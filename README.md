@@ -20,6 +20,10 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
   - First-pass catalog of documented COM methods, MAC entry points, and keystroke syntax
 - `API_VS_KEYSTROKE_MATRIX.md`
   - Decision guide for when to prefer direct COM/API calls vs MAC keystroke command strings
+- `KEYSTROKE_REFERENCE_EXTRACT.md`
+  - First-pass extract of concrete keystroke topics and command tokens from the installed CHM help
+- `INTEROP_SURFACE_DUMP.md`
+  - Generated dump of exported RADAN interop interfaces, methods, properties, and parameter lists
 - `tests/test_radan_com.py`
   - Unit coverage for the wrapper surface
 - `docs/Radan API Programming Help.pdf`

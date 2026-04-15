@@ -24,7 +24,7 @@ There are three different command layers in RADAN:
 - Keystroke command strings
   - Strings passed to `mac2()`, `fmac2()`, or `rfmac()`.
 
-The PDF documents the first two well and documents the syntax for the third, but it does not include a single compact "all keystrokes" table in the extracted pages I reviewed. It points to `Keystroke Reference` and `Order mode keystroke reference` for the fuller command lists.
+The PDF documents the first two well and documents the syntax for the third, but it does not include a single compact "all keystrokes" table in the extracted pages I reviewed. We can now read the installed CHM help directly, so the fuller command/topic lists should come from that path.
 
 ## Application COM Surface
 
@@ -357,7 +357,7 @@ Most likely next sources:
 - the installed CHM pages referenced by the PDF:
   - `C:\Program Files\Mazak\Mazak\help\manuals\radanapi.chm`
   - `C:\Program Files\Mazak\Mazak\help\manuals\radraft.chm`
-- any XML help or decompiled CHM pages containing `Keystroke Reference`
+- CHM topic extraction via `pylibmspack`
 - controlled live testing of documented keystroke strings through `mac2()` and `rfmac()`
 
 ## Recommended Next Step
