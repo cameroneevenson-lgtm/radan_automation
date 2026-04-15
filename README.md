@@ -24,6 +24,8 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
   - First-pass extract of concrete keystroke topics and command tokens from the installed CHM help
 - `INTEROP_SURFACE_DUMP.md`
   - Generated dump of exported RADAN interop interfaces, methods, properties, and parameter lists
+- `COMMAND_TEST_MATRIX.md`
+  - Working matrix of direct API calls and keystroke commands, with recommended path and tested status
 - `tests/test_radan_com.py`
   - Unit coverage for the wrapper surface
 - `docs/Radan API Programming Help.pdf`
