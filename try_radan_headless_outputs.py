@@ -23,7 +23,7 @@ def main() -> int:
         "thumbnail_path": str(thumbnail_path),
     }
 
-    with open_application(backend=args.backend) as app:
+    with open_application(backend=args.backend, force_new_instance=True) as app:
         info = app.info()
         result["backend"] = app.backend_name
         result["created_new_instance"] = app.created_new_instance
@@ -32,8 +32,9 @@ def main() -> int:
         result["report_type_png"] = app.mac.report_type("PNG")
 
         app.visible = False
-        app.interactive = False
         app.new_drawing(False)
+        app.visible = False
+        app.interactive = False
         result["document_before_save"] = app.active_document_info().__dict__
 
         app.save_active_document_as(str(base_path))

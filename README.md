@@ -47,5 +47,62 @@ python -m unittest tests.test_radan_com
 - `try_radan_headless.py`
 - `try_radan_headless_save.py`
 - `try_radan_headless_outputs.py`
+- `headless_export_document_artifacts.py`
 - `probe_radan_attach.py`
 - `probe_radan_managed_attach.ps1`
+- `probe_live_session.py`
+
+## Live Session API
+
+The reusable live-session entry points are exposed from `radan_com.py`:
+
+- `describe_live_session()`
+  - Read-only attach to the active visible RADAN session and report PID, title, editor mode, and bounds when available.
+- `list_visible_radan_sessions()`
+  - Enumerate visible RADAN UI windows so multi-session targeting can start from real PIDs and titles.
+- `attach_live_application()`
+  - Returns a guarded live-session object for follow-up geometry calls like `draw_rectangle_centered()`.
+
+Read-only live probe:
+
+```powershell
+python .\probe_live_session.py --require-part-editor
+```
+
+Visible RADAN windows:
+
+```powershell
+python .\probe_live_session.py --list-visible-sessions
+```
+
+Python example:
+
+```python
+from radan_com import attach_live_application
+
+live = attach_live_application(expected_process_id=22188, require_part_editor=True)
+print(live.session)
+```
+
+Live write caution:
+
+- `attach_live_application()` targets the currently registered active RADAN UI session.
+- Geometry helpers write directly into the attached editor.
+- Prefer a read-only `describe_live_session()` or `probe_live_session.py` pass first when multiple RADAN windows are open.
+- The current RADAN `IPartEditor` interop surface exposes `DrawRectangle`, but not `DrawCircle`.
+
+## Headless Workflow
+
+Useful batch work can stay isolated from the live UI session:
+
+```powershell
+python .\headless_export_document_artifacts.py C:\path\to\part.drg --save-copy-path C:\path\to\part_copy.drg
+```
+
+That workflow:
+
+- opens the document headlessly
+- exports a flat PNG thumbnail
+- optionally saves a copy
+- closes the document and quits the automation instance
+- forces a fresh automation instance instead of reusing a live attached UI session

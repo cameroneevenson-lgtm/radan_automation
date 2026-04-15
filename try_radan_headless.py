@@ -13,7 +13,7 @@ def main() -> int:
 
     result: dict[str, object] = {}
 
-    with open_application(backend=args.backend) as app:
+    with open_application(backend=args.backend, force_new_instance=True) as app:
         info = app.info()
         result["backend"] = app.backend_name
         result["created_new_instance"] = app.created_new_instance
@@ -22,8 +22,9 @@ def main() -> int:
         result["interactive_before"] = info.interactive
 
         app.visible = False
-        app.interactive = False
         app.new_drawing(False)
+        app.visible = False
+        app.interactive = False
 
         doc_info = app.active_document_info()
         result["document_type"] = doc_info.document_type if doc_info else None

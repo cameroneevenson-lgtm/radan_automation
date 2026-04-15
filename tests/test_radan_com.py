@@ -1,13 +1,22 @@
 from __future__ import annotations
 
 import unittest
+from unittest import mock
 
 from radan_com import (
     RadanApplication,
     RadanApplicationInfo,
+    RadanBounds,
     RadanLicenseInfo,
+    RadanLiveApplication,
+    RadanLiveSessionInfo,
     RadanReportResult,
+    RadanTargetMismatchError,
+    attach_live_application,
     available_radan_backends,
+    describe_live_session,
+    list_visible_radan_sessions,
+    open_application,
 )
 
 
@@ -130,6 +139,17 @@ class RadanComTests(unittest.TestCase):
         backends = available_radan_backends()
         self.assertIn("powershell", backends)
 
+    def test_open_application_can_force_fresh_instance(self) -> None:
+        with mock.patch("radan_com.RadanApplication", return_value="sentinel") as application_factory:
+            result = open_application(force_new_instance=True)
+
+        self.assertEqual(result, "sentinel")
+        application_factory.assert_called_once_with(
+            backend=None,
+            create_if_missing=True,
+            force_new_instance=True,
+        )
+
     def test_application_info_coerces_common_property_types(self) -> None:
         app = RadanApplication.__new__(RadanApplication)
         app.prog_id = "Radraft.Application"
@@ -169,6 +189,24 @@ class RadanComTests(unittest.TestCase):
         )
         self.assertTrue(result)
         self.assertTrue(app._backend.closed)
+
+    def test_open_document_dispatches_by_extension(self) -> None:
+        app = RadanApplication.__new__(RadanApplication)
+        app.prog_id = "Radraft.Application"
+        app._backend = _FakeBackend()
+
+        app.open_document(r"C:\Jobs\Demo.sym")
+        app.open_document(r"C:\Jobs\Raster.png", read_only=True, password="secret")
+        app.open_document(r"C:\Jobs\Demo.drg", read_only=True, password="pw")
+
+        self.assertEqual(
+            app._backend.calls,
+            [
+                ("OpenSymbol", (r"C:\Jobs\Demo.sym", False, "")),
+                ("OpenSymbolFromRasterImage", (r"C:\Jobs\Raster.png", True, "secret")),
+                ("OpenDrawing", (r"C:\Jobs\Demo.drg", True, "pw")),
+            ],
+        )
 
     def test_active_document_helpers_delegate_to_document(self) -> None:
         app = RadanApplication.__new__(RadanApplication)
@@ -250,6 +288,246 @@ class RadanComTests(unittest.TestCase):
                 ("prj_output_report", ("Project Report", r"C:\Jobs\project.pdf", 4, "")),
                 ("stp_output_report", ("Setup Sheet", r"C:\Jobs\setup.pdf", 4, "")),
             ],
+        )
+
+    def test_describe_live_session_uses_attached_pid_title_and_bounds(self) -> None:
+        info = RadanApplicationInfo(
+            prog_id="Radraft.Application",
+            backend="fake",
+            name="Mazak Smart System",
+            full_name=r"C:\Program Files\Mazak\Mazak\bin\radraft",
+            path=r"C:\Program Files\Mazak\Mazak\bin",
+            software_version="2025.1.2523.1252",
+            process_id=22188,
+            visible=True,
+            interactive=True,
+            gui_state=4,
+            gui_sub_state=14,
+        )
+
+        class _FakeAttachedApp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return None
+
+            def info(self):
+                return info
+
+        with mock.patch("radan_com.attach_application", return_value=_FakeAttachedApp()):
+            with mock.patch(
+                "radan_com._get_process_window_title",
+                return_value="Demo Part - Mazak Smart System Part Editor",
+            ):
+                with mock.patch(
+                    "radan_com._run_live_session_bridge",
+                    return_value={
+                        "ProcessId": 22188,
+                        "WindowTitle": "Demo Part - Mazak Smart System Part Editor",
+                        "Pattern": "/symbol editor",
+                        "BoundsAvailable": True,
+                        "Left": 10.0,
+                        "Bottom": 20.0,
+                        "Right": 30.0,
+                        "Top": 50.0,
+                    },
+                ):
+                    session = describe_live_session(require_part_editor=True, window_title_contains="Demo Part")
+
+        self.assertIsInstance(session, RadanLiveSessionInfo)
+        self.assertEqual(session.process_id, 22188)
+        self.assertEqual(session.window_title, "Demo Part - Mazak Smart System Part Editor")
+        self.assertEqual(session.editor_mode, "part")
+        self.assertEqual(session.pattern, "/symbol editor")
+        self.assertIsInstance(session.bounds, RadanBounds)
+        assert session.bounds is not None
+        self.assertEqual(session.bounds.width, 20.0)
+        self.assertEqual(session.bounds.height, 30.0)
+        self.assertEqual(session.bounds.center_x, 20.0)
+        self.assertEqual(session.bounds.center_y, 35.0)
+
+    def test_list_visible_radan_sessions_parses_visible_windows(self) -> None:
+        payload = """
+[
+  {
+    "ProcessId": 22188,
+    "WindowTitle": "Demo Part - Mazak Smart System Part Editor"
+  },
+  {
+    "ProcessId": 22189,
+    "WindowTitle": "Demo Nest - Mazak Smart System Nest Editor"
+  }
+]
+"""
+
+        with mock.patch(
+            "radan_com.subprocess.run",
+            return_value=mock.Mock(stdout=payload),
+        ):
+            sessions = list_visible_radan_sessions()
+
+        self.assertEqual(len(sessions), 2)
+        self.assertEqual(sessions[0].process_id, 22188)
+        self.assertEqual(sessions[0].editor_mode, "part")
+        self.assertEqual(sessions[1].process_id, 22189)
+        self.assertEqual(sessions[1].editor_mode, "nest")
+
+    def test_attach_live_application_rejects_wrong_mode(self) -> None:
+        info = RadanApplicationInfo(
+            prog_id="Radraft.Application",
+            backend="fake",
+            name="Mazak Smart System",
+            full_name=r"C:\Program Files\Mazak\Mazak\bin\radraft",
+            path=r"C:\Program Files\Mazak\Mazak\bin",
+            software_version="2025.1.2523.1252",
+            process_id=22188,
+            visible=True,
+            interactive=True,
+            gui_state=4,
+            gui_sub_state=14,
+        )
+
+        class _FakeAttachedApp:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, exc_type, exc, tb):
+                return None
+
+            def info(self):
+                return info
+
+        with mock.patch("radan_com.attach_application", return_value=_FakeAttachedApp()):
+            with mock.patch(
+                "radan_com._get_process_window_title",
+                return_value="Demo Nest - Mazak Smart System Nest Editor",
+            ):
+                with self.assertRaises(RadanTargetMismatchError):
+                    attach_live_application(require_part_editor=True)
+
+    def test_live_application_draw_rectangle_centered_uses_pid_guard(self) -> None:
+        session = RadanLiveSessionInfo(
+            application=RadanApplicationInfo(
+                prog_id="Radraft.Application",
+                backend="fake",
+                name="Mazak Smart System",
+                full_name=r"C:\Program Files\Mazak\Mazak\bin\radraft",
+                path=r"C:\Program Files\Mazak\Mazak\bin",
+                software_version="2025.1.2523.1252",
+                process_id=22188,
+                visible=True,
+                interactive=True,
+                gui_state=4,
+                gui_sub_state=14,
+            ),
+            window_title="Demo Part - Mazak Smart System Part Editor",
+            editor_mode="part",
+            pattern="/symbol editor",
+            bounds=RadanBounds(left=10.0, bottom=20.0, right=30.0, top=50.0),
+        )
+        live = RadanLiveApplication(
+            session,
+            backend="fake",
+            title_guard_contains="Demo Part",
+            require_part_editor=True,
+        )
+        refreshed = RadanLiveSessionInfo(
+            application=session.application,
+            window_title=session.window_title,
+            editor_mode="part",
+            pattern="/symbol editor",
+            bounds=RadanBounds(left=10.0, bottom=20.0, right=31.0, top=52.0),
+        )
+
+        with mock.patch(
+            "radan_com._run_live_session_bridge",
+            return_value={
+                "RectangleX": 19.5,
+                "RectangleY": 34.0,
+                "RectangleWidth": 1.0,
+                "RectangleHeight": 2.0,
+            },
+        ) as bridge:
+            with mock.patch("radan_com.describe_live_session", return_value=refreshed):
+                result = live.draw_rectangle_centered(width=1.0, height=2.0)
+
+        self.assertEqual(result.x, 19.5)
+        self.assertEqual(result.y, 34.0)
+        self.assertEqual(result.width, 1.0)
+        self.assertEqual(result.height, 2.0)
+        self.assertEqual(result.session.bounds, refreshed.bounds)
+        self.assertEqual(live.session.bounds, refreshed.bounds)
+        bridge.assert_called_once_with(
+            "draw_rectangle",
+            expected_process_id=22188,
+            window_title_contains="Demo Part",
+            require_part_editor=True,
+            width=1.0,
+            height=2.0,
+            gap=None,
+            x=None,
+            y=None,
+            center_on_bounds=True,
+            use_explicit_position=False,
+        )
+
+    def test_live_application_draw_rectangle_at_center_converts_center_to_corner(self) -> None:
+        session = RadanLiveSessionInfo(
+            application=RadanApplicationInfo(
+                prog_id="Radraft.Application",
+                backend="fake",
+                name="Mazak Smart System",
+                full_name=r"C:\Program Files\Mazak\Mazak\bin\radraft",
+                path=r"C:\Program Files\Mazak\Mazak\bin",
+                software_version="2025.1.2523.1252",
+                process_id=22188,
+                visible=True,
+                interactive=True,
+                gui_state=4,
+                gui_sub_state=14,
+            ),
+            window_title="Demo Part - Mazak Smart System Part Editor",
+            editor_mode="part",
+            pattern="/symbol editor",
+            bounds=RadanBounds(left=10.0, bottom=20.0, right=30.0, top=50.0),
+        )
+        live = RadanLiveApplication(
+            session,
+            backend="fake",
+            expected_process_id=22188,
+            title_guard_contains="Demo Part",
+            require_part_editor=True,
+        )
+
+        with mock.patch(
+            "radan_com._run_live_session_bridge",
+            return_value={
+                "RectangleX": 48.0,
+                "RectangleY": 99.0,
+                "RectangleWidth": 4.0,
+                "RectangleHeight": 2.0,
+            },
+        ) as bridge:
+            with mock.patch("radan_com.describe_live_session", return_value=session):
+                result = live.draw_rectangle_at_center(center_x=50.0, center_y=100.0, width=4.0, height=2.0)
+
+        self.assertEqual(result.x, 48.0)
+        self.assertEqual(result.y, 99.0)
+        self.assertEqual(result.width, 4.0)
+        self.assertEqual(result.height, 2.0)
+        bridge.assert_called_once_with(
+            "draw_rectangle",
+            expected_process_id=22188,
+            window_title_contains="Demo Part",
+            require_part_editor=True,
+            width=4.0,
+            height=2.0,
+            gap=None,
+            x=48.0,
+            y=99.0,
+            center_on_bounds=False,
+            use_explicit_position=True,
         )
 
 if __name__ == "__main__":

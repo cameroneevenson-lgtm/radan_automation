@@ -20,15 +20,16 @@ def main() -> int:
         "actual_path": str(actual_path),
     }
 
-    with open_application(backend=args.backend) as app:
+    with open_application(backend=args.backend, force_new_instance=True) as app:
         info = app.info()
         result["backend"] = app.backend_name
         result["created_new_instance"] = app.created_new_instance
         result["process_id"] = info.process_id
 
         app.visible = False
-        app.interactive = False
         app.new_drawing(False)
+        app.visible = False
+        app.interactive = False
         app.save_active_document_as(str(base_path))
 
         result["base_exists"] = base_path.exists()
@@ -36,6 +37,8 @@ def main() -> int:
 
         app.close_active_document(True)
         app.open_drawing(str(actual_path), read_only=True)
+        app.visible = False
+        app.interactive = False
 
         reopened = app.active_document_info()
         result["reopened_document_type"] = reopened.document_type if reopened else None
