@@ -63,6 +63,7 @@ python -m unittest tests.test_radan_com
 - `probe_radan_attach.py`
 - `probe_radan_managed_attach.ps1`
 - `probe_live_session.py`
+- `refresh_document_headless.py`
 
 ## Live Session API
 
@@ -118,3 +119,9 @@ That workflow:
 - optionally saves a copy
 - closes the document and quits the automation instance
 - forces a fresh automation instance instead of reusing a live attached UI session
+
+For a simpler "open, save, optionally thumbnail, and quit" path, use:
+
+```powershell
+python .\refresh_document_headless.py C:\path\to\part.drg --thumbnail-path C:\path\to\part.png
+```
