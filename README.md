@@ -5,7 +5,9 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
 ## What Lives Here
 
 - `radan_com.py`
-  - Python wrapper for `Radraft.Application`
+  - Stable public wrapper surface for `Radraft.Application`
+- `radan_models.py`, `radan_backends.py`, `radan_utils.py`, `radan_mac.py`
+  - Internal support modules split out from the original monolithic wrapper
 - `radan_com_bridge.ps1`
   - PowerShell bridge backend for COM access
 - `inspect_radan_api_xml.py`
@@ -64,7 +66,7 @@ python -m unittest tests.test_radan_com
 
 ## Live Session API
 
-The reusable live-session entry points are exposed from `radan_com.py`:
+The reusable live-session entry points are still exposed from `radan_com.py`:
 
 - `describe_live_session()`
   - Read-only attach to the active visible RADAN session and report PID, title, editor mode, and bounds when available.

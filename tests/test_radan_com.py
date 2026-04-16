@@ -530,5 +530,41 @@ class RadanComTests(unittest.TestCase):
             use_explicit_position=True,
         )
 
+    def test_live_application_close_is_noop_and_context_manager_returns_self(self) -> None:
+        session = RadanLiveSessionInfo(
+            application=RadanApplicationInfo(
+                prog_id="Radraft.Application",
+                backend="fake",
+                name="Mazak Smart System",
+                full_name=r"C:\Program Files\Mazak\Mazak\bin\radraft",
+                path=r"C:\Program Files\Mazak\Mazak\bin",
+                software_version="2025.1.2523.1252",
+                process_id=22188,
+                visible=True,
+                interactive=True,
+                gui_state=4,
+                gui_sub_state=14,
+            ),
+            window_title="Demo Part - Mazak Smart System Part Editor",
+            editor_mode="part",
+            pattern="/symbol editor",
+            bounds=RadanBounds(left=10.0, bottom=20.0, right=30.0, top=50.0),
+        )
+        live = RadanLiveApplication(
+            session,
+            backend="fake",
+            expected_process_id=22188,
+            title_guard_contains="Demo Part",
+            require_part_editor=True,
+        )
+
+        with live as attached:
+            self.assertIs(attached, live)
+            self.assertEqual(attached.process_id, 22188)
+
+        self.assertEqual(live.window_title, "Demo Part - Mazak Smart System Part Editor")
+        live.close()
+        self.assertEqual(live.process_id, 22188)
+
 if __name__ == "__main__":
     unittest.main()
