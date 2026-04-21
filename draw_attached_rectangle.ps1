@@ -8,34 +8,34 @@ param(
     [switch]$UseExplicitPosition
 )
 
-$scriptPath = Join-Path $PSScriptRoot "live_session_bridge.ps1"
+$repoRoot = Split-Path $PSScriptRoot -Parent
+$preferredPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+$pythonExe = if (Test-Path $preferredPython) { $preferredPython } else { "python" }
+$scriptPath = Join-Path $PSScriptRoot "draw_live_rectangle.py"
 $arguments = @(
-    "-NoProfile",
-    "-ExecutionPolicy",
-    "Bypass",
-    "-File",
     $scriptPath,
-    "-Action",
-    "draw_rectangle",
-    "-Width",
+    "--width",
     "$Width",
-    "-Height",
+    "--height",
     "$Height",
-    "-Gap",
+    "--gap",
     "$Gap"
 )
 
 if ($PSBoundParameters.ContainsKey("X")) {
-    $arguments += @("-X", "$X")
+    $arguments += @("--x", "$X")
 }
 if ($PSBoundParameters.ContainsKey("Y")) {
-    $arguments += @("-Y", "$Y")
+    $arguments += @("--y", "$Y")
 }
 if ($CenterOnBounds) {
-    $arguments += "-CenterOnBounds"
+    $arguments += "--center-on-bounds"
 }
 if ($UseExplicitPosition) {
-    $arguments += "-UseExplicitPosition"
+    $arguments += "--use-explicit-position"
 }
 
-& powershell @arguments
+& $pythonExe @arguments
+if ($LASTEXITCODE -ne 0) {
+    exit $LASTEXITCODE
+}

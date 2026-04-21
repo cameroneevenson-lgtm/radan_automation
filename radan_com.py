@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import time
+import uuid
 from typing import Any
 
 try:
@@ -198,7 +200,135 @@ def list_visible_radan_sessions() -> list[RadanVisibleSessionInfo]:
     return sessions
 
 
-def _run_live_session_bridge(
+def _select_visible_radan_session(
+    *,
+    expected_process_id: int | None = None,
+    window_title_contains: str | None = None,
+    require_part_editor: bool = False,
+) -> RadanVisibleSessionInfo:
+    sessions = list_visible_radan_sessions()
+    if not sessions:
+        raise RadanComUnavailableError("No visible RADAN UI session was found.")
+
+    matches = sessions
+    if expected_process_id is not None:
+        matches = [session for session in matches if session.process_id == expected_process_id]
+        if not matches:
+            raise RadanTargetMismatchError(
+                f"No visible RADAN UI session matched expected PID {expected_process_id}."
+            )
+
+    if window_title_contains:
+        titled_matches = [
+            session
+            for session in matches
+            if _contains_case_insensitive(session.window_title, window_title_contains)
+        ]
+        if not titled_matches:
+            if len(matches) == 1:
+                raise RadanTargetMismatchError(
+                    f"Attached RADAN window {matches[0].window_title!r} does not contain {window_title_contains!r}."
+                )
+            raise RadanTargetMismatchError(
+                f"No visible RADAN window title contains {window_title_contains!r}."
+            )
+        matches = titled_matches
+
+    if require_part_editor:
+        part_matches = [session for session in matches if session.editor_mode == "part"]
+        if not part_matches:
+            if len(matches) == 1:
+                raise RadanTargetMismatchError(
+                    f"Attached RADAN window is in {matches[0].editor_mode or 'unknown'} mode, not Part Editor."
+                )
+            raise RadanTargetMismatchError("No visible RADAN session is in Part Editor mode.")
+        matches = part_matches
+
+    if len(matches) > 1:
+        raise RadanTargetMismatchError(
+            "Multiple visible RADAN UI sessions matched the current filters. "
+            "Pass expected_process_id or window_title_contains to disambiguate."
+        )
+
+    return matches[0]
+
+
+def _make_visible_window_application_info(session: RadanVisibleSessionInfo) -> RadanApplicationInfo:
+    return RadanApplicationInfo(
+        prog_id=DEFAULT_RADRAFT_PROG_ID,
+        backend="visible-window",
+        name="Mazak Smart System",
+        full_name=None,
+        path=None,
+        software_version=None,
+        process_id=session.process_id,
+        visible=True,
+        interactive=True,
+        gui_state=None,
+        gui_sub_state=None,
+    )
+
+
+def _make_host_bridge_application_info(
+    payload: dict[str, Any],
+    visible_session: RadanVisibleSessionInfo,
+) -> RadanApplicationInfo:
+    return RadanApplicationInfo(
+        prog_id=DEFAULT_RADRAFT_PROG_ID,
+        backend="host-bridge",
+        name="Mazak Smart System",
+        full_name=None,
+        path=None,
+        software_version=None,
+        process_id=_coerce_int(payload.get("ProcessId")) or visible_session.process_id,
+        visible=_coerce_bool(payload.get("Visible")),
+        interactive=True,
+        gui_state=None,
+        gui_sub_state=None,
+    )
+
+
+def _default_live_bridge_dir() -> str:
+    return os.path.join(os.path.dirname(__file__), "_runtime", "live_bridge")
+
+
+def _live_bridge_dir() -> str:
+    configured = os.environ.get("RADAN_LIVE_BRIDGE_DIR", "").strip()
+    if configured:
+        return os.path.abspath(os.path.expanduser(configured))
+    return _default_live_bridge_dir()
+
+
+def _live_bridge_ready_path(bridge_dir: str | None = None) -> str:
+    root = bridge_dir or _live_bridge_dir()
+    return os.path.join(root, "ready.json")
+
+
+def _host_live_bridge_is_ready(bridge_dir: str | None = None) -> bool:
+    return os.path.exists(_live_bridge_ready_path(bridge_dir))
+
+
+def _live_bridge_timeout_seconds() -> float:
+    raw = os.environ.get("RADAN_LIVE_BRIDGE_TIMEOUT_SEC", "").strip()
+    if raw:
+        try:
+            value = float(raw)
+            if value > 0:
+                return value
+        except ValueError:
+            pass
+    return 15.0
+
+
+def _write_json_atomic(path: str, payload: dict[str, Any]) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    temp_path = f"{path}.tmp-{os.getpid()}-{uuid.uuid4().hex}"
+    with open(temp_path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle)
+    os.replace(temp_path, path)
+
+
+def _run_local_live_session_bridge(
     action: str,
     *,
     expected_process_id: int | None = None,
@@ -274,6 +404,157 @@ def _run_live_session_bridge(
     if not isinstance(payload, dict):
         raise RadanComProtocolError(f"Live session bridge returned unexpected payload: {payload!r}")
     return payload
+
+
+def _run_host_live_session_bridge(
+    action: str,
+    *,
+    expected_process_id: int | None = None,
+    window_title_contains: str | None = None,
+    require_part_editor: bool = False,
+    width: float | None = None,
+    height: float | None = None,
+    gap: float | None = None,
+    x: float | None = None,
+    y: float | None = None,
+    center_on_bounds: bool = False,
+    use_explicit_position: bool = False,
+) -> dict[str, Any]:
+    bridge_dir = _live_bridge_dir()
+    if not _host_live_bridge_is_ready(bridge_dir):
+        raise RadanComUnavailableError("Host live bridge is not ready.")
+
+    requests_dir = os.path.join(bridge_dir, "requests")
+    responses_dir = os.path.join(bridge_dir, "responses")
+    request_id = uuid.uuid4().hex
+    request_path = os.path.join(requests_dir, f"{request_id}.json")
+    response_path = os.path.join(responses_dir, f"{request_id}.json")
+
+    request_payload: dict[str, Any] = {
+        "request_id": request_id,
+        "action": action,
+    }
+    if expected_process_id is not None:
+        request_payload["expected_process_id"] = int(expected_process_id)
+    if window_title_contains:
+        request_payload["window_title_contains"] = window_title_contains
+    if require_part_editor:
+        request_payload["require_part_editor"] = True
+    if width is not None:
+        request_payload["width"] = float(width)
+    if height is not None:
+        request_payload["height"] = float(height)
+    if gap is not None:
+        request_payload["gap"] = float(gap)
+    if x is not None:
+        request_payload["x"] = float(x)
+    if y is not None:
+        request_payload["y"] = float(y)
+    if center_on_bounds:
+        request_payload["center_on_bounds"] = True
+    if use_explicit_position:
+        request_payload["use_explicit_position"] = True
+
+    _write_json_atomic(request_path, request_payload)
+
+    deadline = time.monotonic() + _live_bridge_timeout_seconds()
+    try:
+        while time.monotonic() < deadline:
+            if os.path.exists(response_path):
+                try:
+                    with open(response_path, "r", encoding="utf-8") as handle:
+                        response = json.load(handle)
+                finally:
+                    try:
+                        os.remove(response_path)
+                    except OSError:
+                        pass
+
+                if not isinstance(response, dict):
+                    raise RadanComProtocolError(
+                        f"Host live bridge returned an unexpected payload: {response!r}"
+                    )
+                if not response.get("ok"):
+                    error = str(response.get("error") or "Unknown host live bridge error.")
+                    raise RadanComError(f"Host live bridge call failed: {error}")
+
+                payload = response.get("payload")
+                if not isinstance(payload, dict):
+                    raise RadanComProtocolError(
+                        f"Host live bridge returned an invalid payload: {payload!r}"
+                    )
+                return payload
+
+            time.sleep(0.1)
+    finally:
+        try:
+            if os.path.exists(request_path):
+                os.remove(request_path)
+        except OSError:
+            pass
+
+    raise RadanComUnavailableError(
+        f"Timed out waiting for a host live bridge response in {bridge_dir!r}."
+    )
+
+
+def _run_live_session_bridge(
+    action: str,
+    *,
+    expected_process_id: int | None = None,
+    window_title_contains: str | None = None,
+    require_part_editor: bool = False,
+    width: float | None = None,
+    height: float | None = None,
+    gap: float | None = None,
+    x: float | None = None,
+    y: float | None = None,
+    center_on_bounds: bool = False,
+    use_explicit_position: bool = False,
+) -> dict[str, Any]:
+    local_error: RadanComError | None = None
+    try:
+        return _run_local_live_session_bridge(
+            action,
+            expected_process_id=expected_process_id,
+            window_title_contains=window_title_contains,
+            require_part_editor=require_part_editor,
+            width=width,
+            height=height,
+            gap=gap,
+            x=x,
+            y=y,
+            center_on_bounds=center_on_bounds,
+            use_explicit_position=use_explicit_position,
+        )
+    except RadanComError as exc:
+        local_error = exc
+
+    if _host_live_bridge_is_ready():
+        try:
+            return _run_host_live_session_bridge(
+                action,
+                expected_process_id=expected_process_id,
+                window_title_contains=window_title_contains,
+                require_part_editor=require_part_editor,
+                width=width,
+                height=height,
+                gap=gap,
+                x=x,
+                y=y,
+                center_on_bounds=center_on_bounds,
+                use_explicit_position=use_explicit_position,
+            )
+        except RadanComError as bridge_exc:
+            if local_error is not None:
+                raise RadanComError(
+                    f"{local_error} Host live bridge also failed: {bridge_exc}"
+                ) from bridge_exc
+            raise
+
+    if local_error is not None:
+        raise local_error
+    raise RadanComError("Live session bridge failed for an unknown reason.")
 
 
 def _parse_bounds(payload: dict[str, Any]) -> RadanBounds | None:
@@ -619,34 +900,65 @@ def describe_live_session(
     window_title_contains: str | None = None,
     require_part_editor: bool = False,
 ) -> RadanLiveSessionInfo:
-    with attach_application(backend=backend) as app:
-        info = app.info()
+    try:
+        with attach_application(backend=backend) as app:
+            info = app.info()
 
-    if info.process_id is None:
-        raise RadanComUnavailableError("Attached RADAN session did not expose a process ID.")
-    if expected_process_id is not None and info.process_id != expected_process_id:
-        raise RadanTargetMismatchError(
-            f"Attached RADAN PID {info.process_id} does not match expected PID {expected_process_id}."
-        )
+        if info.process_id is None:
+            raise RadanComUnavailableError("Attached RADAN session did not expose a process ID.")
+        if expected_process_id is not None and info.process_id != expected_process_id:
+            raise RadanTargetMismatchError(
+                f"Attached RADAN PID {info.process_id} does not match expected PID {expected_process_id}."
+            )
 
-    window_title = _get_process_window_title(info.process_id)
-    if not _contains_case_insensitive(window_title, window_title_contains):
-        raise RadanTargetMismatchError(
-            f"Attached RADAN window {window_title!r} does not contain {window_title_contains!r}."
-        )
-    editor_mode = _infer_editor_mode(window_title)
-    if require_part_editor and editor_mode != "part":
-        raise RadanTargetMismatchError(
-            f"Attached RADAN window is in {editor_mode or 'unknown'} mode, not Part Editor."
-        )
+        window_title = _get_process_window_title(info.process_id)
+        if not _contains_case_insensitive(window_title, window_title_contains):
+            raise RadanTargetMismatchError(
+                f"Attached RADAN window {window_title!r} does not contain {window_title_contains!r}."
+            )
+        editor_mode = _infer_editor_mode(window_title)
+        if require_part_editor and editor_mode != "part":
+            raise RadanTargetMismatchError(
+                f"Attached RADAN window is in {editor_mode or 'unknown'} mode, not Part Editor."
+            )
 
-    payload = _run_live_session_bridge(
-        "describe",
-        expected_process_id=info.process_id,
-        window_title_contains=window_title_contains,
-        require_part_editor=require_part_editor,
-    )
-    return _make_live_session_info(info, payload, window_title=window_title)
+        payload = _run_live_session_bridge(
+            "describe",
+            expected_process_id=info.process_id,
+            window_title_contains=window_title_contains,
+            require_part_editor=require_part_editor,
+        )
+        return _make_live_session_info(info, payload, window_title=window_title)
+    except RadanTargetMismatchError:
+        raise
+    except RadanComError:
+        visible_session = _select_visible_radan_session(
+            expected_process_id=expected_process_id,
+            window_title_contains=window_title_contains,
+            require_part_editor=require_part_editor,
+        )
+        if _host_live_bridge_is_ready():
+            try:
+                payload = _run_live_session_bridge(
+                    "describe",
+                    expected_process_id=visible_session.process_id,
+                    window_title_contains=window_title_contains,
+                    require_part_editor=require_part_editor,
+                )
+                return _make_live_session_info(
+                    _make_host_bridge_application_info(payload, visible_session),
+                    payload,
+                    window_title=visible_session.window_title,
+                )
+            except RadanComError:
+                pass
+        return RadanLiveSessionInfo(
+            application=_make_visible_window_application_info(visible_session),
+            window_title=visible_session.window_title,
+            editor_mode=visible_session.editor_mode,
+            pattern=None,
+            bounds=None,
+        )
 
 
 def attach_live_application(
@@ -662,6 +974,10 @@ def attach_live_application(
         window_title_contains=window_title_contains,
         require_part_editor=require_part_editor,
     )
+    if session.application.backend == "visible-window":
+        raise RadanComUnavailableError(
+            "A visible RADAN window was found, but no attachable live automation session is currently available."
+        )
     return RadanLiveApplication(
         session,
         backend=backend,

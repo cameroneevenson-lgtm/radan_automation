@@ -37,6 +37,7 @@ function Get-SessionResult {
         [object]$App,
         [Parameter(Mandatory = $true)]
         [string]$WindowTitle,
+        [AllowEmptyString()]
         [Parameter(Mandatory = $true)]
         [string]$Pattern,
         [Parameter(Mandatory = $true)]
@@ -95,6 +96,7 @@ try {
     }
 
     $isPartEditor = Test-ContainsInsensitive -Value $windowTitle -Needle "Part Editor"
+    $isNestEditor = Test-ContainsInsensitive -Value $windowTitle -Needle "Nest Editor"
     if ($RequirePartEditor -and -not $isPartEditor) {
         throw "Attached RADAN window is not in Part Editor mode."
     }
@@ -113,14 +115,22 @@ try {
         catch {
             $pattern = ""
         }
+    }
+    elseif ($isNestEditor) {
+        try {
+            $pattern = [string]$app.PCC_PATTERN_LAYOUT
+        }
+        catch {
+            $pattern = ""
+        }
+    }
 
-        if (-not [string]::IsNullOrWhiteSpace($pattern)) {
-            try {
-                $boundsOk = $app.ElfBounds($pattern, "", [ref]$left, [ref]$bottom, [ref]$right, [ref]$top)
-            }
-            catch {
-                $boundsOk = $false
-            }
+    if (-not [string]::IsNullOrWhiteSpace($pattern)) {
+        try {
+            $boundsOk = $app.ElfBounds($pattern, "", [ref]$left, [ref]$bottom, [ref]$right, [ref]$top)
+        }
+        catch {
+            $boundsOk = $false
         }
     }
 

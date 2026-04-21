@@ -140,3 +140,21 @@ We are closer in certainty than before:
   - the target must be `Visible=True`
   - otherwise the wrapper stays disconnected
 - If an attach path exists, it is probably outside the common COM patterns already tested, or hidden behind an internal subsystem we have not found yet.
+
+## Later Reconciliation Note
+
+Later markdowns in this repo mark `ElfBounds(...)` and `IPartEditor.DrawRectangle(...)` as `tested-live`.
+
+That should **not** be read as proof that any hand-opened visible RADAN window is attachable.
+
+The most consistent interpretation is:
+
+- this file is about ordinary hand-opened RADAN UI windows
+- the later `tested-live` notes refer to a visible session that was also automation-attachable
+- those are not guaranteed to be the same runtime state
+
+When updating docs or probes, keep these states separate:
+
+- visible-window detection only
+- attachable live automation session
+- hidden automation-owned worker

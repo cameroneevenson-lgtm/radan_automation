@@ -16,6 +16,12 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
   - Inspect IL for the managed RADAN interop assembly
 - `probe_radan_*` and `try_radan_*`
   - Attach, headless, and output probes
+- `draw_live_rectangle.py`, `draw_attached_rectangle.ps1`
+  - Live Part Editor rectangle writers for an attachable session
+- `serve_live_session_bridge.py`, `start_live_session_host_bridge.ps1`
+  - Optional host-side request/response bridge for live-session attach and draw calls
+- `watch_live_session.py`
+  - Transition-only watcher for live RADAN session state, prompts, and MAC fields
 - `RADAN_*.md`
   - Findings and quick-reference notes
 - `COMMAND_CATALOG.md`
@@ -64,17 +70,43 @@ python -m unittest tests.test_radan_com
 - `probe_radan_managed_attach.ps1`
 - `probe_live_session.py`
 - `refresh_document_headless.py`
+- `draw_live_rectangle.py`
+- `watch_live_session.py`
 
 ## Live Session API
 
 The reusable live-session entry points are still exposed from `radan_com.py`:
 
 - `describe_live_session()`
-  - Read-only attach to the active visible RADAN session and report PID, title, editor mode, and bounds when available.
+  - Read-only live-session probe. When a real attachable automation session is available it reports PID, title, editor mode, pattern, and bounds. When attach is unavailable it falls back to visible-window detection and reports only what can be inferred from the window/process.
 - `list_visible_radan_sessions()`
   - Enumerate visible RADAN UI windows so multi-session targeting can start from real PIDs and titles.
 - `attach_live_application()`
-  - Returns a guarded live-session object for follow-up geometry calls like `draw_rectangle_centered()`.
+  - Returns a guarded write-capable live-session object for follow-up geometry calls like `draw_rectangle_centered()`.
+  - This requires a real attachable automation session. A merely visible RADAN window is not enough.
+
+## Session Model
+
+There are three different runtime states that the repo has to keep separate:
+
+- visible RADAN UI window
+  - A normal hand-opened `RADRAFT.exe` window that we can identify by PID and title.
+  - This is enough for `list_visible_radan_sessions()` and the visible-window fallback in `describe_live_session()`.
+- attachable live automation session
+  - A visible RADAN session that the managed/COM attach paths can actually bind to.
+  - This is required for `attach_live_application()`, `ElfBounds(...)`, and `PartEditor.DrawRectangle(...)`.
+- hidden automation-owned worker
+  - A separate `Radraft.Application` automation instance used for headless open/save/export work.
+  - This is the safest path for unattended batch workflows.
+
+Two bridge models also exist in the repo:
+
+- `radan_com_bridge.ps1`
+  - Long-lived stdin/stdout bridge for classic COM access to `Radraft.Application`.
+- `live_session_bridge.ps1`
+  - One-shot managed interop probe/write helper for attachable live sessions.
+- `serve_live_session_bridge.py`
+  - Optional request/response host bridge for cases where a local attach probe fails but a host-side live session is already available.
 
 Read-only live probe:
 
@@ -88,6 +120,18 @@ Visible RADAN windows:
 python .\probe_live_session.py --list-visible-sessions
 ```
 
+Transition-only live watcher:
+
+```powershell
+python .\watch_live_session.py --seconds 30 --interval 0.2
+```
+
+Optional host bridge:
+
+```powershell
+powershell .\start_live_session_host_bridge.ps1 -Background
+```
+
 Python example:
 
 ```python
@@ -99,10 +143,40 @@ print(live.session)
 
 Live write caution:
 
-- `attach_live_application()` targets the currently registered active RADAN UI session.
+- `attach_live_application()` only succeeds when RADAN exposes a real attachable live automation session.
 - Geometry helpers write directly into the attached editor.
+- If `describe_live_session()` reports a `visible-window` backend, that is read-only detection, not proof that live geometry calls will work.
 - Prefer a read-only `describe_live_session()` or `probe_live_session.py` pass first when multiple RADAN windows are open.
 - The current RADAN `IPartEditor` interop surface exposes `DrawRectangle`, but not `DrawCircle`.
+
+## Live Nest Findings
+
+The strongest current live-session findings for Nest mode are:
+
+- when an attachable visible Nest session is available, `live_session_bridge.ps1` now reports the active layout pattern through `PCC_PATTERN_LAYOUT` and can resolve layout bounds with `ElfBounds(...)`
+- the attached Nest mode signal on this machine is primarily `GUISubState`, not prompt text
+  - `14` = modify
+  - `7` = profiling
+  - `11` = order
+- `GUIState` stayed at `4` across those live Nest mode transitions
+- `Mac.PRS` was **not** a reliable discriminator for Nest modes in local testing; it often stayed the same across `modify`, `profiling`, and `order`
+- the live UI exposes top-row custom mode buttons that can be targeted directly once the RADAN window is foregrounded:
+  - `rtl_nest_modify_button`
+  - `rtl_nest_profile_button`
+  - `rtl_nest_order_button`
+- the `Profiling` and `Modify` buttons have been proven live by automation on this machine
+  - `order -> profiling`
+  - `profiling -> modify`
+- a direct MAC escape command (`mac2('\!')`) was accepted in `order` mode, but it did **not** exit `order` mode here
+
+Sandbox / desktop-access note:
+
+- read-only probing (`describe_live_session()`, `probe_live_session.py`, `watch_live_session.py`) can work from a normal automation shell as long as RADAN is attachable
+- live mode switching through the top-row Nest buttons is a lower-level UI action
+  - it required access to the real interactive Windows desktop session so the automation could foreground the RADAN window and click custom controls
+  - a more restrictive sandbox that blocks focus changes, mouse movement, or desktop interaction should be expected to fail for this path even if COM attach still works
+
+For the detailed evidence trail, see [RADAN_LIVE_NEST_FINDINGS_20260421.md](/c:/Tools/radan_automation/RADAN_LIVE_NEST_FINDINGS_20260421.md).
 
 ## Headless Workflow
 

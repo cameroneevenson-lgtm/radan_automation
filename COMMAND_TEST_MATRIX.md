@@ -14,7 +14,7 @@ This file is intended to bridge:
 - `tested-headless`
   - executed successfully in an isolated automation instance
 - `tested-live`
-  - executed successfully against an attached visible RADAN UI session
+  - executed successfully against an attached, automation-backed visible RADAN session
 - `wrapper-tested`
   - covered by unit tests or wrapper contract checks, but not yet proven against a live RADAN workflow here
 - `doc-only`
@@ -40,11 +40,23 @@ These are the highest-value typed calls to prefer when possible.
 | `Mac.fla_thumbnail(...)` | wrapper, interop | headless | n/a | `API` | `tested-headless` | Verified to produce PNG output in isolated automation instance. |
 | `Mac.prj_output_report(...)` / `stp_output_report(...)` | wrapper, interop | headless/live | n/a | `API` | `wrapper-tested` | Interface present; setup report path unit-covered, real workflow still pending. |
 | `Mac.scan(...)` / `next()` / `rewind()` | PDF, interop | headless/live | keystroke find workflows | `API` | `doc-only` | Prefer for deterministic feature iteration instead of cursor-driven find commands. |
-| `Mac.elf_bounds(...)` | PDF, interop | live/headless | pattern-based size queries via keystrokes | `API` | `tested-live` | Used indirectly to compute active part bounds for live rectangle placement. |
+| `Mac.elf_bounds(...)` | PDF, interop | live/headless | pattern-based size queries via keystrokes | `API` | `tested-live` | Used indirectly to compute active part bounds for live rectangle placement in an attachable live session. |
 | `Mac.fed_edit_feature(...)` | PDF, interop | headless/live | edit-mode keystrokes | `API` | `doc-only` | Strong candidate for structured feature edits instead of edit-mode keys. |
-| `IPartEditor.DrawRectangle(...)` | interop reflection | live | keystroke `"` rectangle | `API` | `tested-live` | Successfully attached to live Part Editor and drew geometry. |
+| `IPartEditor.DrawRectangle(...)` | interop reflection | live | keystroke `"` rectangle | `API` | `tested-live` | Successfully attached to a live Part Editor and drew geometry once the session was attachable through the managed/COM path. |
 | `run_verifier()` / `run_verifier_silently()` | PDF, interop | verifier | keystroke-driven verifier workflow | `API` | `doc-only` | Better as typed calls if we automate verifier mode later. |
 | `ord_run_blockmaker_silently()` | PDF, interop | order mode | order-mode keystrokes | `API` | `doc-only` | Prefer typed path if order/blockmaker automation becomes important. |
+
+## Live Session State / UI Control Paths
+
+These are not typed geometry APIs, but they are now proven useful for real live-session targeting in the Nest Editor.
+
+| Command or Surface | Source | Mode | Direct API Alternative | Recommended Path | Tested Status | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `Application.GUIState` / `Application.GUISubState` | wrapper, live probe | live nest | prompt text | `API` | `tested-live` | On this machine the attached Nest session stayed at `GUIState=4` while `GUISubState` mapped `14=modify`, `7=profiling`, `11=order`. |
+| `PCC_PATTERN_LAYOUT` + `ElfBounds(...)` in Nest Editor | managed bridge, interop, live probe | live nest | prompt text | `API` | `tested-live` | The attachable Nest session reported `PCC_PATTERN_LAYOUT=/layout`, and `ElfBounds('/layout', ...)` returned stable layout bounds. |
+| `rtl_nest_profile_button` / `big_button_profile.bmp` | UI Automation inspection + live click | live nest | guessed keystrokes | `UI control` | `tested-live` | Foreground the RADAN window, then click the top-row Profile button. Proven `order -> profiling` on this machine. |
+| `rtl_nest_modify_button` / `big_button_nest_modify.bmp` | UI Automation inspection + live click | live nest | guessed keystrokes | `UI control` | `tested-live` | Foreground the RADAN window, then click the top-row Modify button. Proven `profiling -> modify` on this machine. |
+| `rtl_nest_order_button` / `big_button_order.bmp` | UI Automation inspection | live nest | guessed keystrokes | `UI control` | `not-tested` | The control is present in the same top-row Nest mode strip, but this repo has not yet programmatically clicked it. |
 
 ## Keystroke Commands With Strong CHM Evidence
 
@@ -79,6 +91,7 @@ These are directly described in the CHM and are likely the best route when no ty
 | `x` | pattern and edit topics | pattern/edit | `Document.Close`, feature-editor, pattern APIs partial | `rfmac` or `mac2` | `not-tested` | PDF says safe for `rfmac()` in some cases, but not window delete or hatching-related cases. |
 | `m` | pattern manipulation | pattern | none | `mac2` | `not-tested` | PDF says `m` is only safe for `rfmac()` outside symbols/window move. |
 | `S` | pattern manipulation | pattern | `SaveCopyAs` is not equivalent | `mac2` | `not-tested` | Pattern save-and-retain behavior is keystroke-level. |
+| `\!` | MAC language manual escape command | live nest/order | top-row Nest mode buttons | `unknown` | `tested-live` | Accepted by RADAN and returned success in `order` mode, but did not move the session out of `GUISubState=11` here. |
 | `?` / `??` | `on.screenhelpforkeystrokes.htm` | all interactive modes | none | manual / `mac2` research only | `not-tested` | Best discovery aid for attached live sessions, not production automation. |
 | `r`, `z`, `Ctrl+r`, `Ctrl+z` | redraw/zoom topics | view | none | `mac2` | `not-tested` | Interactive-only, not useful for unattended headless runs. |
 | `q` | query topic | drafting/query | some typed geometry APIs overlap | `mac2` | `not-tested` | Better for attached operator workflows than batch automation. |

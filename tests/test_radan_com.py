@@ -3,15 +3,18 @@ from __future__ import annotations
 import unittest
 from unittest import mock
 
+import radan_com
 from radan_com import (
     RadanApplication,
     RadanApplicationInfo,
     RadanBounds,
+    RadanComUnavailableError,
     RadanLicenseInfo,
     RadanLiveApplication,
     RadanLiveSessionInfo,
     RadanReportResult,
     RadanTargetMismatchError,
+    RadanVisibleSessionInfo,
     attach_live_application,
     available_radan_backends,
     describe_live_session,
@@ -539,6 +542,148 @@ class RadanComTests(unittest.TestCase):
             ):
                 with self.assertRaises(RadanTargetMismatchError):
                     attach_live_application(require_part_editor=True)
+
+    def test_describe_live_session_falls_back_to_visible_window_when_com_attach_is_unavailable(self) -> None:
+        visible_session = RadanVisibleSessionInfo(
+            process_id=2324,
+            window_title="Demo Nest - Mazak Smart System Nest Editor",
+            editor_mode="nest",
+        )
+
+        with mock.patch(
+            "radan_com.attach_application",
+            side_effect=RadanComUnavailableError("No active COM object is registered."),
+        ):
+            with mock.patch("radan_com.list_visible_radan_sessions", return_value=[visible_session]):
+                session = describe_live_session()
+
+        self.assertEqual(session.process_id, 2324)
+        self.assertEqual(session.window_title, visible_session.window_title)
+        self.assertEqual(session.editor_mode, "nest")
+        self.assertEqual(session.application.backend, "visible-window")
+        self.assertIsNone(session.pattern)
+        self.assertIsNone(session.bounds)
+
+    def test_describe_live_session_visible_window_fallback_requires_disambiguation(self) -> None:
+        visible_sessions = [
+            RadanVisibleSessionInfo(
+                process_id=2324,
+                window_title="Demo Part - Mazak Smart System Part Editor",
+                editor_mode="part",
+            ),
+            RadanVisibleSessionInfo(
+                process_id=2456,
+                window_title="Demo Nest - Mazak Smart System Nest Editor",
+                editor_mode="nest",
+            ),
+        ]
+
+        with mock.patch(
+            "radan_com.attach_application",
+            side_effect=RadanComUnavailableError("No active COM object is registered."),
+        ):
+            with mock.patch("radan_com.list_visible_radan_sessions", return_value=visible_sessions):
+                with self.assertRaises(RadanTargetMismatchError):
+                    describe_live_session()
+
+    def test_run_live_session_bridge_uses_host_bridge_after_local_failure(self) -> None:
+        with mock.patch(
+            "radan_com._run_local_live_session_bridge",
+            side_effect=RadanComUnavailableError("No active COM object is registered."),
+        ):
+            with mock.patch("radan_com._host_live_bridge_is_ready", return_value=True):
+                with mock.patch(
+                    "radan_com._run_host_live_session_bridge",
+                    return_value={"ProcessId": 2324, "WindowTitle": "Demo Part"},
+                ) as host_bridge:
+                    payload = radan_com._run_live_session_bridge(
+                        "describe",
+                        expected_process_id=2324,
+                        window_title_contains="Demo Part",
+                        require_part_editor=True,
+                    )
+
+        self.assertEqual(payload["ProcessId"], 2324)
+        host_bridge.assert_called_once_with(
+            "describe",
+            expected_process_id=2324,
+            window_title_contains="Demo Part",
+            require_part_editor=True,
+            width=None,
+            height=None,
+            gap=None,
+            x=None,
+            y=None,
+            center_on_bounds=False,
+            use_explicit_position=False,
+        )
+
+    def test_describe_live_session_uses_host_bridge_when_local_attach_is_unavailable(self) -> None:
+        visible_session = RadanVisibleSessionInfo(
+            process_id=2324,
+            window_title="Demo Part - Mazak Smart System Part Editor",
+            editor_mode="part",
+        )
+        payload = {
+            "ProcessId": 2324,
+            "WindowTitle": visible_session.window_title,
+            "Visible": True,
+            "Pattern": "/part editor",
+            "BoundsAvailable": True,
+            "Left": 10.0,
+            "Bottom": 20.0,
+            "Right": 40.0,
+            "Top": 60.0,
+        }
+
+        with mock.patch(
+            "radan_com.attach_application",
+            side_effect=RadanComUnavailableError("No active COM object is registered."),
+        ):
+            with mock.patch(
+                "radan_com._select_visible_radan_session",
+                return_value=visible_session,
+            ):
+                with mock.patch("radan_com._host_live_bridge_is_ready", return_value=True):
+                    with mock.patch("radan_com._run_live_session_bridge", return_value=payload) as bridge:
+                        session = describe_live_session(require_part_editor=True)
+
+        self.assertEqual(session.application.backend, "host-bridge")
+        self.assertEqual(session.process_id, 2324)
+        self.assertEqual(session.window_title, visible_session.window_title)
+        self.assertEqual(session.pattern, "/part editor")
+        self.assertEqual(session.bounds, RadanBounds(left=10.0, bottom=20.0, right=40.0, top=60.0))
+        bridge.assert_called_once_with(
+            "describe",
+            expected_process_id=2324,
+            window_title_contains=None,
+            require_part_editor=True,
+        )
+
+    def test_attach_live_application_rejects_visible_window_fallback(self) -> None:
+        visible_only = RadanLiveSessionInfo(
+            application=RadanApplicationInfo(
+                prog_id="Radraft.Application",
+                backend="visible-window",
+                name="Mazak Smart System",
+                full_name=None,
+                path=None,
+                software_version=None,
+                process_id=2324,
+                visible=True,
+                interactive=True,
+                gui_state=None,
+                gui_sub_state=None,
+            ),
+            window_title="Demo Part - Mazak Smart System Part Editor",
+            editor_mode="part",
+            pattern=None,
+            bounds=None,
+        )
+
+        with mock.patch("radan_com.describe_live_session", return_value=visible_only):
+            with self.assertRaises(RadanComUnavailableError):
+                attach_live_application(require_part_editor=True)
 
     def test_live_application_draw_rectangle_centered_uses_pid_guard(self) -> None:
         session = RadanLiveSessionInfo(

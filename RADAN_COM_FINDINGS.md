@@ -9,6 +9,12 @@ Related doc: see [RADAN_API_QUICK_INDEX.md](/c:/Tools/radan_automation/RADAN_API
 
 Inspected local COM/registry registration to identify what RADAN automation interfaces are available.
 
+Important scope limit:
+
+- this pass only enumerated `Radan.*` registry keys
+- it did **not** cover `Radraft.Application` / `Radraft.Application.1`
+- later work in this repo confirmed that `Radraft.Application` is registered separately and is the ProgID used by the wrapper and live attach tooling
+
 ## Method
 
 1. Enumerated `HKCR` keys matching `Radan.*`.
@@ -61,6 +67,13 @@ These keys did not expose `CLSID` mappings in the queried locations.
 
 ## Practical Conclusion
 
-On this machine, the RADAN COM surface currently visible via registry is centered on `RasterToVector` (`radrvc.exe`, 32-bit registration path).
+Within the limited `Radan.*` registry scope, the COM surface visible here is centered on `RasterToVector` (`radrvc.exe`, 32-bit registration path).
+
+That is **not** the whole RADAN automation picture for this machine, because:
+
+- `Radraft.Application`
+- `Radraft.Application.1`
+
+are also registered and are the ProgIDs relevant to the main RADAN automation wrapper in this repo.
 
 If deeper COM inspection is needed (methods/properties/events), use TypeLib browser tooling against `{4A14B157-FC74-4D89-9C68-E4B409057087}` with a 32-bit COM-capable client/runtime.
