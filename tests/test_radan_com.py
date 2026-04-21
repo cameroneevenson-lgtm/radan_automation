@@ -68,6 +68,10 @@ class _FakeBackend:
     class _FakeMac:
         REPORT_TYPE_PDF = "4"
         REPORT_TYPE_CSV = 0
+        PRS = "Ready"
+        PART_PATTERN = "/part editor"
+        CUP = "/current pattern"
+        COP = "/open pattern"
 
         def __init__(self, calls: list[tuple[str, tuple[object, ...]]]) -> None:
             self._calls = calls
@@ -95,6 +99,88 @@ class _FakeBackend:
         def rfmac(self, command: str) -> str:
             self._calls.append(("rfmac", (command,)))
             return "1"
+
+        def profile_healing(
+            self,
+            pattern: str,
+            include_sub_patterns: bool,
+            tolerance: float,
+            realise_ellipses: bool,
+            remove_small_features: bool,
+            close_small_gaps: bool,
+            merge_overlaps: bool,
+            simplify_data: bool,
+        ) -> bool:
+            self._calls.append(
+                (
+                    "profile_healing",
+                    (
+                        pattern,
+                        include_sub_patterns,
+                        tolerance,
+                        realise_ellipses,
+                        remove_small_features,
+                        close_small_gaps,
+                        merge_overlaps,
+                        simplify_data,
+                    ),
+                )
+            )
+            return True
+
+        def profile_healing_with_timeout(
+            self,
+            pattern: str,
+            include_sub_patterns: bool,
+            tolerance: float,
+            realise_ellipses: bool,
+            remove_small_features: bool,
+            close_small_gaps: bool,
+            merge_overlaps: bool,
+            simplify_data: bool,
+            time_limit: float,
+        ) -> int:
+            self._calls.append(
+                (
+                    "profile_healing_with_timeout",
+                    (
+                        pattern,
+                        include_sub_patterns,
+                        tolerance,
+                        realise_ellipses,
+                        remove_small_features,
+                        close_small_gaps,
+                        merge_overlaps,
+                        simplify_data,
+                        time_limit,
+                    ),
+                )
+            )
+            return 1
+
+        def profile_extraction(
+            self,
+            pattern: str,
+            include_sub_patterns: bool,
+            delete_by_pen: bool,
+            pen_mask: int,
+            lines_arcs_only: bool,
+            full_linetype_only: bool,
+        ) -> bool:
+            self._calls.append(
+                (
+                    "profile_extraction",
+                    (
+                        pattern,
+                        include_sub_patterns,
+                        delete_by_pen,
+                        pen_mask,
+                        lines_arcs_only,
+                        full_linetype_only,
+                    ),
+                )
+            )
+            return True
 
         def fla_thumbnail(self, path: str, width: int, height: int) -> bool:
             self._calls.append(("fla_thumbnail", (path, width, height)))
@@ -252,6 +338,35 @@ class RadanComTests(unittest.TestCase):
         report_type_pdf = app.mac.report_type("pdf")
         report_type_csv = app.mac.report_type("CSV")
         keystroke_result = app.mac.keystroke("TEST-COMMAND")
+        prompt_string = app.mac.prompt_string
+        part_pattern = app.mac.part_pattern
+        current_pattern = app.mac.current_pattern_path
+        open_pattern = app.mac.open_pattern_path
+        healing_result = app.mac.profile_healing(
+            "/part editor",
+            include_sub_patterns=True,
+            tolerance=0.01,
+            realise_ellipses=True,
+            remove_small_features=True,
+            close_small_gaps=True,
+            merge_overlaps=True,
+            simplify_data=True,
+        )
+        healing_timeout_result = app.mac.profile_healing_with_timeout(
+            "/part editor",
+            include_sub_patterns=False,
+            tolerance=0.005,
+            simplify_data=True,
+            time_limit=12.5,
+        )
+        extraction_result = app.mac.profile_extraction(
+            "/part editor",
+            include_sub_patterns=True,
+            delete_by_pen=True,
+            pen_mask=0x12,
+            lines_arcs_only=True,
+            full_linetype_only=False,
+        )
         flat_thumbnail = app.mac.flat_thumbnail(r"C:\Jobs\thumb.png", 400, 300)
         model_thumbnail = app.mac.model_thumbnail(r"C:\Jobs\model.png", 512)
         project_report = app.mac.output_project_report("Project Report", r"C:\Jobs\project.pdf", 4)
@@ -266,6 +381,13 @@ class RadanComTests(unittest.TestCase):
         self.assertEqual(report_type_pdf, 4)
         self.assertEqual(report_type_csv, 0)
         self.assertEqual(keystroke_result, 1)
+        self.assertEqual(prompt_string, "Ready")
+        self.assertEqual(part_pattern, "/part editor")
+        self.assertEqual(current_pattern, "/current pattern")
+        self.assertEqual(open_pattern, "/open pattern")
+        self.assertTrue(healing_result)
+        self.assertEqual(healing_timeout_result, 1)
+        self.assertTrue(extraction_result)
         self.assertTrue(flat_thumbnail)
         self.assertFalse(model_thumbnail)
         self.assertIsInstance(project_report, RadanReportResult)
@@ -283,6 +405,18 @@ class RadanComTests(unittest.TestCase):
                 ("lic_confirm", ("CORE",)),
                 ("lic_request", ("NEST",)),
                 ("rfmac", ("TEST-COMMAND",)),
+                (
+                    "profile_healing",
+                    ("/part editor", True, 0.01, True, True, True, True, True),
+                ),
+                (
+                    "profile_healing_with_timeout",
+                    ("/part editor", False, 0.005, False, False, False, False, True, 12.5),
+                ),
+                (
+                    "profile_extraction",
+                    ("/part editor", True, True, 18, True, False),
+                ),
                 ("fla_thumbnail", (r"C:\Jobs\thumb.png", 400, 300)),
                 ("mfl_thumbnail", (r"C:\Jobs\model.png", 512)),
                 ("prj_output_report", ("Project Report", r"C:\Jobs\project.pdf", 4, "")),

@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RadanCompoundDocument xmlns="http://www.radan.com/ns/rcd">
+  <RadanAttributes>
+    <Group class="system" name="System"
+        desc="These attributes describe the Mazak Smart System system used to create this file." ord="7">
+      <Attr num="13" name="Language" desc="Mazak Smart System language code." type="i" ord="1" value="1">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="14" name="Licence" desc="Mazak Smart System licence code." type="s" ord="2"
+          value="8341-8159-8477-6673-9885-7909">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="15" name="Build" desc="Mazak Smart System software build." type="s" ord="3" value="2025.1.2523">
+        <Valid perm="r"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Workflow state" desc="Attributes used for updating the workflow status" ord="12">
+      <Attr num="17" name="Nest time" desc="Time the nest's sheet or part arrangement was last modified." type="t"
+          ord="2">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="18" name="Tooling time" desc="Time the tooling was last modified." type="t" ord="3">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="19" name="Order view time" desc="Time of last entry into Order mode." type="t" ord="4">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="20" name="Time estimate time" desc="Time when the cycle time was calculated." type="t" ord="6">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="21" name="Annotation time" desc="Time the nest annotation was last updated." type="t" ord="7">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="22" name="Order set-up time" desc="Time the order text set-up commands were last modified." type="t"
+          ord="5">
+        <Valid perm="h"/>
+      </Attr>
+    </Group>
+    <Group class="system" name="File" desc="These attributes are basic properties of the file." ord="1">
+      <Attr num="101" name="Created" desc="Time file was created." type="t" ord="3" value="2026-04-15T13:19:18-04:00">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="102" name="Modified" desc="Time file was last modified." type="t" ord="4"
+          value="2026-04-20T16:28:40-04:00">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="103" name="File size" desc="File size in bytes." type="i" ord="5" value="16405">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="105" name="Associated files" desc="Associated files." type="s" ord="6">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="107" name="Extension" desc="File name extension." type="s" ord="2" value="drg">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="110" name="File name" desc="File name without its extension." type="s" ord="1"
+          value="_tmp_geometry_util_apply_test">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="141" name="Checkout user" desc="The username to which this file is checked out" type="s" ord="7">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="142" name="Checkout time" desc="The time at which this file was checked out" type="t" ord="8">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="143" name="Filestore" desc="Radcontrol local filestore path" type="s" ord="9">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="144" name="Current version"
+          desc='A flag to show (when set to "yes") that this is the current version of a file' type="s" ord="10">
+        <Valid perm="r"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Description" desc="Use these attributes to give a description of the file." ord="2">
+      <Attr num="108" name="Title" desc="The title of this file." type="s" ord="1">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="109" name="Comments" desc="Comments about this file." type="s" ord="2">
+        <Valid perm="e"/>
+      </Attr>
+    </Group>
+    <Group class="system" name="Drawing" desc="These attributes are the drawing properties." ord="4">
+      <Attr num="116" name="Paper size" desc="Paper size." type="s" ord="1" value="A1">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="117" name="Drawing scale" desc="Drawing scale." type="s" ord="2" value="1:1">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="118" name="Drawing units" desc="Drawing units." type="s" ord="3" value="in">
+        <Valid perm="r"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Manufacturing" desc="These attributes are the manufacturing properties of the file."
+        ord="6">
+      <Attr num="119" name="Material" desc="Material." type="s" ord="1">
+        <Valid perm="e" max="100"/>
+      </Attr>
+      <Attr num="120" name="Thickness" desc="Thickness." type="r" ord="2">
+        <Valid perm="e" min="0" max="99999"/>
+      </Attr>
+      <Attr num="121" name="Thickness units" desc="Thickness units." type="s" ord="4">
+        <Valid perm="e" expr="mm|in|swg" max="80"/>
+      </Attr>
+      <Attr num="123" name="Cycle time" desc="Cycle time in minutes." type="r" ord="27">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="124" name="Sheet X" desc="Sheet length in the X direction." type="r" ord="13">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="125" name="Sheet Y" desc="Sheet length in the Y direction." type="r" ord="14">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="126" name="Free area"
+          desc="Leftover sheet area, in square metres or square feet depending on your drawing units." type="r" ord="16">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="127" name="Machine" desc="Machine name." type="s" ord="21"
+          value="1: Optiplex Champ 3015 3.0kw Fiber TT">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="128" name="Order time" desc="Time the order text was last modified." type="t" ord="24">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="129" name="Blocks time" desc="Time the blocks were last modified." type="t" ord="25">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="130" name="Verify time" desc="Time the job was verified." type="t" ord="26">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="131" name="Output time" desc="Time the blocks were last output." type="t" ord="28">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="137" name="Number of sheets" desc="Number of copies of this sheet." type="i" ord="17">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="138" name="Sheet utilisation" desc="Percentage of sheet area used." type="r" ord="15">
+        <Valid perm="e" min="0" max="100"/>
+      </Attr>
+      <Attr num="139" name="STL id" desc="Standard Tool Loading file id." type="i" ord="22">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="146" name="Strategy" desc="Autotooling strategy." type="s" ord="23">
+        <Valid perm="e" max="60"/>
+      </Attr>
+      <Attr num="157" name="Sheet article number" desc="Sheet article number of the sheet." type="s" ord="32">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="159" name="Stock id" desc="Stock identifier of the sheet." type="s" ord="31">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="161" name="Remnant source" desc="Name of the drawing that this drawing was derived from." type="s"
+          ord="19">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="170" name="Remnants saved" desc="Number of remnants saved for each copy of this sheet." type="i"
+          ord="20">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="171" name="Nest name template" desc="The template that was used to make the nest name." type="s"
+          ord="30">
+        <Valid perm="e" max="125"/>
+      </Attr>
+      <Attr num="186" name="Workflow status" desc="The workflow status of this file." type="s" ord="29"
+          value="0 - Not defined">
+        <Valid perm="e" max="80"/>
+        <MC machine="psys_Mazak_OPCF_510_3.0kw_TT" value="0 - Not defined"/>
+      </Attr>
+      <Attr num="195" name="Sheet weight " desc="The weight of the sheet in lb or kg, depending on your drawing units."
+          type="r" ord="18">
+        <Valid perm="e" min="0"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Works order nesting"
+        desc="These attributes record the file's Works Order Nesting properties (not supported in this version)."
+        ord="9">
+      <Attr num="151" name="Number of sheets cut" desc="Number of copies of this sheet cut to date." type="i" ord="13">
+        <Valid perm="r"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Cost estimate" desc="These attributes are used to estimate costs." ord="10">
+      <Attr num="172" name="Last estimated cost" desc="The last estimated cost per item in run of quantity-off."
+          type="r" ord="1">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="173" name="Setup cost" desc="The setting up component of the last cost estimate." type="r" ord="2">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="174" name="Runtime cost" desc="The runtime component of the last cost estimate." type="r" ord="3">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="175" name="Material cost" desc="The material component of the last cost estimate." type="r" ord="4">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="176" name="Last estimate sheet cost" desc="The cost of the sheet used in the last cost estimate."
+          type="r" ord="5">
+        <Valid perm="e" min="0"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Radbend" desc="These attributes record the file's Radbend properties." ord="11">
+      <Attr num="182" name="Model modify time" desc="The time at which the active model was last modified." type="t"
+          ord="1">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="183" name="Development time"
+          desc="The time at which the development for the active model was last created." type="t" ord="2">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="184" name="Export time" desc="The time at which the active model was last exported." type="t" ord="3">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="185" name="Bend program time"
+          desc="The time at which the bend program for the active model was last updated." type="t" ord="4">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="192" name="Bend set-up time"
+          desc="Length of time (in minutes) needed for setting up the tools for the bend program." type="r" ord="5">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="193" name="Bend run time"
+          desc="Length of time (in minutes) the bend machine axes are moving (including programmed delays/wait times)."
+          type="r" ord="6">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="194" name="Bend handling time"
+          desc="Length of time (in minutes) needed for the bend machine operator to handle the part (inserting and removing
+the part and handling between bends)." type="r" ord="7">
+        <Valid perm="e" min="0"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="User" desc="You can use these attributes for your own purposes." ord="13">
+      <Attr num="200" name="User string" type="s" ord="0">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="300" name="User integer" type="i" ord="100">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="400" name="User time" type="t" ord="200">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="500" name="User real" type="r" ord="300">
+        <Valid perm="e"/>
+      </Attr>
+    </Group>
+  </RadanAttributes>
+  <Thumbnail image-type="bmp" image-encoding="base64Binary">
+    <![CDATA[
+Qk2+BwAAAAAAAD4AAAAoAAAAeAAAAHgAAAABAAEAAAAAAIAHAAAAAAAAAAAAAAAAAAAAAAAA////
+AP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+]]>
+  </Thumbnail>
+  <RadanFile extension="ddc">
+    <![CDATA[A,2,
+B,D,>,,1,2,3,4,5,6,7,8,9,:,<,=,>,
+B,E,],?,@,E1,R1,A,B,C,D,E,F,G,k1,H,I,J,F1,;,K,L,:,M,N,O,P,Q,R,S,T,<,=,>,U,m1,n1,52,62,:2,>2,?2,U2,V2,e2,i2,j2,k2,
+D,1,6,.4@0SIJFQY>8..3@7J=[A4ic6..4@0SIJFQY>8..3@7J=[A4ic6.3@9IVIVIVIV.o?0.o?0.$_tmp_headless_output_probe_copy
+E,,-1,,,,,,,,1,1,1,,,1,,o?0...o?0.........o?0.o?0.$/
+C,$
+U,,$
+U,$
+U,,,,2,,,,,,,
+]]>
+  </RadanFile>
+  <History>
+    <![CDATA[_VSq
+CFA@'iv'<8GEuT(B4v6b=G#Trq_]^YFIlOO=vzDN]x
+=GE":3.Y+d\p<}&3.ErBg%sW>@uLZ5p93u:i2woV)M
+]]>
+    <![CDATA[
+UEsDBBQACQAIAJCDlFwAAAAAAAAAAAIEAAAJABEAQ2FjaGUueG1sVVQNAAc4VOZpOFTmaThU5mnj
+Nb9Rp1NAmmLONJ7jqI9/xicF8j23iLIWApSH4FQRKoIFgAoMK5s80FDI8Np3vS4ZBDyxzJQP8hun
+QBOJ989FbUfUjU9UFFySf2+IdVvCK6QDHVdNBVPpMD6/KgmgLCPQntmCzqQDsVFuyRbvOD4Cfdi5
+LXSzyI2IcJUD95L7aXg3Crt6J+G3YRlbz9CaaD9YfCLaBXodV1ZQRslJQTXt1Y9TxFaHdJuniFmZ
+JOdm2iBy+Yb0J6qqt6VDLTRCF30Qm9EqILUfOs0cfPMBeFQdw7SxVdkJkUb3DMPQO5uvJq57+Dx5
+7jXJ1UvKW6VDgT04pAS94v61BzdI7EhCf1LLc1Eru1Rirw2OQbnvwqaloFKqwfW5MCZ4tqQusDNb
+Ti7Fpr3ON68GH179PbF9jI3jEtObPw9ujSvuYdcxqyKmt3m9p+2jRokIAiim7lh3623MT5NJGQ+O
+mx9MEzrhfZUITegbTA56LX6W01Wlt96n/CvC3Ufqh17k3dfsIf5AmqxpVCMLKZXGYvbg0dtEcpjl
+AcSrS6NeKamDgBVIiUd8kmtcNlNSt4VyZJFXB0TZi4AfXcWjKQ0uuk/Mef6OalcAmAZv3FU0Pq28
++bFFvYLJtTtRRNQm4S41n9q7rVCMXfnp4c9x1G8LPer42iSV5PrjPP9M9+1+4OYXnr53Rq25nRc1
+cv9e3Noo1T+qO51klIo6wGE06Mw+eWWWOFpmypJfYXEzVJoxDbb0BJHgdbQ0UEsHCDkTddUvAgAA
+AgQAAFBLAQIXCxQACQAIAJCDlFw5E3XVLwIAAAIEAAAJAAkAAAAAAAAAAAAAgAAAAABDYWNoZS54
+bWxVVAUABzhU5mlQSwUGAAAAAAEAAQBAAAAAdwIAAAAA
+]]>
+  </History>
+  <QuotationInfo/>
+</RadanCompoundDocument>
