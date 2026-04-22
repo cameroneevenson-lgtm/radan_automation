@@ -71,6 +71,8 @@ The following mode changes were proven by automation:
   - succeeded by foregrounding the RADAN window and clicking `rtl_nest_profile_button`
 - `profiling -> modify`
   - succeeded by foregrounding the RADAN window and clicking `rtl_nest_modify_button`
+- `modify -> order`
+  - succeeded by foregrounding the RADAN window and clicking `rtl_nest_order_button`
 
 The corresponding live confirmation came from:
 
@@ -106,6 +108,39 @@ So the current preferred mode-switch path is:
 not:
 
 - guessed keystrokes
+
+## Proven Import Parts Launcher
+
+The live Nest parts-list area exposed an import launcher as:
+
+- `rpr_parts_list_import_parts_button`
+- paired bitmap: `project_import_parts.bmp`
+
+This launcher behaved like the other custom RADAN controls:
+
+- it exposed a stable UIA name
+- it did not expose a simple UIA `InvokePattern`
+- a real foregrounded click was the reliable launch path
+
+One important placement caveat was proven during live testing:
+
+- if the RADAN window was moved partly off-screen, the import button could still appear in the UIA tree while the click path stopped working reliably
+- after moving the main RADAN window back on-screen, the same click path succeeded
+
+The observed import-launch behavior was:
+
+- clicking the launcher opened the import workflow
+- RADAN immediately surfaced a standard Windows `#32770` file picker titled `Import Parts`
+- the larger WinForms `Import Parts` parent dialog stayed behind it and was disabled while the picker remained open
+- later live work also proved the full CSV import path through to completion:
+  - CSV expansion readiness was best detected by `Browse...` becoming enabled in the parent dialog
+  - output-folder assignment worked through the old `Browse For Folder` shell tree when driven with real focus plus MSAA/tree navigation
+  - `Import All` completed with a separate `Import Parts` completion modal of class `#32770`
+  - that modal reported:
+    - `Number of parts added to the parts list: 108`
+  - the selected output folder populated incrementally with `.sym` files during the run
+
+For the detailed control inventory, see [RADAN_IMPORT_PARTS_UI_FINDINGS_20260421.md](/c:/Tools/radan_automation/RADAN_IMPORT_PARTS_UI_FINDINGS_20260421.md).
 
 ## Useful Repo Tools
 

@@ -167,6 +167,22 @@ The strongest current live-session findings for Nest mode are:
 - the `Profiling` and `Modify` buttons have been proven live by automation on this machine
   - `order -> profiling`
   - `profiling -> modify`
+- the `Order` button has also now been proven live by automation on this machine
+  - `modify -> order`
+- the parts-list import launcher has been identified and exercised live:
+  - `rpr_parts_list_import_parts_button`
+  - paired bitmap `project_import_parts.bmp`
+  - launching it immediately surfaces a standard Windows `Import Parts` file picker on top of the WinForms parent dialog
+- the full CSV import path has now also been proven live end-to-end:
+  - CSV `Open` -> `Browse...` enabled:
+    - `70.618s` for `108` rows
+    - about `0.6539s/part`
+  - `Import All` -> completion modal:
+    - `56.886s` for `108` parts
+    - about `0.5267s/part`
+  - completion was confirmed by a separate `Import Parts` modal with class `#32770` and text:
+    - `Number of parts added to the parts list: 108`
+  - output `.sym` files were observed appearing incrementally in the selected output folder during the import
 - a direct MAC escape command (`mac2('\!')`) was accepted in `order` mode, but it did **not** exit `order` mode here
 
 Sandbox / desktop-access note:
@@ -175,8 +191,13 @@ Sandbox / desktop-access note:
 - live mode switching through the top-row Nest buttons is a lower-level UI action
   - it required access to the real interactive Windows desktop session so the automation could foreground the RADAN window and click custom controls
   - a more restrictive sandbox that blocks focus changes, mouse movement, or desktop interaction should be expected to fail for this path even if COM attach still works
+- the same desktop caveat applies to the custom `Import Parts` launcher button in the live Nest window
+  - once the standard Windows file picker is open, the interaction surface becomes much more conventional than the custom launcher itself
+- the same caveat also applies to long-running live buttons such as `Import All`
+  - a real desktop click allowed the script to keep observing progress and the completion modal
+  - synchronous `SendMessage(BM_CLICK, ...)` blocked inside RADAN for this path and is therefore a poor fit when we need concurrent observation
 
-For the detailed evidence trail, see [RADAN_LIVE_NEST_FINDINGS_20260421.md](/c:/Tools/radan_automation/RADAN_LIVE_NEST_FINDINGS_20260421.md).
+For the detailed evidence trail, see [RADAN_LIVE_NEST_FINDINGS_20260421.md](/c:/Tools/radan_automation/RADAN_LIVE_NEST_FINDINGS_20260421.md) and [RADAN_IMPORT_PARTS_UI_FINDINGS_20260421.md](/c:/Tools/radan_automation/RADAN_IMPORT_PARTS_UI_FINDINGS_20260421.md).
 
 ## Headless Workflow
 
