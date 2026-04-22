@@ -48,17 +48,30 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
 
 ## Setup
 
-Install the automation-only Python dependencies:
+This repo now prefers the shared `C:\Tools\.venv` interpreter for Python-side tooling.
+
+Create or refresh that environment:
 
 ```powershell
-python -m pip install -r requirements.txt
+python -m venv C:\Tools\.venv
+```
+
+Install the automation-only Python dependencies into that environment:
+
+```powershell
+C:\Tools\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 Run the wrapper tests:
 
 ```powershell
-python -m unittest tests.test_radan_com
+C:\Tools\.venv\Scripts\python.exe -m unittest tests.test_radan_com
 ```
+
+Notes:
+
+- the helper PowerShell launchers in this repo now prefer `C:\Tools\.venv\Scripts\python.exe`
+- if that shared venv is missing, they still fall back to a repo-local `.venv` and then `python`
 
 ## Verified Probes
 

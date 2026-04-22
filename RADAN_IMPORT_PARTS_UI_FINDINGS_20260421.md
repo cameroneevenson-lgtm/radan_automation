@@ -356,6 +356,32 @@ Practical rule:
 - do **not** use shell-message injection as the folder-selection strategy for this dialog
 - prefer plain supported UI interaction through the folder tree and normal `OK` confirmation
 
+## Unsafe Tree Introspection Found
+
+Later live testing exposed a second unsafe class of interaction against the same old `Browse For Folder` dialog.
+
+Attempted path:
+
+- low-level cross-process tree introspection against the live `SysTreeView32`
+- specifically a remote-memory / `TVM_GETITEMW` style probe intended to read item text without changing the visible UI workflow
+
+Observed result on this machine:
+
+- the entire live RADAN application went down during the folder-selection stage
+- the import state was lost
+- after restart, RADAN came back only as a fresh Nest Editor session
+
+Important distinction:
+
+- this was **not** the earlier shell-selection-message route
+- this was a separate failure mode triggered by direct low-level probing of the shell tree internals
+
+Practical rule:
+
+- do **not** use cross-process tree introspection or remote-memory tree probing against RADAN's live `Browse For Folder` dialog
+- for this workflow, treat the shell tree as click/keyboard only
+- if automation needs stronger folder targeting, prefer a safer higher-level approach or operator assistance rather than direct tree internals
+
 That part is now confirmed live:
 
 - `Browse...` opens the older shell `Browse For Folder` dialog

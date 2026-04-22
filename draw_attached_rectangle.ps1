@@ -9,8 +9,17 @@ param(
 )
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$preferredPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
-$pythonExe = if (Test-Path $preferredPython) { $preferredPython } else { "python" }
+$preferredPythons = @(
+    "C:\Tools\.venv\Scripts\python.exe",
+    (Join-Path $repoRoot ".venv\Scripts\python.exe")
+)
+$pythonExe = "python"
+foreach ($candidate in $preferredPythons) {
+    if (Test-Path $candidate) {
+        $pythonExe = $candidate
+        break
+    }
+}
 $scriptPath = Join-Path $PSScriptRoot "draw_live_rectangle.py"
 $arguments = @(
     $scriptPath,

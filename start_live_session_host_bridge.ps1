@@ -6,15 +6,19 @@ param(
 )
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
-$preferredPython = Join-Path $repoRoot ".venv\Scripts\python.exe"
+$preferredPythons = @(
+    "C:\Tools\.venv\Scripts\python.exe",
+    (Join-Path $repoRoot ".venv\Scripts\python.exe")
+)
 $scriptPath = Join-Path $PSScriptRoot "serve_live_session_bridge.py"
 
 if ([string]::IsNullOrWhiteSpace($PythonExe)) {
-    if (Test-Path $preferredPython) {
-        $PythonExe = $preferredPython
-    }
-    else {
-        $PythonExe = "python"
+    $PythonExe = "python"
+    foreach ($candidate in $preferredPythons) {
+        if (Test-Path $candidate) {
+            $PythonExe = $candidate
+            break
+        }
     }
 }
 
