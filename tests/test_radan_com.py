@@ -75,6 +75,12 @@ class _FakeBackend:
         PART_PATTERN = "/part editor"
         CUP = "/current pattern"
         COP = "/open pattern"
+        FI0 = "/symbol editor/_19"
+        FT0 = ""
+        FP0 = "7"
+        LT0 = "1"
+        S0X = "89.64375"
+        S0Y = "64.64827"
 
         def __init__(self, calls: list[tuple[str, tuple[object, ...]]]) -> None:
             self._calls = calls
@@ -102,6 +108,26 @@ class _FakeBackend:
         def rfmac(self, command: str) -> str:
             self._calls.append(("rfmac", (command,)))
             return "1"
+
+        def scan(self, path: str, feature_filter: str, number: int) -> bool:
+            self._calls.append(("scan", (path, feature_filter, number)))
+            return True
+
+        def next(self) -> bool:
+            self._calls.append(("next", ()))
+            return False
+
+        def rewind(self) -> bool:
+            self._calls.append(("rewind", ()))
+            return True
+
+        def end_scan(self) -> bool:
+            self._calls.append(("end_scan", ()))
+            return True
+
+        def find_xy_identifier(self, identifier: str, x: float, y: float) -> bool:
+            self._calls.append(("find_xy_identifier", (identifier, x, y)))
+            return True
 
         def profile_healing(
             self,
@@ -345,6 +371,17 @@ class RadanComTests(unittest.TestCase):
         part_pattern = app.mac.part_pattern
         current_pattern = app.mac.current_pattern_path
         open_pattern = app.mac.open_pattern_path
+        current_feature_identifier = app.mac.current_feature_identifier
+        current_feature_type = app.mac.current_feature_type
+        current_feature_pen = app.mac.current_feature_pen
+        current_feature_line_type = app.mac.current_feature_line_type
+        current_feature_x = app.mac.current_feature_x
+        current_feature_y = app.mac.current_feature_y
+        scan_result = app.mac.scan("/symbol editor", "l")
+        next_result = app.mac.next()
+        rewind_result = app.mac.rewind()
+        end_scan_result = app.mac.end_scan()
+        find_result = app.mac.find_xy_identifier("/symbol editor/_19", 89.64375, 64.64827)
         healing_result = app.mac.profile_healing(
             "/part editor",
             include_sub_patterns=True,
@@ -388,6 +425,17 @@ class RadanComTests(unittest.TestCase):
         self.assertEqual(part_pattern, "/part editor")
         self.assertEqual(current_pattern, "/current pattern")
         self.assertEqual(open_pattern, "/open pattern")
+        self.assertEqual(current_feature_identifier, "/symbol editor/_19")
+        self.assertEqual(current_feature_type, "")
+        self.assertEqual(current_feature_pen, 7)
+        self.assertEqual(current_feature_line_type, 1)
+        self.assertEqual(current_feature_x, 89.64375)
+        self.assertEqual(current_feature_y, 64.64827)
+        self.assertTrue(scan_result)
+        self.assertFalse(next_result)
+        self.assertTrue(rewind_result)
+        self.assertTrue(end_scan_result)
+        self.assertTrue(find_result)
         self.assertTrue(healing_result)
         self.assertEqual(healing_timeout_result, 1)
         self.assertTrue(extraction_result)
@@ -408,6 +456,11 @@ class RadanComTests(unittest.TestCase):
                 ("lic_confirm", ("CORE",)),
                 ("lic_request", ("NEST",)),
                 ("rfmac", ("TEST-COMMAND",)),
+                ("scan", ("/symbol editor", "l", 0)),
+                ("next", ()),
+                ("rewind", ()),
+                ("end_scan", ()),
+                ("find_xy_identifier", ("/symbol editor/_19", 89.64375, 64.64827)),
                 (
                     "profile_healing",
                     ("/part editor", True, 0.01, True, True, True, True, True),

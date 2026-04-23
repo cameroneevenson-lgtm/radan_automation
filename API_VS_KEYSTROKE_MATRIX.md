@@ -190,6 +190,17 @@ The CHM documents many edit actions as mode-sensitive command flows:
 - feature property editing in edit mode
   - pen, line type, orientation, etc.
 
+Live pen remap now has a proven mixed workflow in this repo:
+
+- use `scan(...)` to iterate features and capture `FI0`, `FP0`, `S0X`, and `S0Y`
+- use `find_xy_identifier(...)` to re-mark the exact feature you want to edit
+- then use `rfmac('e\\?P,<pen>?')` to apply the logical pen change
+
+Important constraint:
+
+- a direct `rfmac('e\\?P,<pen>?')` call from scan state alone failed live with `First find a feature`
+- the extra `find_xy_identifier(...)` step was required before the edit-mode keystroke would stick
+
 When the operation is described as "enter edit mode, then press key X", it is usually a keystroke-first workflow.
 
 ### View / Prompt / Cursor Workflows
@@ -294,6 +305,7 @@ For this repo today, the safest practical strategy is:
 
 - use direct API calls for batch/headless automation
 - use keystrokes only for editor-style workflows that RADAN documents primarily as command sequences
+- use mixed API + keystroke flows when RADAN needs typed selection but only exposes the edit itself through an edit-mode keystroke
 - prefer attached live-session automation for keystroke-heavy editing work
 - prefer isolated fresh instances for typed export and conversion pipelines
 

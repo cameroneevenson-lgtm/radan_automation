@@ -5,11 +5,11 @@ from typing import Any
 try:
     from .radan_backends import _Backend
     from .radan_models import RadanLicenseInfo, RadanReportResult
-    from .radan_utils import _coerce_bool, _coerce_int, _coerce_str, _parse_report_result
+    from .radan_utils import _coerce_bool, _coerce_float, _coerce_int, _coerce_str, _parse_report_result
 except ImportError:
     from radan_backends import _Backend
     from radan_models import RadanLicenseInfo, RadanReportResult
-    from radan_utils import _coerce_bool, _coerce_int, _coerce_str, _parse_report_result
+    from radan_utils import _coerce_bool, _coerce_float, _coerce_int, _coerce_str, _parse_report_result
 
 
 class RadanMac:
@@ -54,12 +54,51 @@ class RadanMac:
     def open_pattern_path(self) -> str | None:
         return _coerce_str(self._get_property("COP"))
 
+    @property
+    def current_feature_identifier(self) -> str | None:
+        return _coerce_str(self._get_property("FI0"))
+
+    @property
+    def current_feature_type(self) -> str | None:
+        return _coerce_str(self._get_property("FT0"))
+
+    @property
+    def current_feature_pen(self) -> int | None:
+        return _coerce_int(self._get_property("FP0"))
+
+    @property
+    def current_feature_line_type(self) -> int | None:
+        return _coerce_int(self._get_property("LT0"))
+
+    @property
+    def current_feature_x(self) -> float | None:
+        return _coerce_float(self._get_property("S0X"))
+
+    @property
+    def current_feature_y(self) -> float | None:
+        return _coerce_float(self._get_property("S0Y"))
+
     def report_type(self, file_type_name: str) -> int | None:
         property_name = f"REPORT_TYPE_{file_type_name.strip().upper()}"
         return _coerce_int(self._get_property(property_name))
 
     def keystroke(self, command: str) -> int | None:
         return _coerce_int(self._call_method("rfmac", command))
+
+    def scan(self, path: str, feature_filter: str, number: int = 0) -> bool | None:
+        return _coerce_bool(self._call_method("scan", path, feature_filter, int(number)))
+
+    def next(self) -> bool | None:
+        return _coerce_bool(self._call_method("next"))
+
+    def rewind(self) -> bool | None:
+        return _coerce_bool(self._call_method("rewind"))
+
+    def end_scan(self) -> bool | None:
+        return _coerce_bool(self._call_method("end_scan"))
+
+    def find_xy_identifier(self, identifier: str, x: float, y: float) -> bool | None:
+        return _coerce_bool(self._call_method("find_xy_identifier", identifier, float(x), float(y)))
 
     def profile_healing(
         self,

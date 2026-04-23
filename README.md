@@ -18,6 +18,8 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
   - Attach, headless, and output probes
 - `draw_live_rectangle.py`, `draw_attached_rectangle.ps1`
   - Live Part Editor rectangle writers for an attachable session
+- `remap_feature_pens_live.py`
+  - Live Part Editor pen remapper using `scan(...)` + `find_xy_identifier(...)` + `rfmac('e\\?P,...')`
 - `serve_live_session_bridge.py`, `start_live_session_host_bridge.ps1`
   - Optional host-side request/response bridge for live-session attach and draw calls
 - `watch_live_session.py`
@@ -138,6 +140,21 @@ Transition-only live watcher:
 ```powershell
 python .\watch_live_session.py --seconds 30 --interval 0.2
 ```
+
+Live feature pen remap:
+
+```powershell
+C:\Tools\.venv\Scripts\python.exe .\remap_feature_pens_live.py --expected-process-id 22704 --source-pen 7 --target-pen 5 --filter-target a=9
+```
+
+Notes:
+
+- the proven live pen-remap path is mixed, not keystrokes-only
+  - `scan(...)` to collect candidates
+  - `find_xy_identifier(...)` to re-mark the exact feature
+  - `rfmac('e\\?P,<pen>?')` to apply the new logical pen
+- a direct `rfmac('e\\?P,<pen>?')` from scan state failed live with `First find a feature`
+- close modal dialogs such as `Edit Common Properties` before running the remap utility, because modal UI can block the attached COM/MAC workflow
 
 Optional host bridge:
 
