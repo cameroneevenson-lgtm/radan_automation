@@ -1,13 +1,15 @@
 # RADAN Automation
 
-Reusable RADAN automation wrapper, probes, and reverse-engineering notes extracted from `radan_kitter`.
+Reusable RADAN automation wrappers, probes, and reverse-engineering notes for local RADAN/Radraft work.
+
+This is a standalone automation workspace for RADAN/Radraft exploration and batch tooling.
 
 ## What Lives Here
 
 - `radan_com.py`
   - Stable public wrapper surface for `Radraft.Application`
 - `radan_models.py`, `radan_backends.py`, `radan_utils.py`, `radan_mac.py`
-  - Internal support modules split out from the original monolithic wrapper
+  - Internal support modules for model types, backend selection, value coercion, and MAC helpers
 - `radan_com_bridge.ps1`
   - PowerShell bridge backend for COM access
 - `inspect_radan_api_xml.py`
@@ -22,6 +24,8 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
   - Live Part Editor pen remapper using `scan(...)` + `find_xy_identifier(...)` + `rfmac('e\\?P,...')`
 - `batch_fix_parts_from_nest_live.py`
   - Live Nest batch runner that opens selected parts, remaps pens, saves through the standard notice dialog, and returns to Nest
+- `remap_feature_pens_file.py`
+  - Direct `.sym` DDC pen remapper that edits line/arc records without opening RADAN
 - `serve_live_session_bridge.py`, `start_live_session_host_bridge.ps1`
   - Optional host-side request/response bridge for live-session attach and draw calls
 - `watch_live_session.py`
@@ -38,8 +42,8 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
   - Generated dump of exported RADAN interop interfaces, methods, properties, and parameter lists
 - `COMMAND_TEST_MATRIX.md`
   - Working matrix of direct API calls and keystroke commands, with recommended path and tested status
-- `tests/test_radan_com.py`
-  - Unit coverage for the wrapper surface
+- `tests/`
+  - Unit coverage for the wrapper surface, headless entry points, batch summaries, and direct `.sym` pen remapping
 - `docs/Radan API Programming Help.pdf`
   - Local PDF reference copy
 
@@ -66,11 +70,16 @@ Install the automation-only Python dependencies into that environment:
 C:\Tools\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-Run the wrapper tests:
+Run the unit tests:
 
 ```powershell
-C:\Tools\.venv\Scripts\python.exe -m unittest tests.test_radan_com
+C:\Tools\.venv\Scripts\python.exe -m unittest discover -v
 ```
+
+Current local validation:
+
+- `2026-04-24`: `C:\Tools\.venv\Scripts\python.exe -m unittest discover -v`
+- result: `Ran 32 tests` / `OK`
 
 Notes:
 
@@ -114,7 +123,7 @@ There are three different runtime states that the repo has to keep separate:
   - This is required for `attach_live_application()`, `ElfBounds(...)`, and `PartEditor.DrawRectangle(...)`.
 - hidden automation-owned worker
   - A separate `Radraft.Application` automation instance used for headless open/save/export work.
-  - This is the safest path for unattended batch workflows.
+  - Confirm the resolved process before cleanup. On this machine, a requested fresh COM automation object can still bind to an already-visible user-owned `RADRAFT.exe` process.
 
 Two bridge models also exist in the repo:
 
@@ -166,6 +175,10 @@ C:\Tools\.venv\Scripts\python.exe .\batch_fix_parts_from_nest_live.py --process-
 
 More live batch notes:
 
+- pass `--json-out <path>` for incremental progress writes after each open/remap/return phase
+- by default, the batch stops on the first failed part if RADAN may be left in a dirty Part Editor
+  - use `--continue-on-error` only for failures that leave RADAN safely back in Nest Editor
+  - use `--return-to-nest-on-error` only when saving partial edits is acceptable
 - `rpr_parts_list_open_part_button` is the proven open-from-list control
 - after a save-return cycle, `accSelect(...)` may stop advancing the visible parts-list selection on this machine
   - verify the row highlight and fall back to a real row click before opening
@@ -205,6 +218,7 @@ Live write caution:
 - If `describe_live_session()` reports a `visible-window` backend, that is read-only detection, not proof that live geometry calls will work.
 - Prefer a read-only `describe_live_session()` or `probe_live_session.py` pass first when multiple RADAN windows are open.
 - The current RADAN `IPartEditor` interop surface exposes `DrawRectangle`, but not `DrawCircle`.
+- Do not call `Radraft.Application.Quit()` as routine cleanup unless the automation-owned process has been positively identified.
 
 ## Live Nest Findings
 
@@ -277,3 +291,25 @@ For a simpler "open, save, optionally thumbnail, and quit" path, use:
 ```powershell
 python .\refresh_document_headless.py C:\path\to\part.drg --thumbnail-path C:\path\to\part.png
 ```
+
+## Direct Symbol File Remap
+
+When RADAN COM attach is unsafe or would disturb a visible user session, `.sym` files can be edited directly:
+
+```powershell
+C:\Tools\.venv\Scripts\python.exe .\remap_feature_pens_file.py C:\path\to\part.sym
+```
+
+This utility edits the DDC geometry block only:
+
+- line records (`G`): pen `7 -> 5`
+- arc records (`H`): pen `7 -> 9`
+- a timestamped `.bak-*` file is written before changes
+
+Caveats:
+
+- direct DDC edits do not refresh RADAN-derived workflow status, Nest warning flags, thumbnails, or internal file metadata
+- touching the filesystem timestamp alone does not update the symbol's internal `Workflow status`
+- do not spoof `Workflow status` by XML edit; open/save in RADAN is the validation refresh path
+
+Detailed notes live in [RADAN_DIRECT_FILE_PEN_REMAP_FINDINGS_20260424.md](/c:/Tools/radan_automation/RADAN_DIRECT_FILE_PEN_REMAP_FINDINGS_20260424.md).

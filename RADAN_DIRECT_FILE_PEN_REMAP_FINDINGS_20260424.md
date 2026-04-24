@@ -31,6 +31,15 @@ Practical rule:
 - then do a RADAN open/save refresh pass when Nest warnings, status, thumbnails, or other cached views need to update
 - do not manually flip `Workflow status` to clear the flag; that is RADAN's validation result and spoofing it could hide a real geometry problem
 
+## Follow-Up Observations
+
+- The active seven-part Nest project for the tested batch was:
+  - `L:\BATTLESHIELD\F-LARGE FLEET\PLAYGROUND\PLAYGROUND\PLAYGROUND.rpd`
+- The earlier Paint Pack project file was not the active one; it only referenced `F56139-B-95` from the visible seven-row list.
+- The correct `PLAYGROUND.rpd` stores the seven symbol paths and nest membership, but no embedded per-symbol thumbnails were found there.
+- Touching filesystem `LastWriteTime` on the modified `.sym` files does not update the internal RADAN XML metadata fields such as `Modified`, `Workflow status`, or `File size`.
+- A manual RADAN open/save on `F56139-B-1.sym` changed its internal `Workflow status` from `3 - Part geometry is not closed` to `1 - OK` and rewrote its thumbnail block.
+
 ## Safety Note
 
 Do not use `Radraft.Application.Quit()` as cleanup while a user-owned RADAN session is open. On this machine, requesting a new COM automation instance can still bind back to the visible `RADRAFT.exe` process.
