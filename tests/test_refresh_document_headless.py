@@ -32,8 +32,8 @@ class _FakeMac:
 
     def license_info(self):
         class _LicenseInfo:
-            holder = "Battleshield Industries"
-            servercode = "8341-8159-8477-6673-9885-7909"
+            holder = "Example Fabrication"
+            servercode = "0000-0000-0000-0000"
 
             @property
             def __dict__(self):
@@ -99,6 +99,8 @@ class RefreshDocumentHeadlessTests(unittest.TestCase):
         try:
             input_path = os.path.join(tmpdir, "Demo.sym")
             thumbnail_path = os.path.join(tmpdir, "thumb.png")
+            with open(input_path, "wb") as f:
+                f.write(b"sym")
             with mock.patch("refresh_document_headless.open_application", return_value=fake_app):
                 with mock.patch.object(
                     sys,
@@ -125,6 +127,7 @@ class RefreshDocumentHeadlessTests(unittest.TestCase):
         self.assertTrue(payload["save_ok"])
         self.assertTrue(payload["thumbnail_ok"])
         self.assertTrue(payload["thumbnail_exists"])
+        self.assertEqual(payload["license_info"], {"holder_present": True, "servercode_present": True})
         self.assertEqual(fake_app.saved, 1)
         self.assertEqual(fake_app.closed, 1)
         self.assertEqual(len(fake_app.thumbnail_writes), 1)
@@ -135,6 +138,8 @@ class RefreshDocumentHeadlessTests(unittest.TestCase):
         os.makedirs(tmpdir, exist_ok=False)
         try:
             input_path = os.path.join(tmpdir, "Demo.sym")
+            with open(input_path, "wb") as f:
+                f.write(b"sym")
             with mock.patch("refresh_document_headless.open_application", return_value=fake_app):
                 with mock.patch.object(
                     sys,

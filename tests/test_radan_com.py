@@ -87,11 +87,11 @@ class _FakeBackend:
 
         def lic_get_holder(self) -> str:
             self._calls.append(("lic_get_holder", ()))
-            return "Battleshield Industries"
+            return "Example Fabrication"
 
         def lic_get_servercode(self) -> str:
             self._calls.append(("lic_get_servercode", ()))
-            return "8341-8159-8477-6673-9885-7909"
+            return "0000-0000-0000-0000"
 
         def lic_available(self, name: str) -> str:
             self._calls.append(("lic_available", (name,)))
@@ -413,8 +413,8 @@ class RadanComTests(unittest.TestCase):
         setup_report = app.mac.output_setup_report("Setup Sheet", r"C:\Jobs\setup.pdf", 4)
 
         self.assertIsInstance(license_info, RadanLicenseInfo)
-        self.assertEqual(license_info.holder, "Battleshield Industries")
-        self.assertEqual(license_info.servercode, "8341-8159-8477-6673-9885-7909")
+        self.assertEqual(license_info.holder, "Example Fabrication")
+        self.assertEqual(license_info.servercode, "0000-0000-0000-0000")
         self.assertTrue(available)
         self.assertTrue(confirmed)
         self.assertFalse(requested)

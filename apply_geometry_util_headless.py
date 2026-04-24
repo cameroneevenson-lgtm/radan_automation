@@ -89,6 +89,9 @@ def main() -> int:
     input_path = Path(args.input_path).expanduser().resolve()
     save_copy_path = Path(args.save_copy_path).expanduser().resolve() if args.save_copy_path else None
 
+    if not input_path.exists():
+        parser.error(f"Input path does not exist: {input_path}")
+
     run_healing = not bool(args.skip_healing)
     run_extraction = bool(args.delete_by_pen or args.pen_mask or args.lines_arcs_only or args.full_linetype_only)
     if not run_healing and not run_extraction:

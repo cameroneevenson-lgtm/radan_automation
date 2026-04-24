@@ -5,7 +5,7 @@ param(
     [switch]$Background
 )
 
-$repoRoot = Split-Path $PSScriptRoot -Parent
+$repoRoot = $PSScriptRoot
 $preferredPythons = @(
     "C:\Tools\.venv\Scripts\python.exe",
     (Join-Path $repoRoot ".venv\Scripts\python.exe")

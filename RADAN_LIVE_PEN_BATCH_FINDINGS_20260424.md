@@ -57,6 +57,8 @@ Artifacts captured during the run:
 - [docs/live_pen_batch_20260424_run.json](/c:/Tools/radan_automation/docs/live_pen_batch_20260424_run.json)
 - [docs/live_pen_batch_20260424_remaining.json](/c:/Tools/radan_automation/docs/live_pen_batch_20260424_remaining.json)
 
+These checked-in artifacts are now summarized: they keep timings and before/after pen counts, but omit raw subprocess stdout and per-feature success rows.
+
 The first JSON artifact records the initial batch attempt:
 
 - `F56139-B-20` was genuinely fixed

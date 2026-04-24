@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from radan_com import open_application
+from radan_utils import _summarize_license_info
 
 
 def main() -> int:
@@ -28,7 +29,7 @@ def main() -> int:
         result["backend"] = app.backend_name
         result["created_new_instance"] = app.created_new_instance
         result["process_id"] = info.process_id
-        result["license_info"] = app.mac.license_info().__dict__
+        result["license_info"] = _summarize_license_info(app.mac.license_info())
         result["report_type_png"] = app.mac.report_type("PNG")
 
         app.visible = False

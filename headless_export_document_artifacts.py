@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from radan_com import open_application
+from radan_utils import _summarize_license_info
 
 
 def main() -> int:
@@ -43,6 +44,9 @@ def main() -> int:
     )
     save_copy_path = Path(args.save_copy_path).expanduser().resolve() if args.save_copy_path else None
 
+    if not input_path.exists():
+        parser.error(f"Input path does not exist: {input_path}")
+
     result: dict[str, object] = {
         "input_path": str(input_path),
         "thumbnail_path": str(thumbnail_path),
@@ -56,7 +60,7 @@ def main() -> int:
         result["created_new_instance"] = app.created_new_instance
         result["process_id"] = info.process_id
         result["software_version"] = info.software_version
-        result["license_info"] = app.mac.license_info().__dict__
+        result["license_info"] = _summarize_license_info(app.mac.license_info())
 
         app.visible = False
         app.open_document(str(input_path), read_only=args.read_only)

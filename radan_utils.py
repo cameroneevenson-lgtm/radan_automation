@@ -89,3 +89,12 @@ def _infer_document_kind_from_path(path: str) -> str:
     if extension in _RASTER_IMAGE_EXTENSIONS:
         return "symbol_from_raster"
     return "drawing"
+
+
+def _summarize_license_info(license_info: Any) -> dict[str, object]:
+    holder = getattr(license_info, "holder", None)
+    servercode = getattr(license_info, "servercode", None)
+    return {
+        "holder_present": bool(holder),
+        "servercode_present": bool(servercode),
+    }

@@ -7,7 +7,7 @@
         <Valid perm="r"/>
       </Attr>
       <Attr num="14" name="Licence" desc="Mazak Smart System licence code." type="s" ord="2"
-          value="8341-8159-8477-6673-9885-7909">
+          value="0000-0000-0000-0000">
         <Valid perm="r"/>
       </Attr>
       <Attr num="15" name="Build" desc="Mazak Smart System software build." type="s" ord="3" value="2025.1.2523">

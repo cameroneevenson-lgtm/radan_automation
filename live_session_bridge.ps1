@@ -31,6 +31,82 @@ function Test-ContainsInsensitive {
     return $Value.IndexOf($Needle, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
 }
 
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+
+public static class RadanUser32 {
+    public delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    public static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
+
+    [DllImport("user32.dll")]
+    public static extern bool IsWindowVisible(IntPtr hWnd);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern int GetClassName(IntPtr hWnd, StringBuilder text, int count);
+
+    [DllImport("user32.dll")]
+    public static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+}
+"@
+
+function Get-WindowTextValue {
+    param([IntPtr]$Hwnd)
+
+    $builder = [System.Text.StringBuilder]::new(512)
+    [void][RadanUser32]::GetWindowText($Hwnd, $builder, $builder.Capacity)
+    return $builder.ToString().Trim()
+}
+
+function Get-WindowClassValue {
+    param([IntPtr]$Hwnd)
+
+    $builder = [System.Text.StringBuilder]::new(256)
+    [void][RadanUser32]::GetClassName($Hwnd, $builder, $builder.Capacity)
+    return $builder.ToString()
+}
+
+function Get-VisibleMyFrameTitleForPid {
+    param([int]$ProcessId)
+
+    $rows = [System.Collections.Generic.List[object]]::new()
+    $callback = [RadanUser32+EnumWindowsProc]{
+        param([IntPtr]$Hwnd, [IntPtr]$LParam)
+
+        $foundPid = [uint32]0
+        [void][RadanUser32]::GetWindowThreadProcessId($Hwnd, [ref]$foundPid)
+        if ([int]$foundPid -ne $ProcessId) {
+            return $true
+        }
+        if (-not [RadanUser32]::IsWindowVisible($Hwnd)) {
+            return $true
+        }
+
+        $title = Get-WindowTextValue -Hwnd $Hwnd
+        $className = Get-WindowClassValue -Hwnd $Hwnd
+        if (-not [string]::IsNullOrWhiteSpace($title) -and $className -eq "myframe") {
+            $rows.Add([pscustomobject]@{
+                Hwnd  = $Hwnd.ToInt64()
+                Title = $title
+            })
+        }
+        return $true
+    }
+
+    [void][RadanUser32]::EnumWindows($callback, [IntPtr]::Zero)
+    $match = $rows | Sort-Object Title, Hwnd | Select-Object -First 1
+    if ($null -eq $match) {
+        return ""
+    }
+    return [string]$match.Title
+}
+
 function Get-SessionResult {
     param(
         [Parameter(Mandatory = $true)]
@@ -87,6 +163,9 @@ try {
 
     $process = Get-Process -Id $app.ProcessId -ErrorAction SilentlyContinue
     $windowTitle = if ($null -ne $process) { $process.MainWindowTitle } else { "" }
+    if ([string]::IsNullOrWhiteSpace($windowTitle)) {
+        $windowTitle = Get-VisibleMyFrameTitleForPid -ProcessId $app.ProcessId
+    }
 
     if ($ExpectedProcessId -gt 0 -and $app.ProcessId -ne $ExpectedProcessId) {
         throw "Attached RADAN PID $($app.ProcessId) does not match expected PID $ExpectedProcessId."

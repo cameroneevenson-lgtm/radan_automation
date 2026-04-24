@@ -5,6 +5,7 @@ import ctypes
 from ctypes import wintypes
 import datetime as dt
 import json
+import os
 import subprocess
 import sys
 import time
@@ -23,6 +24,7 @@ from comtypes.automation import IDispatch
 OBJID_CLIENT = 0xFFFFFFFC
 SELFLAG_TAKEFOCUS = 0x1
 SELFLAG_TAKESELECTION = 0x2
+STATE_SYSTEM_SELECTED = 0x2
 
 oleacc = ctypes.OleDLL("oleacc")
 oleacc.AccessibleObjectFromWindow.argtypes = [
@@ -32,6 +34,13 @@ oleacc.AccessibleObjectFromWindow.argtypes = [
     ctypes.POINTER(ctypes.c_void_p),
 ]
 oleacc.AccessibleObjectFromWindow.restype = ctypes.c_long
+
+
+def _is_selected_state(state: object) -> bool:
+    try:
+        return bool(int(state) & STATE_SYSTEM_SELECTED)
+    except (TypeError, ValueError):
+        return False
 
 
 def _top_level_windows_for_pid(process_id: int) -> list[dict[str, Any]]:
@@ -213,13 +222,13 @@ def _select_part_row(list_hwnd: int, part_name: str) -> dict[str, Any]:
 
     refreshed = _dump_parts_list_items(list_hwnd)
     selected = next((item for item in refreshed if item["name"] == part_name), target)
-    if int(selected["state"]) != 19922950:
+    if not _is_selected_state(selected["state"]):
         left, top, width, height = target["rect"]
         _click_rect_center((left, top, left + width, top + height))
         time.sleep(0.25)
         refreshed = _dump_parts_list_items(list_hwnd)
         selected = next((item for item in refreshed if item["name"] == part_name), target)
-    if int(selected["state"]) != 19922950:
+    if not _is_selected_state(selected["state"]):
         raise RuntimeError(f"Could not verify that {part_name!r} became the selected parts-list row.")
     return {
         "before": target,
@@ -320,21 +329,57 @@ def _run_pen_remap(
     payload: dict[str, Any] = {
         "command": command,
         "returncode": completed.returncode,
-        "stdout": completed.stdout,
-        "stderr": completed.stderr,
     }
     stdout = completed.stdout.strip()
     if stdout:
         try:
-            payload["json"] = json.loads(stdout)
-        except json.JSONDecodeError:
-            payload["json"] = None
+            payload["summary"] = _summarize_remap_payload(json.loads(stdout))
+        except json.JSONDecodeError as exc:
+            payload["summary"] = None
+            payload["stdout_excerpt"] = stdout[:4000]
+            payload["json_parse_error"] = str(exc)
     else:
-        payload["json"] = None
+        payload["summary"] = None
 
+    stderr = completed.stderr.strip()
+    if stderr:
+        payload["stderr_excerpt"] = stderr[-4000:]
+
+    payload["ok"] = completed.returncode == 0
     if completed.returncode != 0:
-        raise RuntimeError(f"remap_feature_pens_live.py failed: {completed.stderr or completed.stdout}")
+        payload["error"] = (stderr or stdout or f"exit code {completed.returncode}")[:4000]
     return payload
+
+
+def _summarize_remap_payload(payload: Any) -> dict[str, Any] | None:
+    if not isinstance(payload, dict):
+        return None
+
+    summary_keys = (
+        "session",
+        "resolved_pattern",
+        "source_pen",
+        "target_pen",
+        "scan_filters",
+        "filter_target_overrides",
+        "dry_run",
+        "before",
+        "candidate_count",
+        "candidate_counts_by_filter",
+        "candidate_counts_by_target_pen",
+        "success_count",
+        "failure_count",
+        "after",
+    )
+    summary = {key: payload.get(key) for key in summary_keys if key in payload}
+
+    results = payload.get("results")
+    if isinstance(results, list):
+        failures = [result for result in results if isinstance(result, dict) and not result.get("ok")]
+        if failures:
+            summary["failure_samples"] = failures[:10]
+
+    return summary
 
 
 def _return_to_nest(process_id: int, part_hwnd: int) -> dict[str, Any]:
@@ -431,6 +476,22 @@ def _iso_now() -> str:
     return dt.datetime.now().astimezone().isoformat(timespec="seconds")
 
 
+def _json_output_path(raw_path: str) -> Path:
+    return Path(raw_path).expanduser().resolve()
+
+
+def _write_json_payload(payload: dict[str, Any], raw_path: str | None) -> None:
+    if not raw_path:
+        return
+
+    output_path = _json_output_path(raw_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(payload, indent=2, ensure_ascii=True)
+    temp_path = output_path.with_name(f"{output_path.name}.tmp-{os.getpid()}")
+    temp_path.write_text(text, encoding="utf-8")
+    os.replace(temp_path, output_path)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Open selected parts from the live RADAN Nest parts list, remap pens, return to Nest, and time the whole batch.",
@@ -452,6 +513,19 @@ def main() -> int:
     parser.add_argument("--target-pen", type=int, default=5)
     parser.add_argument("--arc-target-pen", type=int, default=9)
     parser.add_argument("--json-out", help="Optional path to write the batch JSON result.")
+    parser.add_argument(
+        "--continue-on-error",
+        action="store_true",
+        help="Continue to the next part after failures that leave RADAN safely in Nest Editor.",
+    )
+    parser.add_argument(
+        "--return-to-nest-on-error",
+        action="store_true",
+        help=(
+            "After a part-level failure, attempt the normal Nest return/save path. "
+            "Use only when saving partial edits is acceptable."
+        ),
+    )
     args = parser.parse_args()
 
     repo_root = Path(__file__).resolve().parent
@@ -463,39 +537,104 @@ def main() -> int:
         "source_pen": int(args.source_pen),
         "target_pen": int(args.target_pen),
         "arc_target_pen": int(args.arc_target_pen),
+        "continue_on_error": bool(args.continue_on_error),
+        "return_to_nest_on_error": bool(args.return_to_nest_on_error),
     }
+    _write_json_payload(payload, args.json_out)
 
+    stopped_after_failure = False
     for part_name in args.part:
         part_start = time.monotonic()
         item_result: dict[str, Any] = {
             "part_name": part_name,
+            "started_at": _iso_now(),
+            "ok": None,
         }
-        item_result["open"] = _open_part_from_nest(int(args.process_id), part_name)
-        item_result["remap"] = _run_pen_remap(
-            repo_root,
-            process_id=int(args.process_id),
-            backend=args.backend,
-            source_pen=int(args.source_pen),
-            target_pen=int(args.target_pen),
-            arc_target_pen=int(args.arc_target_pen),
-        )
-        item_result["return_to_nest"] = _return_to_nest(
-            int(args.process_id),
-            int(item_result["open"]["part_hwnd"]),
-        )
-        item_result["elapsed_sec"] = round(time.monotonic() - part_start, 3)
         payload["parts"].append(item_result)
+        _write_json_payload(payload, args.json_out)
+
+        phase = "open"
+        part_hwnd: int | None = None
+        try:
+            item_result["phase"] = phase
+            item_result["open"] = _open_part_from_nest(int(args.process_id), part_name)
+            part_hwnd = int(item_result["open"]["part_hwnd"])
+            _write_json_payload(payload, args.json_out)
+
+            phase = "remap"
+            item_result["phase"] = phase
+            item_result["remap"] = _run_pen_remap(
+                repo_root,
+                process_id=int(args.process_id),
+                backend=args.backend,
+                source_pen=int(args.source_pen),
+                target_pen=int(args.target_pen),
+                arc_target_pen=int(args.arc_target_pen),
+            )
+            _write_json_payload(payload, args.json_out)
+            if not item_result["remap"].get("ok"):
+                raise RuntimeError(str(item_result["remap"].get("error") or "Pen remap failed."))
+
+            phase = "return_to_nest"
+            item_result["phase"] = phase
+            item_result["return_to_nest"] = _return_to_nest(
+                int(args.process_id),
+                part_hwnd,
+            )
+            item_result["ok"] = True
+            item_result["phase"] = "complete"
+        except Exception as exc:
+            item_result["ok"] = False
+            item_result["failed_phase"] = phase
+            item_result["error"] = {
+                "type": type(exc).__name__,
+                "message": str(exc),
+            }
+
+            returned_to_nest = False
+            if part_hwnd is not None and args.return_to_nest_on_error and phase != "return_to_nest":
+                try:
+                    item_result["return_to_nest_on_error"] = _return_to_nest(
+                        int(args.process_id),
+                        part_hwnd,
+                    )
+                    returned_to_nest = True
+                except Exception as recovery_exc:
+                    item_result["return_to_nest_on_error_error"] = {
+                        "type": type(recovery_exc).__name__,
+                        "message": str(recovery_exc),
+                    }
+
+            if part_hwnd is not None and not returned_to_nest:
+                item_result["operator_action"] = (
+                    "RADAN may still be in a dirty Part Editor. Inspect the visible session, "
+                    "then save/return to Nest or discard/reopen before resuming the batch."
+                )
+
+            can_continue = bool(args.continue_on_error) and (part_hwnd is None or returned_to_nest)
+            if not can_continue:
+                stopped_after_failure = True
+                payload["stopped_after_part"] = part_name
+                payload["stop_reason"] = item_result.get("operator_action") or str(exc)
+        finally:
+            item_result["finished_at"] = _iso_now()
+            item_result["elapsed_sec"] = round(time.monotonic() - part_start, 3)
+            _write_json_payload(payload, args.json_out)
+
+        if stopped_after_failure:
+            break
 
     payload["finished_at"] = _iso_now()
     payload["total_elapsed_sec"] = round(time.monotonic() - batch_start, 3)
+    payload["success_count"] = sum(1 for item in payload["parts"] if item.get("ok") is True)
+    payload["failure_count"] = sum(1 for item in payload["parts"] if item.get("ok") is False)
+    payload["completed_all_parts"] = not stopped_after_failure and len(payload["parts"]) == len(args.part)
 
     output = json.dumps(payload, indent=2, ensure_ascii=True)
     if args.json_out:
-        output_path = Path(args.json_out).expanduser().resolve()
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(output, encoding="utf-8")
+        _write_json_payload(payload, args.json_out)
     print(output)
-    return 0
+    return 0 if payload["failure_count"] == 0 else 1
 
 
 if __name__ == "__main__":

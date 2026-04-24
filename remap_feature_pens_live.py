@@ -5,7 +5,7 @@ import json
 from collections import Counter
 from typing import Any
 
-from radan_com import attach_application, describe_live_session
+from radan_com import RadanLiveSessionInfo, RadanTargetMismatchError, attach_application, describe_live_session
 
 
 def _parse_filter_override(value: str) -> tuple[str, int]:
@@ -44,6 +44,27 @@ def _resolve_pattern(explicit_pattern: str | None, mac: Any) -> str:
         if candidate:
             return candidate
     raise RuntimeError("Could not determine an active pattern path for the attached part.")
+
+
+def _assert_attached_app_matches_session(
+    app: Any,
+    session: RadanLiveSessionInfo,
+    *,
+    expected_process_id: int | None = None,
+) -> None:
+    info = app.info()
+    attached_pid = info.process_id
+    required_pid = expected_process_id if expected_process_id is not None else session.process_id
+
+    if required_pid is not None and attached_pid != required_pid:
+        raise RadanTargetMismatchError(
+            f"Write-capable RADAN attach resolved PID {attached_pid}, expected PID {required_pid}."
+        )
+    if session.process_id is not None and attached_pid != session.process_id:
+        raise RadanTargetMismatchError(
+            f"Write-capable RADAN attach resolved PID {attached_pid}, "
+            f"but the validated live session was PID {session.process_id}."
+        )
 
 
 def _scan_filter(mac: Any, pattern: str, feature_filter: str) -> list[dict[str, Any]]:
@@ -184,6 +205,11 @@ def main() -> int:
     )
 
     with attach_application(backend=args.backend) as app:
+        _assert_attached_app_matches_session(
+            app,
+            session,
+            expected_process_id=args.expected_process_id,
+        )
         mac = app.mac
         pattern = _resolve_pattern(args.pattern, mac)
         before = _scan_summary(mac, pattern, scan_filters)
