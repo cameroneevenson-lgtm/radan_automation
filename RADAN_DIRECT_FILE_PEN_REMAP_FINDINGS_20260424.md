@@ -33,10 +33,11 @@ Practical rule:
 
 ## Follow-Up Observations
 
-- The active seven-part Nest project for the tested batch was:
+- The seven-part Nest project path for the tested batch was operator-confirmed as:
   - `L:\BATTLESHIELD\F-LARGE FLEET\PLAYGROUND\PLAYGROUND\PLAYGROUND.rpd`
-- The earlier Paint Pack project file was not the active one; it only referenced `F56139-B-95` from the visible seven-row list.
-- The correct `PLAYGROUND.rpd` stores the seven symbol paths and nest membership, but no embedded per-symbol thumbnails were found there.
+- The earlier Paint Pack project file was an incorrect inference; it only referenced `F56139-B-95` from the visible seven-row list.
+- Future live project targeting should use documented `Mac.prj_get_file_path()` before inspecting `.rpd` contents, rather than guessing from symbol folders or recent files.
+- The operator-confirmed `PLAYGROUND.rpd` stores the seven symbol paths and nest membership, but no embedded per-symbol thumbnails were found there.
 - Touching filesystem `LastWriteTime` on the modified `.sym` files does not update the internal RADAN XML metadata fields such as `Modified`, `Workflow status`, or `File size`.
 - A manual RADAN open/save on `F56139-B-1.sym` changed its internal `Workflow status` from `3 - Part geometry is not closed` to `1 - OK` and rewrote its thumbnail block.
 

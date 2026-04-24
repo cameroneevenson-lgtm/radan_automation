@@ -33,3 +33,4 @@ Source: `docs/Radan API Programming Help.pdf` (116 pages)
 - `OpenDrawing(...)` reference: page 3
 - `OpenSheetRemnantDrawingFromRasterImage(...)` reference: page 4
 - `Radraft.mac` examples: pages 18-28
+- `prj_get_file_path()` current Nest Project path lookup: page 80

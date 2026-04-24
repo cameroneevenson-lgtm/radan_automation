@@ -249,7 +249,8 @@ Do not use this route to:
 
 Observed project context:
 
-- the active seven-part Nest project was `L:\BATTLESHIELD\F-LARGE FLEET\PLAYGROUND\PLAYGROUND\PLAYGROUND.rpd`
+- the seven-part Nest project path was operator-confirmed as `L:\BATTLESHIELD\F-LARGE FLEET\PLAYGROUND\PLAYGROUND\PLAYGROUND.rpd` after an earlier inferred path was wrong
+- future live project targeting should call documented `Mac.prj_get_file_path()` before inspecting `.rpd` contents or falling back to UI state
 - that `.rpd` stores symbol paths and nest membership, but no embedded per-symbol thumbnails were found
 - manual RADAN open/save on a changed symbol updated `Workflow status` to `1 - OK` and rewrote its thumbnail block
 
