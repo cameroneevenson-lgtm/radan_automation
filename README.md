@@ -174,6 +174,14 @@ More live batch notes:
 - the detailed evidence trail for the batch path and timings lives in:
   - [RADAN_LIVE_PEN_REMAP_FINDINGS_20260423.md](/c:/Tools/radan_automation/RADAN_LIVE_PEN_REMAP_FINDINGS_20260423.md)
   - [RADAN_LIVE_PEN_BATCH_FINDINGS_20260424.md](/c:/Tools/radan_automation/RADAN_LIVE_PEN_BATCH_FINDINGS_20260424.md)
+  - [RADAN_LIVE_GEOMETRY_REPAIR_FINDINGS_20260424.md](/c:/Tools/radan_automation/RADAN_LIVE_GEOMETRY_REPAIR_FINDINGS_20260424.md)
+
+Live geometry repair notes:
+
+- `IMac` exposes true endpoint fields `TS0X/TS0Y/TE0X/TE0Y`, but in local testing they were not reliably populated once the session had already been driven into an interactive line-draw flow
+- for single-segment replacement work, prefer `Draw -> Lines -> Unconnected` over `Connected`
+- do not redraw from stale pixel coordinates after the RADAN window shifts; rediscover live control geometry first
+- the current detailed `F56139-B-95` investigation write-up lives in [RADAN_LIVE_GEOMETRY_REPAIR_FINDINGS_20260424.md](/c:/Tools/radan_automation/RADAN_LIVE_GEOMETRY_REPAIR_FINDINGS_20260424.md)
 
 Optional host bridge:
 
