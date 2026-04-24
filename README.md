@@ -36,6 +36,8 @@ This is a standalone automation workspace for RADAN/Radraft exploration and batc
   - First-pass catalog of documented COM methods, MAC entry points, and keystroke syntax
 - `API_VS_KEYSTROKE_MATRIX.md`
   - Decision guide for when to prefer direct COM/API calls vs MAC keystroke command strings
+- `RADAN_API_TEST_PRIORITIES.md`
+  - Ranked backlog of API functions to test next after a full pass through the RADAN API PDF
 - `KEYSTROKE_REFERENCE_EXTRACT.md`
   - First-pass extract of concrete keystroke topics and command tokens from the installed CHM help
 - `INTEROP_SURFACE_DUMP.md`
