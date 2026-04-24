@@ -15,12 +15,19 @@ This file is intended to bridge:
   - executed successfully in an isolated automation instance
 - `tested-live`
   - executed successfully against an attached, automation-backed visible RADAN session
+- `tested-file`
+  - executed successfully as a direct file transformation without opening RADAN
 - `wrapper-tested`
   - covered by unit tests or wrapper contract checks, but not yet proven against a live RADAN workflow here
 - `doc-only`
   - documented in PDF/CHM and/or reflected from interop, but not yet exercised by us
 - `not-tested`
   - identified candidate, but no execution proof yet
+
+Current automated validation:
+
+- `2026-04-24`: `C:\Tools\.venv\Scripts\python.exe -m unittest discover -v`
+- result: `Ran 32 tests` / `OK`
 
 ## Direct API / COM Paths
 
@@ -30,9 +37,9 @@ These are the highest-value typed calls to prefer when possible.
 | --- | --- | --- | --- | --- | --- | --- |
 | `Application.NewDrawing(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Works when startup mode is established before forcing fully non-interactive state. |
 | `Application.OpenDrawing(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Verified by opening saved drawing in headless export flow. |
-| `Application.OpenSymbol(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `wrapper-tested` | Routed by `open_document()`, but no live symbol workflow proof yet. |
+| `Application.OpenSymbol(...)` | PDF, interop, wrapper | headless/live | n/a | `API with process guard` | `wrapper-tested` | Routed by `open_document()`. A local probe showed that requesting a fresh COM instance can still bind to the visible user-owned `RADRAFT.exe`; do not treat this as isolated unless the resolved PID is validated. |
 | `Application.OpenSymbolFromRasterImage(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `wrapper-tested` | Exposed and routed; still needs real raster import test. |
-| `Application.Quit()` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Used throughout probes and isolated export scripts. |
+| `Application.Quit()` | PDF, interop, wrapper | headless/live | n/a | `API with process guard` | `tested-headless` | Safe for a positively identified automation-owned instance. Unsafe as generic cleanup while a user-owned RADAN session is open, because a requested fresh COM object can bind back to the visible `RADRAFT.exe`. |
 | `Document.Close(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Used in headless save/export flows. |
 | `Document.SaveAs(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Verified in temp drawing save probe. |
 | `Document.SaveCopyAs(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Verified in `headless_export_document_artifacts.py`. |
@@ -47,6 +54,18 @@ These are the highest-value typed calls to prefer when possible.
 | `run_verifier()` / `run_verifier_silently()` | PDF, interop | verifier | keystroke-driven verifier workflow | `API` | `doc-only` | Better as typed calls if we automate verifier mode later. |
 | `ord_run_blockmaker_silently()` | PDF, interop | order mode | order-mode keystrokes | `API` | `doc-only` | Prefer typed path if order/blockmaker automation becomes important. |
 
+## Direct File / XML Paths
+
+These are not RADAN COM commands. They are useful when the file format is known and touching RADAN would disturb a visible operator session.
+
+| Command or Surface | Source | Mode | Direct API Alternative | Recommended Path | Tested Status | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| `.sym` DDC line pen remap (`G` record field 8, `7 -> 5`) | live scan parity, direct XML inspection, unit tests | file | live `scan(...)` + `find_xy_identifier(...)` + `rfmac('e\\?P,5?')` | `direct file` | `tested-file` | `remap_feature_pens_file.py` changed the same line counts that live scan reported. It preserves existing line endings and writes `.bak-*` backups. |
+| `.sym` DDC arc pen remap (`H` record field 8, `7 -> 9`) | live scan parity, direct XML inspection, unit tests | file | live `scan(...)` + `find_xy_identifier(...)` + `rfmac('e\\?P,9?')` | `direct file` | `tested-file` | Proven for the paint-pack symbols. Direct edits do not refresh RADAN-derived workflow status, thumbnails, or internal metadata. |
+| `.sym` filesystem timestamp touch | file metadata experiment | file | RADAN open/save refresh | `not sufficient alone` | `tested-file` | Touching `LastWriteTime` on changed symbols did not update internal `Modified`, `Workflow status`, `File size`, or thumbnails. |
+| `.sym` `Workflow status` XML edit | direct XML inspection | file | RADAN validation/open-save | `do not spoof` | `not-tested` | Intentionally not used. `Workflow status` is RADAN's validation result; direct edits could hide real geometry problems. |
+| `.rpd` project membership inspection | direct XML inspection | file/live nest context | visible Nest parts list | `read-only file inspection` | `tested-file` | The active seven-part test project was `L:\BATTLESHIELD\F-LARGE FLEET\PLAYGROUND\PLAYGROUND\PLAYGROUND.rpd`. It stores symbol paths and nest membership, but no embedded per-symbol thumbnails were found. |
+
 ## Live Session State / UI Control Paths
 
 These are not typed geometry APIs, but they are now proven useful for real live-session targeting in the Nest Editor.
@@ -59,6 +78,9 @@ These are not typed geometry APIs, but they are now proven useful for real live-
 | `rtl_nest_modify_button` / `big_button_nest_modify.bmp` | UI Automation inspection + live click | live nest | guessed keystrokes | `UI control` | `tested-live` | Foreground the RADAN window, then click the top-row Modify button. Proven `profiling -> modify` on this machine. |
 | `rtl_nest_order_button` / `big_button_order.bmp` | UI Automation inspection + live click | live nest | guessed keystrokes | `UI control` | `tested-live` | Foreground the RADAN window, then click the top-row Order button. Proven `modify -> order` on this machine. |
 | `rpr_parts_list_import_parts_button` / `project_import_parts.bmp` | UI Automation inspection + live click | live nest / modify | guessed keystrokes | `UI control` | `tested-live` | Custom launcher for the parts import flow. Proven live once the RADAN window was moved fully on-screen; off-screen placement made the click path unreliable. |
+| Parts-list `SysListView32` row selection via MSAA + real row click fallback | MSAA, live batch run | live nest | direct part-list API not identified | `UI control` | `tested-live` | `accSelect(...)` can stop advancing the visible highlight after save-return cycles. The durable path verifies the selected row state and clicks the row if needed before opening. |
+| `rpr_parts_list_open_part_button` | UI Automation inspection + live click | live nest | direct open-selected-part API not identified | `UI control` | `tested-live` | Proven path for opening exact parts from the Nest parts list before live pen remap. Must be paired with selected-row verification to avoid reopening the prior part. |
+| `rtl_nest_button` + `Mazak Smart System Notice` `Yes` | UI Automation inspection + live click | live part editor -> nest | save/return API not identified | `UI control + standard dialog` | `tested-live` | Proven return/save path after live pen remap. Use standard dialog button discovery for the save notice. |
 | `Import Parts` `#32770` child dialog | live UI inspection after launcher click | live nest / modify | direct COM import call not yet identified | `standard dialog` | `tested-live` | Launching `Import Parts` immediately surfaced a standard Windows file picker with `File name`, `Open`, `Cancel`, and `Files of type` controls. |
 | `Browse...` -> `Browse For Folder` tree path | live WinForms import dialog, shell tree, MSAA, real focus | live nest / modify / import workflow | direct path-set API not identified | `standard dialog + desktop interaction` | `tested-live` | Output folder assignment was proven through the old shell tree dialog. The reliable path was real dialog focus plus MSAA/tree navigation; direct shell-selection messages and later low-level cross-process tree introspection were both unsafe. |
 | `Import All` via real live click | WinForms import dialog, filesystem output watch, completion modal | live nest / modify / import workflow | direct COM import call not yet identified | `desktop interaction` | `tested-live` | Full CSV import completed with a separate `#32770` completion modal reporting `Number of parts added to the parts list: 108`. A real click allowed concurrent observation of `.sym` output and modal appearance. |
@@ -124,6 +146,8 @@ If we want to start proving these safely, the best sequence is:
 ## Current Recommendation
 
 - Prefer `API` for anything lifecycle, export, scan, ELF, or feature-editor related.
+- Validate process ownership before API cleanup calls such as `Quit()`.
+- Prefer `direct file` only for narrow, format-proven transformations where RADAN-derived caches can be refreshed later by RADAN itself.
 - Prefer `mac2` for most interactive drafting/edit/pattern workflows.
 - Reserve `rfmac` for the documented safe commands only.
 - Treat the keystroke rows above as a testing backlog until we add live execution proof for each one.

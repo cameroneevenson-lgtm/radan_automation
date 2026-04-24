@@ -6,6 +6,7 @@ The question this file answers is:
 
 - "Should we call a typed COM/API method directly?"
 - "Should we send a keystroke command through `mac2()`, `fmac2()`, or `rfmac()` instead?"
+- "Is this one of the rare cases where a direct file transformation is safer than touching RADAN?"
 - "Do we still need to investigate?"
 
 Important note:
@@ -21,6 +22,7 @@ Important note:
 - Prefer keystrokes when RADAN only documents the workflow as a command/key sequence.
 - Use `rfmac()` only for commands the PDF explicitly says are safe for non-scan execution.
 - Use `mac2()` when the workflow depends on refreshed application state or richer command behavior.
+- Use direct file edits only for narrow, format-proven changes, and only when RADAN can later regenerate any derived status, thumbnails, or metadata.
 - Treat unknown items as research work, not production automation.
 
 ## Direct API Exists
@@ -41,6 +43,12 @@ These are good candidates for direct typed calls and should generally not be rep
 - `Document.Save()`
 - `Document.SaveAs(...)`
 - `Document.SaveCopyAs(...)`
+
+Important process-ownership caveat:
+
+- `Application.Quit()` is only safe when the resolved process is positively known to be automation-owned.
+- On this machine, requesting a fresh `Radraft.Application` COM object can still bind to an already-visible user-owned `RADRAFT.exe` process.
+- Any headless open/save/export workflow should record and validate the resolved PID before cleanup.
 
 ### App State And Environment
 
@@ -102,6 +110,10 @@ When one of the typed methods above exists, that is the preferred route for:
 - repeatable export pipelines
 - deterministic save/close flows
 - anything we want to run unattended
+
+Exception:
+
+- direct `.sym` DDC pen edits are now a proven non-COM route for a specific file-format operation, but they do not replace RADAN validation or thumbnail/status regeneration.
 
 ## Keystroke Path Is Better Or Required
 
@@ -202,6 +214,44 @@ Important constraint:
 - the extra `find_xy_identifier(...)` step was required before the edit-mode keystroke would stick
 
 When the operation is described as "enter edit mode, then press key X", it is usually a keystroke-first workflow.
+
+## Direct File Path Is Better Or Required
+
+This is a third category: neither typed COM nor keystroke. Use it sparingly.
+
+### `.sym` DDC Pen Remapping
+
+The `.sym` files tested here are XML compound documents with a `<RadanFile extension="ddc">` CDATA block. In that block:
+
+- line geometry records are `G`
+- arc geometry records are `H`
+- field index `8` is the logical pen
+
+The direct file remapper:
+
+- changes line records from pen `7` to pen `5`
+- changes arc records from pen `7` to pen `9`
+- writes a timestamped `.bak-*` backup
+- preserves existing line endings
+
+Use this route when:
+
+- the goal is only to remap those DDC pen fields
+- touching the visible RADAN session is riskier than editing the file
+- a later RADAN open/save refresh is acceptable
+
+Do not use this route to:
+
+- spoof `Workflow status`
+- regenerate thumbnails
+- update RADAN internal `Modified` or `File size` metadata by hand
+- infer that a filesystem timestamp touch is enough to clear Nest warning flags
+
+Observed project context:
+
+- the active seven-part Nest project was `L:\BATTLESHIELD\F-LARGE FLEET\PLAYGROUND\PLAYGROUND\PLAYGROUND.rpd`
+- that `.rpd` stores symbol paths and nest membership, but no embedded per-symbol thumbnails were found
+- manual RADAN open/save on a changed symbol updated `Workflow status` to `1 - OK` and rewrote its thumbnail block
 
 ### View / Prompt / Cursor Workflows
 
@@ -304,8 +354,10 @@ Some commands are probably callable, but we should still classify them before us
 For this repo today, the safest practical strategy is:
 
 - use direct API calls for batch/headless automation
+- validate RADAN process ownership before calling lifecycle cleanup methods such as `Quit()`
 - use keystrokes only for editor-style workflows that RADAN documents primarily as command sequences
 - use mixed API + keystroke flows when RADAN needs typed selection but only exposes the edit itself through an edit-mode keystroke
+- use direct file edits only for bounded file-format transformations, with RADAN open/save as the refresh/validation step
 - prefer attached live-session automation for keystroke-heavy editing work
 - prefer isolated fresh instances for typed export and conversion pipelines
 
