@@ -8,6 +8,13 @@ import uuid
 from typing import Any
 
 try:
+    import win32gui
+    import win32process
+except ImportError:
+    win32gui = None
+    win32process = None
+
+try:
     from .radan_backends import _Backend, _make_backend, available_radan_backends
     from .radan_mac import RadanMac
     from .radan_models import (
@@ -135,7 +142,76 @@ def _get_process_window_title(process_id: int | None) -> str | None:
         return None
 
     title = result.stdout.strip()
-    return title or None
+    if title:
+        return title
+
+    fallback_titles = _list_visible_window_titles_for_pid(process_id)
+    return fallback_titles[0] if fallback_titles else None
+
+
+def _list_visible_window_titles_for_pid(process_id: int | None) -> list[str]:
+    if process_id is None or os.name != "nt" or win32gui is None or win32process is None:
+        return []
+
+    rows: list[tuple[str, int]] = []
+
+    def _callback(hwnd: int, _: object) -> bool:
+        try:
+            found_pid = win32process.GetWindowThreadProcessId(hwnd)[1]
+        except Exception:
+            return True
+        if found_pid != process_id:
+            return True
+        try:
+            if not win32gui.IsWindowVisible(hwnd):
+                return True
+            title = win32gui.GetWindowText(hwnd).strip()
+            class_name = win32gui.GetClassName(hwnd)
+        except Exception:
+            return True
+        if not title or class_name != "myframe":
+            return True
+        rows.append((title, int(hwnd)))
+        return True
+
+    win32gui.EnumWindows(_callback, None)
+    rows.sort(key=lambda item: (item[0], item[1]))
+    return [title for title, _ in rows]
+
+
+def _list_visible_radan_sessions_from_windows() -> list[RadanVisibleSessionInfo]:
+    if os.name != "nt" or win32gui is None or win32process is None:
+        return []
+
+    rows: dict[int, str] = {}
+
+    def _callback(hwnd: int, _: object) -> bool:
+        try:
+            process_id = win32process.GetWindowThreadProcessId(hwnd)[1]
+        except Exception:
+            return True
+        try:
+            if not win32gui.IsWindowVisible(hwnd):
+                return True
+            title = win32gui.GetWindowText(hwnd).strip()
+            class_name = win32gui.GetClassName(hwnd)
+        except Exception:
+            return True
+        if not title or class_name != "myframe":
+            return True
+        rows.setdefault(int(process_id), title)
+        return True
+
+    win32gui.EnumWindows(_callback, None)
+    sessions = [
+        RadanVisibleSessionInfo(
+            process_id=process_id,
+            window_title=title,
+            editor_mode=_infer_editor_mode(title),
+        )
+        for process_id, title in sorted(rows.items())
+    ]
+    return sessions
 
 
 def list_visible_radan_sessions() -> list[RadanVisibleSessionInfo]:
@@ -168,12 +244,12 @@ def list_visible_radan_sessions() -> list[RadanVisibleSessionInfo]:
 
     output = result.stdout.strip()
     if not output:
-        return []
+        return _list_visible_radan_sessions_from_windows()
 
     try:
         payload = json.loads(output)
     except json.JSONDecodeError:
-        return []
+        return _list_visible_radan_sessions_from_windows()
 
     items: list[dict[str, Any]]
     if isinstance(payload, dict):
@@ -197,7 +273,7 @@ def list_visible_radan_sessions() -> list[RadanVisibleSessionInfo]:
             )
         )
 
-    return sessions
+    return sessions or _list_visible_radan_sessions_from_windows()
 
 
 def _select_visible_radan_session(

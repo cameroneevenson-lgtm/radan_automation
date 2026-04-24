@@ -20,6 +20,8 @@ Reusable RADAN automation wrapper, probes, and reverse-engineering notes extract
   - Live Part Editor rectangle writers for an attachable session
 - `remap_feature_pens_live.py`
   - Live Part Editor pen remapper using `scan(...)` + `find_xy_identifier(...)` + `rfmac('e\\?P,...')`
+- `batch_fix_parts_from_nest_live.py`
+  - Live Nest batch runner that opens selected parts, remaps pens, saves through the standard notice dialog, and returns to Nest
 - `serve_live_session_bridge.py`, `start_live_session_host_bridge.ps1`
   - Optional host-side request/response bridge for live-session attach and draw calls
 - `watch_live_session.py`
@@ -155,6 +157,23 @@ Notes:
   - `rfmac('e\\?P,<pen>?')` to apply the new logical pen
 - a direct `rfmac('e\\?P,<pen>?')` from scan state failed live with `First find a feature`
 - close modal dialogs such as `Edit Common Properties` before running the remap utility, because modal UI can block the attached COM/MAC workflow
+
+Live Nest pen-remap batch:
+
+```powershell
+C:\Tools\.venv\Scripts\python.exe .\batch_fix_parts_from_nest_live.py --process-id 22704 --part F56139-B-20 --part F56139-B-30 --part F56139-B-35 --part F56139-B-41 --part F56139-B-8
+```
+
+More live batch notes:
+
+- `rpr_parts_list_open_part_button` is the proven open-from-list control
+- after a save-return cycle, `accSelect(...)` may stop advancing the visible parts-list selection on this machine
+  - verify the row highlight and fall back to a real row click before opening
+- in Part Editor, `Get-Process MainWindowTitle` can come back blank even while the visible `myframe` title is correct
+  - `radan_com.py` now falls back to visible `myframe` window titles so live mode detection still resolves `part`
+- the detailed evidence trail for the batch path and timings lives in:
+  - [RADAN_LIVE_PEN_REMAP_FINDINGS_20260423.md](/c:/Tools/radan_automation/RADAN_LIVE_PEN_REMAP_FINDINGS_20260423.md)
+  - [RADAN_LIVE_PEN_BATCH_FINDINGS_20260424.md](/c:/Tools/radan_automation/RADAN_LIVE_PEN_BATCH_FINDINGS_20260424.md)
 
 Optional host bridge:
 

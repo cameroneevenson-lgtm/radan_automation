@@ -537,6 +537,20 @@ class RadanComTests(unittest.TestCase):
         self.assertEqual(session.bounds.center_x, 20.0)
         self.assertEqual(session.bounds.center_y, 35.0)
 
+    def test_get_process_window_title_falls_back_to_visible_myframe_title(self) -> None:
+        with mock.patch(
+            "radan_com.subprocess.run",
+            return_value=mock.Mock(stdout=""),
+        ):
+            with mock.patch(
+                "radan_com._list_visible_window_titles_for_pid",
+                return_value=["Demo Part - Mazak Smart System Part Editor"],
+            ) as fallback:
+                title = radan_com._get_process_window_title(22188)
+
+        self.assertEqual(title, "Demo Part - Mazak Smart System Part Editor")
+        fallback.assert_called_once_with(22188)
+
     def test_list_visible_radan_sessions_parses_visible_windows(self) -> None:
         payload = """
 [
@@ -562,6 +576,28 @@ class RadanComTests(unittest.TestCase):
         self.assertEqual(sessions[0].editor_mode, "part")
         self.assertEqual(sessions[1].process_id, 22189)
         self.assertEqual(sessions[1].editor_mode, "nest")
+
+    def test_list_visible_radan_sessions_falls_back_to_raw_windows_when_powershell_is_blank(self) -> None:
+        fallback_sessions = [
+            RadanVisibleSessionInfo(
+                process_id=22188,
+                window_title="Demo Part - Mazak Smart System Part Editor",
+                editor_mode="part",
+            )
+        ]
+
+        with mock.patch(
+            "radan_com.subprocess.run",
+            return_value=mock.Mock(stdout=""),
+        ):
+            with mock.patch(
+                "radan_com._list_visible_radan_sessions_from_windows",
+                return_value=fallback_sessions,
+            ) as fallback:
+                sessions = list_visible_radan_sessions()
+
+        self.assertEqual(sessions, fallback_sessions)
+        fallback.assert_called_once_with()
 
     def test_attach_live_application_rejects_wrong_mode(self) -> None:
         info = RadanApplicationInfo(
