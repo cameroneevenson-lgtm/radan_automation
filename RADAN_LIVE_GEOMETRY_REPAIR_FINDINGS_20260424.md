@@ -203,3 +203,47 @@ At the end of this pass:
   - generic healing alone is insufficient
   - duplicate shoulder-region lines are plausible root-cause candidates
   - next attempt should begin from a fresh reopen and a neutral non-draw state
+
+## Successful Repair Pass
+
+Later on `2026-04-24`, a fresh neutral scan of the open `F56139-B-95` Part Editor session found the concrete discontinuities:
+
+- `/symbol editor/_5` started at `(51.833456, 42.424436)`, which lay on the interior of overlong vertical line `/symbol editor/_14`
+- `/symbol editor/_6` started at `(55.833456, 42.424436)`, which lay on the interior of overlong vertical line `/symbol editor/_19`
+- the dangling lower endpoints of those verticals were both at approximately `Y=42.261706`
+
+Safe rollback was established with a filesystem backup of the project-confirmed source symbol:
+
+- `L:\BATTLESHIELD\F-LARGE FLEET\F56139\PAINT PACK\F56139 PAINT PACK\F56139-B-95.sym.bak-live-geometry-20260424-142243`
+
+The attempted RADAN `SaveCopyAs` backup was retried and the geometry warning was accepted with `Yes`, but COM still returned a generic failure and did not write the requested copy. For this dirty live-part state, treat filesystem copy as the reliable backup route.
+
+The repair used `find_xy_identifier(...)` plus `mac2('x')` for target deletion, then `Draw -> Lines -> Unconnected` menu command `314` with `UX/UY`, `s`, and `d` to redraw the replacement segment. The stale `FI0` value after `find_xy_identifier(...)` was ignored; correctness was verified by comparing full feature-id sets before and after deletion.
+
+Successful edits:
+
+- deleted `/symbol editor/_14`
+- drew replacement `/symbol editor/_50`
+  - `(51.833456, 43.5878215)` to `(51.833456, 42.4244355)`
+- deleted `/symbol editor/_19`
+- drew replacement `/symbol editor/_51`
+  - `(55.833456, 43.5878215)` to `(55.833456, 42.4244355)`
+
+Verification:
+
+- line count remained `36`
+- arc count remained `9`
+- `elf_closed('/symbol editor', 0)` changed to `True`
+- `Part -> Check Geometry` menu command `308` reported in the visible status bar:
+  - `The geometry is closed`
+- `ActiveDocument.Save()` succeeded
+- the active document changed from dirty to clean
+- returning to Nest via `Application -> Nest` menu command `40` did not raise the geometry warning
+
+Headless progression:
+
+1. detect endpoints that lie on the interior of another line instead of at that line's endpoint
+2. rank candidates where the interior hit creates an overhang beyond a tangent/neighbor point
+3. preserve a filesystem backup of the `.sym` before any repair
+4. use a controlled `OpenSymbol -> scan -> delete/redraw -> Check Geometry -> Save` harness in an automation-owned RADAN instance
+5. avoid live `SaveCopyAs` as the primary backup path for dirty open parts
