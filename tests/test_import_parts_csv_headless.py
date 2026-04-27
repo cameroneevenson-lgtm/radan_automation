@@ -398,9 +398,19 @@ class ImportPartsCsvHeadlessTests(unittest.TestCase):
                 node.findtext(f"{ns}ColourWhenPartSaved")
                 for node in root_xml.findall(f".//{ns}Part")
             ]
+            made_values = [
+                node.findtext(f"{ns}Made")
+                for node in root_xml.findall(f".//{ns}Part")
+            ]
+            used_in_nests_nodes = [
+                node.find(f"{ns}UsedInNests")
+                for node in root_xml.findall(f".//{ns}Part")
+            ]
             self.assertEqual(colors, [row["colour_when_part_saved"] for row in added])
             self.assertEqual(len(colors), 4)
             self.assertEqual(len(set(colors)), 4)
+            self.assertEqual(made_values, ["1", "1", "1", "1"])
+            self.assertTrue(all(node is not None for node in used_in_nests_nodes))
 
 
 if __name__ == "__main__":

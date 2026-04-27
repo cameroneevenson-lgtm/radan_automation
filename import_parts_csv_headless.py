@@ -23,22 +23,38 @@ RADAN_PROJECT_NS = "http://www.radan.com/ns/project"
 ET.register_namespace("", RADAN_PROJECT_NS)
 
 PROJECT_PART_COLOR_PALETTE = (
+    "55, 31, 223",
+    "91, 223, 31",
+    "31, 115, 223",
+    "31, 43, 223",
+    "31, 223, 187",
+    "223, 31, 211",
     "223, 31, 31",
-    "31, 132, 223",
-    "31, 223, 92",
-    "197, 31, 223",
-    "223, 162, 31",
-    "31, 213, 223",
-    "223, 31, 132",
-    "132, 223, 31",
-    "112, 82, 223",
-    "223, 223, 31",
-    "31, 223, 172",
-    "223, 92, 31",
-    "92, 31, 223",
-    "31, 172, 223",
-    "172, 31, 223",
-    "223, 31, 92",
+    "223, 31, 139",
+    "223, 175, 31",
+    "127, 31, 223",
+    "223, 211, 31",
+    "223, 103, 31",
+    "55, 223, 31",
+    "223, 139, 31",
+    "223, 31, 67",
+    "31, 223, 115",
+    "223, 31, 175",
+    "199, 223, 31",
+    "223, 67, 31",
+    "31, 187, 223",
+    "223, 31, 103",
+    "163, 223, 31",
+    "31, 79, 223",
+    "199, 31, 223",
+    "127, 223, 31",
+    "31, 223, 151",
+    "91, 31, 223",
+    "31, 223, 223",
+    "31, 223, 79",
+    "31, 151, 223",
+    "31, 223, 43",
+    "163, 31, 223",
 )
 
 
@@ -387,7 +403,7 @@ def _parse_int_text(value: str | None, default: int = 0) -> int:
 
 
 def _project_part_color(part_id: int) -> str:
-    # RADAN stores these as "R, G, B". Cycle a shuffled high-contrast palette.
+    # RADAN stores these as "R, G, B". Cycle a palette observed in RADAN-created project rows.
     return PROJECT_PART_COLOR_PALETTE[(int(part_id) * 7) % len(PROJECT_PART_COLOR_PALETTE)]
 
 
@@ -413,7 +429,8 @@ def _build_project_part_element(part_id: int, part: ImportPart, symbol_path: Pat
     _set_child(node, "Exclude", "n")
     _set_child(node, "ColourWhenPartSaved", _project_part_color(part_id))
     _set_child(node, "NestMode", "multi-part")
-    _set_child(node, "Made", 0)
+    _set_child(node, "Made", int(part.quantity))
+    _set_child(node, "UsedInNests", "")
     return node
 
 
@@ -610,10 +627,19 @@ def run_headless_import(
         logger.write(f"Adding {len(parts)} part row(s) to project file without opening RADAN.")
         added = _update_project_file_direct(project_path, parts, output_folder)
         project_elapsed = time.perf_counter() - project_started_at
+        assigned_colors = {
+            str(row.get("colour_when_part_saved", ""))
+            for row in added
+            if row.get("colour_when_part_saved")
+        }
+        logger.write(
+            "Project part colors assigned: "
+            f"{len(assigned_colors)} unique color(s) across {len(added)} added part row(s)."
+        )
         for index, row in enumerate(added, start=1):
             logger.write(
                 f"Added {index}/{len(parts)} to project file: "
-                f"{row['part']} (ID {row['project_part_id']})"
+                f"{row['part']} (ID {row['project_part_id']}, color {row['colour_when_part_saved']})"
             )
     finally:
         if app is not None:
