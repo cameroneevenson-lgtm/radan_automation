@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import colorsys
 import csv
 import ctypes
 import datetime as dt
@@ -22,6 +21,25 @@ UNIT_TO_RADAN = {"mm": 0, "in": 1, "swg": 2}
 DEFAULT_ORIENTATION = 3
 RADAN_PROJECT_NS = "http://www.radan.com/ns/project"
 ET.register_namespace("", RADAN_PROJECT_NS)
+
+PROJECT_PART_COLOR_PALETTE = (
+    "223, 31, 31",
+    "31, 132, 223",
+    "31, 223, 92",
+    "197, 31, 223",
+    "223, 162, 31",
+    "31, 213, 223",
+    "223, 31, 132",
+    "132, 223, 31",
+    "112, 82, 223",
+    "223, 223, 31",
+    "31, 223, 172",
+    "223, 92, 31",
+    "92, 31, 223",
+    "31, 172, 223",
+    "172, 31, 223",
+    "223, 31, 92",
+)
 
 
 @dataclass(frozen=True)
@@ -306,16 +324,8 @@ def _parse_int_text(value: str | None, default: int = 0) -> int:
 
 
 def _project_part_color(part_id: int) -> str:
-    # RADAN stores these as "R, G, B". Keep colors print-friendly and deterministic.
-    hue = (int(part_id) * 0.618033988749895) % 1.0
-    saturation = 0.72 + ((int(part_id) * 17) % 4) * 0.06
-    value = 0.82 + ((int(part_id) * 29) % 3) * 0.06
-    red, green, blue = colorsys.hsv_to_rgb(hue, min(saturation, 0.9), min(value, 0.94))
-    channels = [
-        max(31, min(223, int(round(channel * 255))))
-        for channel in (red, green, blue)
-    ]
-    return f"{channels[0]}, {channels[1]}, {channels[2]}"
+    # RADAN stores these as "R, G, B". Cycle a shuffled high-contrast palette.
+    return PROJECT_PART_COLOR_PALETTE[(int(part_id) * 7) % len(PROJECT_PART_COLOR_PALETTE)]
 
 
 def _build_project_part_element(part_id: int, part: ImportPart, symbol_path: Path) -> ET.Element:

@@ -287,11 +287,11 @@ class ImportPartsCsvHeadlessTests(unittest.TestCase):
     def test_project_part_colors_are_deterministic_and_varied(self) -> None:
         colors = [
             import_parts_csv_headless._project_part_color(part_id)
-            for part_id in range(10, 22)
+            for part_id in range(10, 108)
         ]
 
-        self.assertEqual(colors, [import_parts_csv_headless._project_part_color(part_id) for part_id in range(10, 22)])
-        self.assertGreaterEqual(len(set(colors)), 10)
+        self.assertEqual(colors, [import_parts_csv_headless._project_part_color(part_id) for part_id in range(10, 108)])
+        self.assertEqual(len(set(colors)), len(import_parts_csv_headless.PROJECT_PART_COLOR_PALETTE))
         for color in colors:
             channels = [int(value.strip()) for value in color.split(",")]
             self.assertEqual(len(channels), 3)
