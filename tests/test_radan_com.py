@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 from unittest import mock
 
+import radan_backends
 import radan_com
 from radan_com import (
     RadanApplication,
@@ -264,6 +265,16 @@ class RadanComTests(unittest.TestCase):
             create_if_missing=True,
             force_new_instance=True,
         )
+
+    def test_win32_force_new_instance_uses_dispatchex(self) -> None:
+        with mock.patch("radan_backends.win32_client") as win32_client:
+            win32_client.DispatchEx.return_value = "fresh-dispatch"
+
+            backend = radan_backends._Win32ComBackend("Radraft.Application", force_new_instance=True)
+
+        win32_client.DispatchEx.assert_called_once_with("Radraft.Application")
+        win32_client.Dispatch.assert_not_called()
+        self.assertTrue(backend.created_new_instance)
 
     def test_application_info_coerces_common_property_types(self) -> None:
         app = RadanApplication.__new__(RadanApplication)

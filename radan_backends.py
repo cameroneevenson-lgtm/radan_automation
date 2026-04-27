@@ -52,7 +52,10 @@ class _Win32ComBackend(_Backend):
             raise RadanComUnavailableError("win32com is not installed.")
         if force_new_instance:
             try:
-                self._dispatch = win32_client.Dispatch(prog_id)
+                dispatch_ex = getattr(win32_client, "DispatchEx", None)
+                if dispatch_ex is None:
+                    raise RadanComUnavailableError("win32com DispatchEx is not available.")
+                self._dispatch = dispatch_ex(prog_id)
                 self.created_new_instance = True
                 return
             except Exception as exc:
