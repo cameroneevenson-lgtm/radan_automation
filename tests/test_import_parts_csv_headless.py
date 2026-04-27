@@ -205,6 +205,76 @@ class ImportPartsCsvHeadlessTests(unittest.TestCase):
             self.assertTrue((output_folder / "Part A.sym").exists())
             self.assertTrue(any(root.glob("*_before_headless_import_*.rpd")))
 
+    def test_run_headless_import_native_sym_experimental_uses_existing_template_without_com(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = import_parts_csv_headless.Path(tmpdir)
+            dxf_path = root / "Part A.dxf"
+            csv_path = root / "parts_Radan.csv"
+            output_folder = root / "out"
+            project_path = root / "job.rpd"
+            dxf_path.write_text("dxf", encoding="utf-8")
+            csv_path.write_text(f"{dxf_path},1,Aluminum 5052,0.125,in,AIR\n", encoding="utf-8")
+            output_folder.mkdir()
+            symbol_path = output_folder / "Part A.sym"
+            symbol_path.write_text("template sym", encoding="utf-8")
+            _write_project(project_path)
+
+            def fake_write_native_sym(*, dxf_path, template_sym, out_path):
+                self.assertTrue(template_sym.exists())
+                self.assertIn("_headless_import_backups", str(template_sym))
+                self.assertEqual(template_sym.read_text(encoding="utf-8"), "template sym")
+                out_path.write_text("native sym", encoding="utf-8")
+                return {"entity_count": 3, "replaced_records": 3}
+
+            with mock.patch.object(import_parts_csv_headless, "_visible_radan_process_ids", return_value={1234}):
+                with mock.patch.object(import_parts_csv_headless, "open_application") as open_application_mock:
+                    with mock.patch.object(import_parts_csv_headless, "_write_native_sym_prototype", side_effect=fake_write_native_sym):
+                        with mock.patch.object(
+                            import_parts_csv_headless,
+                            "_validate_native_symbol",
+                            return_value={"passed": True, "tiers": []},
+                        ):
+                            result = import_parts_csv_headless.run_headless_import(
+                                csv_path=csv_path,
+                                output_folder=output_folder,
+                                project_path=project_path,
+                                logger=import_parts_csv_headless._Logger(),
+                                native_sym_experimental=True,
+                            )
+
+            open_application_mock.assert_not_called()
+            self.assertEqual(symbol_path.read_text(encoding="utf-8"), "native sym")
+            self.assertEqual(result["conversion_method"], "native_sym_experimental")
+            self.assertEqual(len(result["converted"]), 1)
+            self.assertEqual(result["converted"][0]["template_symbol_path"].endswith("Part A.sym"), True)
+            self.assertEqual(result["skipped_conversion"], [])
+            self.assertEqual(result["added"][0]["part"], "Part A")
+
+    def test_run_headless_import_native_sym_experimental_requires_existing_template(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = import_parts_csv_headless.Path(tmpdir)
+            dxf_path = root / "Part A.dxf"
+            csv_path = root / "parts_Radan.csv"
+            output_folder = root / "out"
+            project_path = root / "job.rpd"
+            dxf_path.write_text("dxf", encoding="utf-8")
+            csv_path.write_text(f"{dxf_path},1,Aluminum 5052,0.125,in,AIR\n", encoding="utf-8")
+            output_folder.mkdir()
+            _write_project(project_path)
+
+            with mock.patch.object(import_parts_csv_headless, "open_application") as open_application_mock:
+                with self.assertRaisesRegex(RuntimeError, "requires existing \\.sym template"):
+                    import_parts_csv_headless.run_headless_import(
+                        csv_path=csv_path,
+                        output_folder=output_folder,
+                        project_path=project_path,
+                        logger=import_parts_csv_headless._Logger(),
+                        native_sym_experimental=True,
+                    )
+
+            open_application_mock.assert_not_called()
+            self.assertFalse(any(root.glob("*_before_headless_import_*.rpd")))
+
     def test_run_headless_import_rejects_visible_radan_when_same_pid_is_resolved_with_override(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = import_parts_csv_headless.Path(tmpdir)

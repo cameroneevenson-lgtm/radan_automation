@@ -302,6 +302,69 @@ def _convert_dxf_to_symbol(app: Any, mac: Any, part: ImportPart, symbol_path: Pa
     }
 
 
+def _write_native_sym_prototype(*, dxf_path: Path, template_sym: Path, out_path: Path) -> dict[str, Any]:
+    from write_native_sym_prototype import write_native_prototype
+
+    return write_native_prototype(
+        dxf_path=dxf_path,
+        template_sym=template_sym,
+        out_path=out_path,
+        allow_outside_lab=True,
+    )
+
+
+def _validate_native_symbol(*, dxf_path: Path, sym_path: Path) -> dict[str, Any]:
+    from validate_native_sym import validate_native_sym
+
+    return validate_native_sym(dxf_path=dxf_path, sym_path=sym_path)
+
+
+def _convert_dxf_to_symbol_native(part: ImportPart, symbol_path: Path, logger: _Logger) -> dict[str, Any]:
+    logger.write(f"Native SYM experimental: {part.dxf_path.name} -> {symbol_path.name}")
+    if not symbol_path.exists():
+        raise RuntimeError(
+            "Native SYM experimental mode currently requires an existing .sym template for each part. "
+            f"Missing template: {symbol_path}"
+        )
+
+    backup_dir = symbol_path.parent / "_headless_import_backups" / dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = _backup_file(symbol_path, backup_dir)
+    logger.write(f"Backed up existing symbol template: {backup_path}")
+
+    try:
+        prototype = _write_native_sym_prototype(
+            dxf_path=part.dxf_path,
+            template_sym=backup_path,
+            out_path=symbol_path,
+        )
+        validation = _validate_native_symbol(dxf_path=part.dxf_path, sym_path=symbol_path)
+        if not bool(validation.get("passed")):
+            failed_tiers = [
+                str(tier.get("name"))
+                for tier in validation.get("tiers", [])
+                if not bool(tier.get("passed"))
+            ]
+            failed_text = ", ".join(failed_tiers) if failed_tiers else "unknown validation tier"
+            raise RuntimeError(f"Native SYM validation failed for {symbol_path.name}: {failed_text}")
+    except Exception:
+        if backup_path.exists():
+            shutil.copy2(backup_path, symbol_path)
+            logger.write(f"Restored original symbol after native SYM failure: {symbol_path}")
+        raise
+
+    return {
+        "part": part.part_name,
+        "symbol_path": str(symbol_path),
+        "symbol_size": symbol_path.stat().st_size,
+        "attributes_written": False,
+        "conversion_method": "native_sym_experimental",
+        "template_symbol_path": str(backup_path),
+        "entity_count": prototype.get("entity_count"),
+        "replaced_records": prototype.get("replaced_records"),
+        "native_validation_passed": True,
+    }
+
+
 def _project_tag(name: str) -> str:
     return f"{{{RADAN_PROJECT_NS}}}{name}"
 
@@ -409,6 +472,7 @@ def run_headless_import(
     backend: str = "win32com",
     allow_visible_radan: bool = False,
     rebuild_symbols: bool = False,
+    native_sym_experimental: bool = False,
 ) -> dict[str, Any]:
     started_at = time.perf_counter()
     parts = read_import_csv(csv_path)
@@ -416,7 +480,7 @@ def run_headless_import(
     parts_to_convert = [
         part
         for part in parts
-        if rebuild_symbols or not part.symbol_path(output_folder).exists()
+        if native_sym_experimental or rebuild_symbols or not part.symbol_path(output_folder).exists()
     ]
     skipped_conversion = [
         {
@@ -427,6 +491,24 @@ def run_headless_import(
         for part in parts
         if part not in parts_to_convert
     ]
+    if native_sym_experimental:
+        missing_templates = [
+            part.symbol_path(output_folder)
+            for part in parts_to_convert
+            if not part.symbol_path(output_folder).exists()
+        ]
+        if missing_templates:
+            sample = "\n".join(str(path) for path in missing_templates[:20])
+            more = len(missing_templates) - min(len(missing_templates), 20)
+            if more > 0:
+                sample += f"\n... (+{more} more)"
+            raise RuntimeError(
+                "Native SYM experimental mode currently requires existing .sym template files for every part. "
+                f"{len(missing_templates)} template(s) are missing:\n{sample}"
+            )
+        logger.write(
+            "Native SYM experimental mode enabled; rebuilding all symbols from DXF using existing .sym files as templates."
+        )
     if skipped_conversion:
         logger.write(f"Reusing {len(skipped_conversion)} existing symbol(s); conversion is only needed for missing symbols.")
     if parts_to_convert:
@@ -448,7 +530,9 @@ def run_headless_import(
             "Visible RADAN session(s) already open before import: "
             + ", ".join(str(pid) for pid in sorted(preexisting_visible_pids))
         )
-        if parts_to_convert and not allow_visible_radan:
+        if native_sym_experimental:
+            logger.write("Native SYM experimental mode does not use RADAN COM for conversion; continuing.")
+        elif parts_to_convert and not allow_visible_radan:
             sample = ", ".join(part.part_name for part in parts_to_convert[:12])
             if len(parts_to_convert) > 12:
                 sample += f", ... (+{len(parts_to_convert) - 12} more)"
@@ -459,7 +543,7 @@ def run_headless_import(
                 "the missing symbols exist, close RADAN first, or rerun with --allow-visible-radan if you "
                 "intentionally accept that transient UI disturbance."
             )
-        if parts_to_convert:
+        elif parts_to_convert:
             logger.write("WARNING: --allow-visible-radan was used; open RADAN windows may redraw or steal focus during conversion.")
         else:
             logger.write("Visible RADAN sessions are open, but no symbol conversion is needed; continuing to project update.")
@@ -467,7 +551,20 @@ def run_headless_import(
     app = None
     quit_result = None
     try:
-        if parts_to_convert:
+        if parts_to_convert and native_sym_experimental:
+            conversion_started_at = time.perf_counter()
+            for index, part in enumerate(parts_to_convert, start=1):
+                symbol_path = part.symbol_path(output_folder)
+                part_started_at = time.perf_counter()
+                converted_row = _convert_dxf_to_symbol_native(part, symbol_path, logger)
+                part_elapsed = time.perf_counter() - part_started_at
+                converted_row["elapsed_sec"] = round(part_elapsed, 3)
+                converted.append(converted_row)
+                logger.write(
+                    f"Native generated {index}/{len(parts_to_convert)}: {part.part_name} "
+                    f"({symbol_path.stat().st_size} bytes, {_format_elapsed(part_elapsed)})"
+                )
+        elif parts_to_convert:
             app = open_application(backend=backend, force_new_instance=True)
             info, should_quit_app = _resolve_automation_instance(app, preexisting_visible_pids, logger)
             logger.write(f"Started hidden RADAN automation instance PID {info.process_id}.")
@@ -545,6 +642,7 @@ def run_headless_import(
         "converted": converted,
         "skipped_conversion": skipped_conversion,
         "added": added,
+        "conversion_method": "native_sym_experimental" if native_sym_experimental else "radan_com",
         "project_update_method": "direct_xml",
         "edited_before_save": edited_before_save,
         "edited_after_save": edited_after_save,
@@ -570,6 +668,14 @@ def main() -> int:
         action="store_true",
         help="Recreate symbols even when matching .sym files already exist.",
     )
+    parser.add_argument(
+        "--native-sym-experimental",
+        action="store_true",
+        help=(
+            "Rebuild symbols with the experimental native DXF-to-SYM writer using existing .sym files as templates; "
+            "does not use RADAN COM during conversion."
+        ),
+    )
     args = parser.parse_args()
 
     csv_path = Path(args.csv).expanduser().resolve()
@@ -593,6 +699,7 @@ def main() -> int:
                 backend=args.backend,
                 allow_visible_radan=bool(args.allow_visible_radan),
                 rebuild_symbols=bool(args.rebuild_symbols),
+                native_sym_experimental=bool(args.native_sym_experimental),
             )
     except Exception as exc:
         logger.write(f"ERROR: {type(exc).__name__}: {exc}")
