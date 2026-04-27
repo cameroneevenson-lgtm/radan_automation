@@ -7,4 +7,6 @@ __pycache__/
 wcftrace.log
 _tmp_headless_*
 _runtime/
+_sym_lab/
+_sym_probe*/
 tests/_tmp/

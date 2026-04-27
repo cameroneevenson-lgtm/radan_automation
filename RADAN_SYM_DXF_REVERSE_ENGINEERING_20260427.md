@@ -136,7 +136,7 @@ Source:
 
 - DXF: `W:\LASER\For Battleshield Fabrication\F54410\PAINT PACK\B-28.dxf`
 - generated symbol: `L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\B-28.sym`
-- copied successful symbol: `C:\Tools\_sym_probe_copy\out\B-28-copy.sym`
+- copied successful symbol: `C:\Tools\radan_automation\_sym_probe_copy\out\B-28-copy.sym`
 
 The record identifiers in the DDC block are:
 
@@ -178,7 +178,7 @@ These variants were tested:
 
 Results:
 
-- real `B-28.dxf` copied to `C:\Tools\_sym_probe_copy\B-28-copy.dxf` converted successfully
+- real `B-28.dxf` copied to `C:\Tools\radan_automation\_sym_probe_copy\B-28-copy.dxf` converted successfully
 - no-change text rewrite converted successfully
 - synthetic entity replacement failed
 - coordinate-transformed versions failed, even when scientific notation was removed
@@ -249,7 +249,7 @@ This does not prove the methods are unusable. It likely means the current late-b
 
 The hidden process was asked to open:
 
-`C:\Tools\_sym_probe_copy\out\B-28-copy.sym`
+`C:\Tools\radan_automation\_sym_probe_copy\out\B-28-copy.sym`
 
 Then scan was attempted:
 

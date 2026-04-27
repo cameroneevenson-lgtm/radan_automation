@@ -10,7 +10,7 @@ from ddc_corpus import DDC_RE, KNOWN_PEN_BY_LAYER, build_part_corpus, read_dxf_e
 from ddc_number_codec import encode_ddc_number
 
 
-DEFAULT_LAB_ROOT = Path(r"C:\Tools\_sym_lab")
+DEFAULT_LAB_ROOT = Path(__file__).resolve().parent / "_sym_lab"
 DDC_BLOCK_RE = re.compile(
     r'(<RadanFile\s+extension="ddc"\s*>\s*<!\[CDATA\[)(.*?)(\]\]>\s*</RadanFile>)',
     re.DOTALL,
@@ -167,9 +167,9 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Write a lab-only native .sym prototype from DXF geometry.")
     parser.add_argument("--dxf", type=Path, required=True, help="Source DXF path.")
     parser.add_argument("--template-sym", type=Path, required=True, help="Known-good template .sym to clone.")
-    parser.add_argument("--out", type=Path, required=True, help="Output .sym path under C:\\Tools\\_sym_lab.")
+    parser.add_argument("--out", type=Path, required=True, help=f"Output .sym path under {DEFAULT_LAB_ROOT}.")
     parser.add_argument("--report", type=Path, help="Optional JSON report path.")
-    parser.add_argument("--allow-outside-lab", action="store_true", help="Allow output outside C:\\Tools\\_sym_lab.")
+    parser.add_argument("--allow-outside-lab", action="store_true", help=f"Allow output outside {DEFAULT_LAB_ROOT}.")
     args = parser.parse_args()
 
     payload = write_native_prototype(

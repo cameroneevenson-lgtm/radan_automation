@@ -40,7 +40,7 @@ Still blocked:
 2. Any COM probe must attach only to a known hidden automation-owned RADAN process, or stop and report the blocker.
 3. Do not attach to a visible user RADAN session for this work.
 4. Do not create a new RADAN process unless explicitly approved for a one-off experiment.
-5. Do not run conversion against the production paint-pack folder during research. Copy input to `C:\Tools\_sym_lab\...`.
+5. Do not run conversion against the production paint-pack folder during research. Copy input to `C:\Tools\radan_automation\_sym_lab\...`.
 6. Do not write generated prototype `.sym` files into production project folders.
 7. Do not wire native `.sym` writing into Truck Nest Explorer until the validation harness can reject bad output automatically.
 
@@ -147,7 +147,7 @@ First target:
 
 - clone the XML wrapper from a known-good symbol
 - replace only the minimum DDC geometry block and bounding attributes
-- generate `B-28-native.sym` under `C:\Tools\_sym_lab\out`
+- generate `B-28-native.sym` under `C:\Tools\radan_automation\_sym_lab\out`
 
 Responsibilities:
 
@@ -239,7 +239,7 @@ Build `ddc_corpus.py` and run it against:
 C:\Tools\.venv\Scripts\python.exe .\ddc_corpus.py `
   --csv "L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410-PAINT PACK-BOM_Radan.csv" `
   --sym-folder "L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK" `
-  --out "C:\Tools\_sym_lab\f54410_ddc_corpus.json"
+  --out "C:\Tools\radan_automation\_sym_lab\f54410_ddc_corpus.json"
 ```
 
 Expected result:
@@ -254,7 +254,7 @@ Completed Phase 1 deliverable:
 
 - `ddc_corpus.py`
 - tests: `tests/test_ddc_corpus.py`
-- corpus output: `C:\Tools\_sym_lab\f54410_ddc_corpus.json`
+- corpus output: `C:\Tools\radan_automation\_sym_lab\f54410_ddc_corpus.json`
 
 Phase 1 pass gate result:
 
@@ -269,7 +269,7 @@ Completed Phase 2 deliverable:
 
 - `analyze_ddc_tokens.py`
 - tests: `tests/test_analyze_ddc_tokens.py`
-- token analysis output: `C:\Tools\_sym_lab\f54410_ddc_token_analysis.json`
+- token analysis output: `C:\Tools\radan_automation\_sym_lab\f54410_ddc_token_analysis.json`
 
 Phase 2 findings:
 
@@ -331,4 +331,4 @@ Next executable step:
 - build a native `.sym` writer prototype for copied `B-28`
 - first reproduction target: regenerate the DDC geometry records from DXF using `ddc_number_codec.encode_ddc_number`
 - compare decoded generated geometry to source DXF before any RADAN validation
-- keep generated files under `C:\Tools\_sym_lab`
+- keep generated files under `C:\Tools\radan_automation\_sym_lab`
