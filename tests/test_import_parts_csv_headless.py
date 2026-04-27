@@ -4,6 +4,7 @@ import os
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from types import SimpleNamespace
 from unittest import mock
 
@@ -282,6 +283,54 @@ class ImportPartsCsvHeadlessTests(unittest.TestCase):
             missing = import_parts_csv_headless._missing_symbol_paths([part], output_folder)
 
             self.assertEqual(missing, [output_folder / "Part A.sym"])
+
+    def test_project_part_colors_are_deterministic_and_varied(self) -> None:
+        colors = [
+            import_parts_csv_headless._project_part_color(part_id)
+            for part_id in range(10, 22)
+        ]
+
+        self.assertEqual(colors, [import_parts_csv_headless._project_part_color(part_id) for part_id in range(10, 22)])
+        self.assertGreaterEqual(len(set(colors)), 10)
+        for color in colors:
+            channels = [int(value.strip()) for value in color.split(",")]
+            self.assertEqual(len(channels), 3)
+            self.assertTrue(all(31 <= channel <= 223 for channel in channels))
+
+    def test_direct_project_update_assigns_varied_part_colors(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = import_parts_csv_headless.Path(tmpdir)
+            output_folder = root / "out"
+            project_path = root / "job.rpd"
+            output_folder.mkdir()
+            _write_project(project_path)
+            parts = []
+            for name in ("Part A", "Part B", "Part C", "Part D"):
+                dxf_path = root / f"{name}.dxf"
+                dxf_path.write_text("dxf", encoding="utf-8")
+                (output_folder / f"{name}.sym").write_text("sym", encoding="utf-8")
+                parts.append(
+                    import_parts_csv_headless.ImportPart(
+                        dxf_path=dxf_path,
+                        quantity=1,
+                        material="Aluminum",
+                        thickness=0.125,
+                        unit="in",
+                        strategy="AIR",
+                    )
+                )
+
+            added = import_parts_csv_headless._update_project_file_direct(project_path, parts, output_folder)
+
+            root_xml = ET.parse(project_path).getroot()
+            ns = f"{{{import_parts_csv_headless.RADAN_PROJECT_NS}}}"
+            colors = [
+                node.findtext(f"{ns}ColourWhenPartSaved")
+                for node in root_xml.findall(f".//{ns}Part")
+            ]
+            self.assertEqual(colors, [row["colour_when_part_saved"] for row in added])
+            self.assertEqual(len(colors), 4)
+            self.assertEqual(len(set(colors)), 4)
 
 
 if __name__ == "__main__":

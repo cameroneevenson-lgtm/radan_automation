@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import colorsys
 import csv
 import ctypes
 import datetime as dt
@@ -304,6 +305,19 @@ def _parse_int_text(value: str | None, default: int = 0) -> int:
         return default
 
 
+def _project_part_color(part_id: int) -> str:
+    # RADAN stores these as "R, G, B". Keep colors print-friendly and deterministic.
+    hue = (int(part_id) * 0.618033988749895) % 1.0
+    saturation = 0.72 + ((int(part_id) * 17) % 4) * 0.06
+    value = 0.82 + ((int(part_id) * 29) % 3) * 0.06
+    red, green, blue = colorsys.hsv_to_rgb(hue, min(saturation, 0.9), min(value, 0.94))
+    channels = [
+        max(31, min(223, int(round(channel * 255))))
+        for channel in (red, green, blue)
+    ]
+    return f"{channels[0]}, {channels[1]}, {channels[2]}"
+
+
 def _build_project_part_element(part_id: int, part: ImportPart, symbol_path: Path) -> ET.Element:
     node = ET.Element(_project_tag("Part"))
     _set_child(node, "ID", int(part_id))
@@ -324,7 +338,7 @@ def _build_project_part_element(part_id: int, part: ImportPart, symbol_path: Pat
     _set_child(node, "ThickUnits", part.unit)
     _set_child(node, "Strategy", part.strategy)
     _set_child(node, "Exclude", "n")
-    _set_child(node, "ColourWhenPartSaved", "31, 223, 223")
+    _set_child(node, "ColourWhenPartSaved", _project_part_color(part_id))
     _set_child(node, "NestMode", "multi-part")
     _set_child(node, "Made", 0)
     return node
@@ -356,6 +370,7 @@ def _update_project_file_direct(project_path: Path, parts: list[ImportPart], out
                 "part": part.part_name,
                 "symbol_path": str(symbol_path),
                 "project_part_id": part_id,
+                "colour_when_part_saved": _project_part_color(part_id),
             }
         )
     next_id_node.text = str(first_new_id + len(parts))
