@@ -12,6 +12,10 @@ against the RADAN-generated symbols in:
 
 The goal was to determine whether a no-RADAN-installed DXF-to-SYM generator is plausible, similar to the direct `.sym` pen remapper.
 
+Concrete execution plan:
+
+`NATIVE_DXF_TO_SYM_PLAN.md`
+
 ## File Structure
 
 The generated `.sym` files are XML compound documents:
