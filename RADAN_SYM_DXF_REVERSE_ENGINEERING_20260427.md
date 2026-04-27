@@ -104,7 +104,29 @@ Known token/value hints from `B-28`:
 | `2.0` | `0@0` |
 | `2.846748` | `0@6aR?@_j2@` |
 
-This looks like a proprietary printable real-number encoding, not raw DXF text.
+This is a proprietary printable real-number encoding, but the observed number format is now decoded in `ddc_number_codec.py`.
+
+Observed number-token structure:
+
+- empty token decodes to `0`
+- a 2-character exponent prefix
+- a first mantissa digit with sign folded into the character range
+- optional base-64 continuation digits
+
+Examples:
+
+| Token | Decoded value |
+| --- | ---: |
+| empty | `0` |
+| `j?0` | `0.03125` |
+| `j?P` | `-0.03125` |
+| `m?0` | `0.25` |
+| `m?P` | `-0.25` |
+| `o?0` | `1` |
+| `o?P` | `-1` |
+| `0@0` | `2` |
+| `0@P` | `-2` |
+| `0@0P` | `2.0625` |
 
 ### B-28 Record-Level Observations
 
@@ -285,12 +307,18 @@ What seems solid:
 - record field index `10` contains compact geometry data.
 - empty dot slots often represent zero, unchanged, omitted, or default values.
 - RADAN normalizes part geometry into positive local symbol coordinates.
+- `G` line geometry appears to use normalized start `X`, normalized start `Y`, delta `X`, and delta `Y` in slots `0..3`.
+- for line delta slots, empty token means zero delta.
+- `H` arc geometry appears to use start point, end delta, center delta, and constant flags.
+- `H` circle geometry uses the same shape with no end delta:
+  - slot `0`: center `X + radius`
+  - slot `1`: center `Y`
+  - slot `4`: `-radius`
+  - slots `6` and `9`: constant `1`
 
 What is not solved:
 
-- whether compact numeric tokens are standalone encoded doubles, slot-dependent values, deltas, or macro-code expressions
-- whether line records encode `start x, start y, end x, end y` directly or use mixed absolute/delta/omitted fields
-- whether arc records encode center/radius/angles directly or endpoint/bulge/orientation data
+- whether `encode_ddc_number(...)` needs to mimic RADAN's final continuation-digit choices exactly, or whether any valid equivalent token is accepted by RADAN
 - how to regenerate all derived symbol metadata safely enough for production
 
 Most likely approach:

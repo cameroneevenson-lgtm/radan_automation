@@ -247,3 +247,88 @@ Expected result:
 - no RADAN launch
 - no license use
 - corpus JSON containing all 4,085 paired DXF/DDC records
+
+## Progress 2026-04-27
+
+Completed Phase 1 deliverable:
+
+- `ddc_corpus.py`
+- tests: `tests/test_ddc_corpus.py`
+- corpus output: `C:\Tools\_sym_lab\f54410_ddc_corpus.json`
+
+Phase 1 pass gate result:
+
+- part count: `98`
+- total DXF entities: `4085`
+- total DDC records: `4085`
+- count mismatches: `0`
+- type mismatches: `0`
+- known layer/pen mismatches: `0`
+
+Completed Phase 2 deliverable:
+
+- `analyze_ddc_tokens.py`
+- tests: `tests/test_analyze_ddc_tokens.py`
+- token analysis output: `C:\Tools\_sym_lab\f54410_ddc_token_analysis.json`
+
+Phase 2 findings:
+
+- `G`/`LINE` slots `0` and `1` behave like absolute normalized start `X` and start `Y`.
+- `G`/`LINE` slots `2` and `3` fit delta `X` and delta `Y` much better than absolute end `X` and end `Y`.
+- empty `G` delta slots mean zero delta.
+- at 6-decimal comparison precision, line slot token-to-value mapping is nearly deterministic:
+  - start `X`: `0` ambiguous non-empty tokens
+  - start `Y`: `0` ambiguous non-empty tokens
+  - delta `X`: `2` ambiguous non-empty tokens
+  - delta `Y`: `0` ambiguous non-empty tokens
+- `H`/`CIRCLE` records have a stable shape: non-empty slots `0,1,4,6,9`.
+- `H`/`CIRCLE` slots behave as:
+  - slot `0`: start `X`, which is center `X + radius`
+  - slot `1`: start `Y`, which is center `Y`
+  - slot `4`: center delta `X`, which is `-radius`
+  - slots `6` and `9`: constant `1`
+
+Added numeric codec:
+
+- `ddc_number_codec.py`
+- tests: `tests/test_ddc_number_codec.py`
+
+Decoded geometry validation:
+
+- `G`/`LINE`: `0` failures over `3172` records, max absolute error below `0.000001`
+- `H`/`CIRCLE`: `0` failures over `367` records, max absolute error below `0.000001`
+- `H`/`ARC`: `0` failures over `546` records, max absolute error below `0.000001`
+
+Decoded DDC geometry formulas:
+
+| DDC record | DXF entity | Slot | Meaning |
+| --- | --- | ---: | --- |
+| `G` | `LINE` | 0 | normalized start `X` |
+| `G` | `LINE` | 1 | normalized start `Y` |
+| `G` | `LINE` | 2 | end `X - start X` |
+| `G` | `LINE` | 3 | end `Y - start Y` |
+| `H` | `ARC` | 0 | normalized start point `X` |
+| `H` | `ARC` | 1 | normalized start point `Y` |
+| `H` | `ARC` | 2 | end point `X - start point X` |
+| `H` | `ARC` | 3 | end point `Y - start point Y` |
+| `H` | `ARC` | 4 | center `X - start point X` |
+| `H` | `ARC` | 5 | center `Y - start point Y` |
+| `H` | `ARC`/`CIRCLE` | 6 | constant `1` |
+| `H` | `ARC`/`CIRCLE` | 9 | constant `1` |
+
+Added Phase 3 deliverable:
+
+- `probe_hidden_sym_scan.py`
+
+Phase 3 run status:
+
+- not run against COM because a visible user RADAN Nest Editor was open at PID `2100`
+- the probe refused before attaching, as intended by the safety rules
+- hidden automation-owned RADAN PID `2496` was present, but not touched while the visible session was open
+
+Next executable step:
+
+- build a native `.sym` writer prototype for copied `B-28`
+- first reproduction target: regenerate the DDC geometry records from DXF using `ddc_number_codec.encode_ddc_number`
+- compare decoded generated geometry to source DXF before any RADAN validation
+- keep generated files under `C:\Tools\_sym_lab`
