@@ -40,6 +40,13 @@ class DdcNumberCodecTests(unittest.TestCase):
         self.assertEqual(encode_ddc_number(-0.25), "m?P")
         self.assertEqual(encode_ddc_number(2.0625), "0@0P")
 
+    def test_encode_carries_near_power_of_two_rounding(self) -> None:
+        token = encode_ddc_number(3.9999999999999964)
+
+        self.assertEqual(token, "1@0")
+        self.assertNotIn("@@", token)
+        self.assertAlmostEqual(decode_ddc_number(token), 4.0, places=9)
+
 
 if __name__ == "__main__":
     unittest.main()

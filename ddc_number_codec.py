@@ -67,6 +67,8 @@ def encode_ddc_number(value: float, *, continuation_digits: int = 8) -> str:
     sign = -1 if value < 0 else 1
     absolute = abs(value)
     exponent = math.floor(math.log(absolute, 2))
+    if math.isclose(absolute, 2.0 ** (exponent + 1), rel_tol=0.0, abs_tol=1e-9):
+        exponent += 1
     if exponent <= 0:
         prefix = chr(ord("o") + exponent) + "?"
     else:
@@ -76,7 +78,17 @@ def encode_ddc_number(value: float, *, continuation_digits: int = 8) -> str:
     fraction = normalized - 1.0
     scaled = fraction * 16.0
     first_digit = int(math.floor(scaled + 1e-12))
-    remainder = scaled - first_digit
+    if first_digit >= 16:
+        exponent += 1
+        if exponent <= 0:
+            prefix = chr(ord("o") + exponent) + "?"
+        else:
+            prefix = chr(ord("0") + exponent - 1) + "@"
+        first_digit = 0
+        remainder = 0.0
+    else:
+        first_digit = max(0, first_digit)
+        remainder = scaled - first_digit
     first_char = chr((80 if sign < 0 else 48) + first_digit)
 
     digits: list[str] = []
