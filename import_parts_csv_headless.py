@@ -33,6 +33,7 @@ PROJECT_UPDATE_METHODS = {
     PROJECT_UPDATE_METHOD_DIRECT_XML,
     PROJECT_UPDATE_METHOD_RADAN_NST,
 }
+PROJECT_SHEETS_REFRESH_MAC_LINE = "prg_notify('rpr_sheets_controls', 'UpdateSheetsList')"
 
 PROJECT_PART_COLOR_PALETTE = (
     "55, 31, 223",
@@ -964,6 +965,84 @@ def _update_project_file_via_radan_nst(
     }
 
 
+def _refresh_project_sheets_from_current_parts(
+    project_path: Path,
+    *,
+    logger: _Logger,
+    backend: str = "win32com",
+    preexisting_visible_pids: set[int] | None = None,
+) -> dict[str, Any]:
+    before_sheets = _project_sheet_snapshot(project_path)
+    logger.write(
+        "Refreshing project sheets from current parts through RADAN headless handler: "
+        f"{before_sheets['sheet_count']} sheet row(s) before."
+    )
+    app = open_application(backend=backend, force_new_instance=True)
+    should_quit_app = False
+    quit_result = False
+    info = None
+    try:
+        info, should_quit_app = _resolve_automation_instance(app, preexisting_visible_pids or set(), logger)
+        app.visible = False
+        app.interactive = False
+        logger.write(
+            "Started hidden RADAN automation instance "
+            f"PID {info.process_id} for project sheet refresh."
+        )
+        mac = _mac_object(app)
+        open_result = bool(mac.prj_open(str(project_path)))
+        if not open_result:
+            raise RuntimeError(f"RADAN prj_open failed for {project_path}")
+        try:
+            opened_project_path = str(mac.prj_get_file_path())
+        except Exception:
+            opened_project_path = str(project_path)
+        logger.write(f"RADAN project sheet refresh opened: {opened_project_path}")
+
+        update_result = bool(mac.Execute(PROJECT_SHEETS_REFRESH_MAC_LINE))
+        if not update_result:
+            raise RuntimeError("RADAN UpdateSheetsList handler returned false.")
+        save_result = bool(mac.prj_save())
+        if not save_result:
+            raise RuntimeError("RADAN prj_save failed after UpdateSheetsList.")
+
+        after_sheets = _project_sheet_snapshot(project_path)
+        logger.write(
+            "RADAN project sheet refresh saved: "
+            f"{after_sheets['sheet_count']} sheet row(s) after "
+            f"(delta {after_sheets['sheet_count'] - before_sheets['sheet_count']})."
+        )
+        return {
+            "before": before_sheets,
+            "after": after_sheets,
+            "handler": PROJECT_SHEETS_REFRESH_MAC_LINE,
+            "process_id": getattr(info, "process_id", None),
+            "project_path_opened": opened_project_path,
+            "open_result": open_result,
+            "update_result": update_result,
+            "save_result": save_result,
+        }
+    finally:
+        try:
+            if "mac" in locals():
+                mac.prj_close()
+        except Exception as exc:
+            logger.write(f"WARNING: RADAN prj_close failed after sheet refresh: {type(exc).__name__}: {exc}")
+        if should_quit_app:
+            try:
+                quit_result = bool(app.quit())
+            except Exception as exc:
+                logger.write(f"WARNING: RADAN Quit() failed after sheet refresh: {type(exc).__name__}: {exc}")
+        else:
+            logger.write("Skipping RADAN Quit() after sheet refresh because automation ownership was not proven.")
+        try:
+            app.close()
+        except Exception:
+            pass
+        if should_quit_app:
+            logger.write(f"RADAN project sheet refresh Quit() result: {quit_result}.")
+
+
 def _validate_project_file_after_write(
     project_path: Path,
     parts: list[ImportPart],
@@ -1516,6 +1595,7 @@ def run_headless_import(
     assign_project_colors: bool = False,
     project_update_method: str = PROJECT_UPDATE_METHOD_DIRECT_XML,
     max_parts: int | None = None,
+    refresh_project_sheets: bool = False,
 ) -> dict[str, Any]:
     started_at = time.perf_counter()
     project_update_method = str(project_update_method or PROJECT_UPDATE_METHOD_DIRECT_XML).strip()
@@ -1603,6 +1683,7 @@ def run_headless_import(
     added: list[dict[str, Any]] = []
     skipped_existing_project_rows: list[dict[str, Any]] = []
     project_validation: dict[str, Any] = {}
+    project_sheet_refresh: dict[str, Any] | None = None
     conversion_started_at = 0.0
     conversion_elapsed = 0.0
     project_elapsed = 0.0
@@ -1875,6 +1956,29 @@ def run_headless_import(
                 shutil.copy2(project_backup, project_path)
                 logger.write(f"Restored project backup after failed post-write validation: {project_backup}")
             raise RuntimeError("RPD post-write validation failed; restored project backup.")
+        if refresh_project_sheets and project_update_method == PROJECT_UPDATE_METHOD_DIRECT_XML:
+            try:
+                project_sheet_refresh = _refresh_project_sheets_from_current_parts(
+                    project_path,
+                    logger=logger,
+                    backend=backend,
+                    preexisting_visible_pids=preexisting_visible_pids,
+                )
+                project_validation = _validate_project_file_after_write(project_path, parts, output_folder)
+            except Exception:
+                if project_backup is not None and project_backup.exists():
+                    shutil.copy2(project_backup, project_path)
+                    logger.write(f"Restored project backup after failed project sheet refresh: {project_backup}")
+                raise
+            if not bool(project_validation.get("passed")):
+                for error in project_validation.get("errors", []):
+                    logger.write(f"RPD post-sheet-refresh validation error: {error}")
+                if project_backup is not None and project_backup.exists():
+                    shutil.copy2(project_backup, project_path)
+                    logger.write(f"Restored project backup after failed post-sheet-refresh validation: {project_backup}")
+                raise RuntimeError("RPD post-sheet-refresh validation failed; restored project backup.")
+        elif refresh_project_sheets:
+            logger.write("Project sheet refresh skipped because the RADAN NST project update method owns project saves.")
         project_elapsed = time.perf_counter() - project_started_at
         logger.write(
             "RPD post-write validation passed: "
@@ -1960,6 +2064,7 @@ def run_headless_import(
         "added": added,
         "skipped_existing_project_rows": skipped_existing_project_rows,
         "project_validation": project_validation,
+        "project_sheet_refresh": project_sheet_refresh,
         "conversion_method": "native_sym_experimental" if native_sym_experimental else "radan_com",
         "edited_before_save": edited_before_save,
         "edited_after_save": edited_after_save,
@@ -2035,6 +2140,15 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--refresh-project-sheets",
+        action="store_true",
+        help=(
+            "After a direct-xml project update, open the project in a fresh hidden RADAN automation instance, "
+            "run the same Update sheets list from current parts handler used by the Nest Editor button, save, "
+            "and validate the RPD again."
+        ),
+    )
+    parser.add_argument(
         "--max-parts",
         type=int,
         help="Temporary test limiter: import only the first N importable CSV rows.",
@@ -2104,6 +2218,7 @@ def main() -> int:
                 assign_project_colors=bool(args.assign_project_colors),
                 project_update_method=str(args.project_update_method),
                 max_parts=args.max_parts,
+                refresh_project_sheets=bool(args.refresh_project_sheets),
             )
     except Exception as exc:
         logger.write(f"ERROR: {type(exc).__name__}: {exc}")

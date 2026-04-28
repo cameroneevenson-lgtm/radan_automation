@@ -979,6 +979,121 @@ class ImportPartsCsvHeadlessTests(unittest.TestCase):
                 ],
             )
 
+    def test_refresh_project_sheets_from_current_parts_uses_fresh_hidden_radan(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = import_parts_csv_headless.Path(tmpdir)
+            project_path = root / "job.rpd"
+            _write_project(project_path)
+
+            class _FakeMac:
+                def __init__(self) -> None:
+                    self.calls: list[str] = []
+                    self.project_path: import_parts_csv_headless.Path | None = None
+
+                def prj_open(self, file):
+                    self.calls.append("prj_open")
+                    self.project_path = import_parts_csv_headless.Path(file)
+                    return True
+
+                def prj_get_file_path(self):
+                    self.calls.append("prj_get_file_path")
+                    return str(self.project_path)
+
+                def Execute(self, line):
+                    self.calls.append(f"Execute:{line}")
+                    self.asserted_line = line
+                    assert self.project_path is not None
+                    tree = ET.parse(self.project_path)
+                    root_node = tree.getroot()
+                    sheets = import_parts_csv_headless._find_project_sheets(root_node)
+                    if sheets is None:
+                        sheets = ET.SubElement(
+                            root_node,
+                            f"{{{import_parts_csv_headless.RADAN_PROJECT_NS}}}Sheets",
+                        )
+                        ET.SubElement(
+                            sheets,
+                            f"{{{import_parts_csv_headless.RADAN_PROJECT_NS}}}NextID",
+                        ).text = "2"
+                    sheet = ET.SubElement(sheets, f"{{{import_parts_csv_headless.RADAN_PROJECT_NS}}}Sheet")
+                    for key, value in (
+                        ("ID", "1"),
+                        ("Material", "Aluminum 5052"),
+                        ("Thickness", "0.125"),
+                        ("ThickUnits", "in"),
+                        ("SheetX", "120"),
+                        ("SheetY", "60"),
+                        ("SheetUnits", "in"),
+                    ):
+                        ET.SubElement(sheet, f"{{{import_parts_csv_headless.RADAN_PROJECT_NS}}}{key}").text = value
+                    ET.indent(tree, space="  ")
+                    tree.write(self.project_path, encoding="utf-8", xml_declaration=True)
+                    return True
+
+                def prj_save(self):
+                    self.calls.append("prj_save")
+                    return True
+
+                def prj_close(self):
+                    self.calls.append("prj_close")
+                    return True
+
+            class _FakeBackend:
+                def __init__(self, mac):
+                    self.mac = mac
+
+                def _resolve_path(self, path):
+                    self.mac.calls.append(f"resolve:{'.'.join(path)}")
+                    return self.mac
+
+            class _FakeApp:
+                created_new_instance = True
+
+                def __init__(self, mac):
+                    self._backend = _FakeBackend(mac)
+                    self.visible = True
+                    self.interactive = True
+                    self.quit_called = False
+                    self.closed = False
+
+                def info(self):
+                    return SimpleNamespace(process_id=9876)
+
+                def quit(self):
+                    self.quit_called = True
+                    return True
+
+                def close(self):
+                    self.closed = True
+
+            fake_mac = _FakeMac()
+            fake_app = _FakeApp(fake_mac)
+            with mock.patch.object(import_parts_csv_headless, "open_application", return_value=fake_app) as open_mock:
+                result = import_parts_csv_headless._refresh_project_sheets_from_current_parts(
+                    project_path,
+                    logger=import_parts_csv_headless._Logger(),
+                    backend="win32com",
+                    preexisting_visible_pids={1234},
+                )
+
+            open_mock.assert_called_once_with(backend="win32com", force_new_instance=True)
+            self.assertEqual(result["before"]["sheet_count"], 0)
+            self.assertEqual(result["after"]["sheet_count"], 1)
+            self.assertEqual(result["process_id"], 9876)
+            self.assertTrue(fake_app.quit_called)
+            self.assertTrue(fake_app.closed)
+            self.assertEqual(
+                fake_mac.calls,
+                [
+                    "resolve:Mac",
+                    "prj_open",
+                    "prj_get_file_path",
+                    f"Execute:{import_parts_csv_headless.PROJECT_SHEETS_REFRESH_MAC_LINE}",
+                    "prj_save",
+                    "prj_close",
+                ],
+            )
+
     def test_run_headless_import_skips_existing_project_rows_on_repeat(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = import_parts_csv_headless.Path(tmpdir)
