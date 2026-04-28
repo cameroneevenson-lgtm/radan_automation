@@ -5,3 +5,4 @@
 pywin32>=311,<312
 comtypes>=1.4,<2.0
 pylibmspack>=0.2,<0.3
+ezdxf>=1.4,<2.0
