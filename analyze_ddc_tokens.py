@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ddc_number_codec import decode_ddc_number
+from path_safety import assert_w_drive_write_allowed
 
 
 LINE_SLOT_FIELDS = {
@@ -431,6 +432,7 @@ def analyze_corpus(corpus: dict[str, Any], *, top: int = 10) -> dict[str, Any]:
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
+    assert_w_drive_write_allowed(path, operation="write DDC token analysis")
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_name(f"{path.name}.tmp")
     temp_path.write_text(json.dumps(payload, indent=2, ensure_ascii=True, sort_keys=True) + "\n", encoding="utf-8")

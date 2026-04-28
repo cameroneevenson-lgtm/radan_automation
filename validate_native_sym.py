@@ -7,6 +7,7 @@ from typing import Any
 
 from analyze_ddc_tokens import analyze_corpus
 from ddc_corpus import build_part_corpus
+from path_safety import assert_w_drive_write_allowed
 
 
 def validate_native_sym(*, dxf_path: Path, sym_path: Path) -> dict[str, Any]:
@@ -68,6 +69,7 @@ def validate_native_sym(*, dxf_path: Path, sym_path: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
+    assert_w_drive_write_allowed(path, operation="write native SYM validation report")
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_name(f"{path.name}.tmp")
     temp_path.write_text(json.dumps(payload, indent=2, ensure_ascii=True, sort_keys=True) + "\n", encoding="utf-8")

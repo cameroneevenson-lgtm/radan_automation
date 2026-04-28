@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import unittest
+from fractions import Fraction
 
-from ddc_number_codec import decode_ddc_number, encode_ddc_number
+from ddc_number_codec import decode_ddc_number, decode_ddc_number_fraction, encode_ddc_number, encode_ddc_number_fraction
 
 
 class DdcNumberCodecTests(unittest.TestCase):
@@ -40,12 +41,30 @@ class DdcNumberCodecTests(unittest.TestCase):
         self.assertEqual(encode_ddc_number(-0.25), "m?P")
         self.assertEqual(encode_ddc_number(2.0625), "0@0P")
 
-    def test_encode_carries_near_power_of_two_rounding(self) -> None:
+    def test_encode_handles_near_power_of_two_without_invalid_digit(self) -> None:
         token = encode_ddc_number(3.9999999999999964)
 
-        self.assertEqual(token, "1@0")
         self.assertNotIn("@@", token)
-        self.assertAlmostEqual(decode_ddc_number(token), 4.0, places=9)
+        self.assertAlmostEqual(decode_ddc_number(token), 3.9999999999999964, places=9)
+
+    def test_encode_matches_observed_near_dyadic_tokens(self) -> None:
+        token = "3@5Ooooooon"
+
+        self.assertAlmostEqual(decode_ddc_number(token), 21.5, places=9)
+        self.assertEqual(encode_ddc_number(decode_ddc_number(token)), token)
+
+    def test_fraction_encoder_preserves_dyadic_values_exactly(self) -> None:
+        token = encode_ddc_number_fraction(Fraction(43, 2))
+
+        self.assertEqual(token, "3@5P")
+        self.assertEqual(decode_ddc_number_fraction(token), Fraction(43, 2))
+
+    def test_fraction_encoder_preserves_observed_terminal_zero_digit(self) -> None:
+        token = "n?0F;ibU_I0"
+
+        value = decode_ddc_number_fraction(token)
+
+        self.assertEqual(encode_ddc_number_fraction(value, min_continuation_digits=8), token)
 
 
 if __name__ == "__main__":

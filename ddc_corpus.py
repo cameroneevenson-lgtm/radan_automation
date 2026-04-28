@@ -12,6 +12,7 @@ from typing import Any
 
 import ezdxf
 
+from path_safety import assert_w_drive_write_allowed
 
 DDC_RE = re.compile(
     r'<RadanFile\s+extension="ddc">\s*<!\[CDATA\[(.*?)\]\]>\s*</RadanFile>',
@@ -335,6 +336,7 @@ def build_corpus(csv_path: Path, sym_folder: Path) -> dict[str, Any]:
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:
+    assert_w_drive_write_allowed(path, operation="write DDC corpus")
     path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = path.with_name(f"{path.name}.tmp")
     temp_path.write_text(json.dumps(payload, indent=2, ensure_ascii=True, sort_keys=True) + "\n", encoding="utf-8")

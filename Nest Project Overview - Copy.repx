@@ -1,0 +1,396 @@
+/// <XRTypeInfo>
+///   <AssemblyFullName>RadraftCppClr, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null</AssemblyFullName>
+///   <AssemblyLocation>C:\Program Files\Mazak\Mazak\bin\RadraftCppClr.dll</AssemblyLocation>
+///   <TypeName>Radan.Radraft.Reports.NestProject.NestProjectReport</TypeName>
+///   <Localization>en-US</Localization>
+///   <Version>18.2</Version>
+///   <References>
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\RadraftCppClr.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\BarcoderWrapper.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Barcoder.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System\v4.0_4.0.0.0__b77a5c561934e089\System.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Configuration\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Configuration.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Xml\v4.0_4.0.0.0__b77a5c561934e089\System.Xml.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Data.SqlXml\v4.0_4.0.0.0__b77a5c561934e089\System.Data.SqlXml.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Security\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Security.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Core\v4.0_4.0.0.0__b77a5c561934e089\System.Core.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Numerics\v4.0_4.0.0.0__b77a5c561934e089\System.Numerics.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.BonusSkins.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.Utils.v18.2.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Drawing\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Drawing.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Windows.Forms\v4.0_4.0.0.0__b77a5c561934e089\System.Windows.Forms.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Accessibility\v4.0_4.0.0.0__b03f5f7f11d50a3a\Accessibility.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Deployment\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Deployment.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Runtime.Serialization.Formatters.Soap\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Runtime.Serialization.Formatters.Soap.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.ComponentModel.DataAnnotations\v4.0_4.0.0.0__31bf3856ad364e35\System.ComponentModel.DataAnnotations.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\UIAutomationClient\v4.0_4.0.0.0__31bf3856ad364e35\UIAutomationClient.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\WindowsBase\v4.0_4.0.0.0__31bf3856ad364e35\WindowsBase.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Xaml\v4.0_4.0.0.0__b77a5c561934e089\System.Xaml.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\UIAutomationTypes\v4.0_4.0.0.0__31bf3856ad364e35\UIAutomationTypes.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\UIAutomationProvider\v4.0_4.0.0.0__31bf3856ad364e35\UIAutomationProvider.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_64\PresentationCore\v4.0_4.0.0.0__31bf3856ad364e35\PresentationCore.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Windows.Input.Manipulations\v4.0_4.0.0.0__b77a5c561934e089\System.Windows.Input.Manipulations.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Runtime.Remoting\v4.0_4.0.0.0__b77a5c561934e089\System.Runtime.Remoting.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_64\System.Web\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Web.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_64\System.Data\v4.0_4.0.0.0__b77a5c561934e089\System.Data.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_64\System.Transactions\v4.0_4.0.0.0__b77a5c561934e089\System.Transactions.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_64\System.EnterpriseServices\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.EnterpriseServices.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.DirectoryServices\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.DirectoryServices.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Runtime.Caching\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Runtime.Caching.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Web.RegularExpressions\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Web.RegularExpressions.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Design\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Design.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_64\System.Data.OracleClient\v4.0_4.0.0.0__b77a5c561934e089\System.Data.OracleClient.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Drawing.Design\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Drawing.Design.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Web.ApplicationServices\v4.0_4.0.0.0__31bf3856ad364e35\System.Web.ApplicationServices.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.DirectoryServices.Protocols\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.DirectoryServices.Protocols.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.ServiceProcess\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.ServiceProcess.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Configuration.Install\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Configuration.Install.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Runtime.Serialization\v4.0_4.0.0.0__b77a5c561934e089\System.Runtime.Serialization.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.ServiceModel.Internals\v4.0_4.0.0.0__31bf3856ad364e35\System.ServiceModel.Internals.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\SMDiagnostics\v4.0_4.0.0.0__b77a5c561934e089\SMDiagnostics.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Web.Services\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Web.Services.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Microsoft.Build.Utilities.v4.0\v4.0_4.0.0.0__b03f5f7f11d50a3a\Microsoft.Build.Utilities.v4.0.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Microsoft.Build.Framework\v4.0_4.0.0.0__b03f5f7f11d50a3a\Microsoft.Build.Framework.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Microsoft.Build.Tasks.v4.0\v4.0_4.0.0.0__b03f5f7f11d50a3a\Microsoft.Build.Tasks.v4.0.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.CodeParser.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.DataAccess.v18.2.UI.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraRichEdit.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraEditors.v18.2.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Data.Linq\v4.0_4.0.0.0__b77a5c561934e089\System.Data.Linq.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Xml.Linq\v4.0_4.0.0.0__b77a5c561934e089\System.Xml.Linq.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraBars.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.Pdf.v18.2.Core.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraPrinting.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraLayout.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraTreeList.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraGrid.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.Images.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.Utils.v18.2.UI.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraVerticalGrid.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraDiagram.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.Diagram.v18.2.Core.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.Mvvm.v18.2.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\PresentationFramework\v4.0_4.0.0.0__31bf3856ad364e35\PresentationFramework.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\ReachFramework\v4.0_4.0.0.0__31bf3856ad364e35\ReachFramework.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_64\System.Printing\v4.0_4.0.0.0__31bf3856ad364e35\System.Printing.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\PresentationUI\v4.0_4.0.0.0__31bf3856ad364e35\PresentationUI.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.Pdf.v18.2.Drawing.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.RichEdit.v18.2.Export.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraCharts.v18.2.Extensions.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraCharts.v18.2.Wizard.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraNavBar.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraPivotGrid.v18.2.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\DevExpress.XtraReports.v18.2.Extensions.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Memory.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Reporting.Attributes.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Microsoft.CSharp\v4.0_4.0.0.0__b03f5f7f11d50a3a\Microsoft.CSharp.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Dynamic\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Dynamic.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Reporting.NestBlanks.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Reporting.NestProjects.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Reporting.Nests.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Reporting.SetupSheets.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Reporting.Remnants.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Reporting.Parts.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\RadraftClientTrustedService.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.ServiceModel\v4.0_4.0.0.0__b77a5c561934e089\System.ServiceModel.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.IdentityModel\v4.0_4.0.0.0__b77a5c561934e089\System.IdentityModel.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Microsoft.Transactions.Bridge\v4.0_4.0.0.0__b03f5f7f11d50a3a\Microsoft.Transactions.Bridge.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.IdentityModel.Selectors\v4.0_4.0.0.0__b77a5c561934e089\System.IdentityModel.Selectors.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Messaging\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Messaging.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Runtime.DurableInstancing\v4.0_4.0.0.0__31bf3856ad364e35\System.Runtime.DurableInstancing.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Net.Http\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Net.Http.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.ServiceModel.Activation\v4.0_4.0.0.0__31bf3856ad364e35\System.ServiceModel.Activation.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.ServiceModel.Activities\v4.0_4.0.0.0__31bf3856ad364e35\System.ServiceModel.Activities.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Activities\v4.0_4.0.0.0__31bf3856ad364e35\System.Activities.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_64\Microsoft.VisualBasic.Activities.Compiler\v4.0_10.0.0.0__b03f5f7f11d50a3a\Microsoft.VisualBasic.Activities.Compiler.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Microsoft.VisualBasic\v4.0_10.0.0.0__b03f5f7f11d50a3a\Microsoft.VisualBasic.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Management\v4.0_4.0.0.0__b03f5f7f11d50a3a\System.Management.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\Microsoft.JScript\v4.0_10.0.0.0__b03f5f7f11d50a3a\Microsoft.JScript.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Activities.DurableInstancing\v4.0_4.0.0.0__31bf3856ad364e35\System.Activities.DurableInstancing.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Xaml.Hosting\v4.0_4.0.0.0__31bf3856ad364e35\System.Xaml.Hosting.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Services.OverrideRadraftLicensesService.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Enums.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.LicenseInfoProvider.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radan.Shared.Encryption.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\RadraftPlugInFinder.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\RadraftDotNetUtilities.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\CommonUtilities.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Radraft.Interop.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\RadanBendParamsEditor.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\BendParamsEditor.dll" />
+///     <Reference Path="C:\WINDOWS\Microsoft.Net\assembly\GAC_MSIL\System.Windows.Forms.DataVisualization\v4.0_4.0.0.0__31bf3856ad364e35\System.Windows.Forms.DataVisualization.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\RadanPluginUtilities.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\Upfolder.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\ImportHelper.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\OrderEditor.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\OrderEditor.Interface.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\OrderEditor.View.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\OrderEditor.Api.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\OrderEditor.Model.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\PanelBuilder.dll" />
+///     <Reference Path="C:\Program Files\Mazak\Mazak\bin\RadraftDotNetDialogs.dll" />
+///   </References>
+///   <Resources>
+///     <Resource Name="XtraReportSerialization.NestProjectOverview">
+/// zsrvvgEAAACRAAAAbFN5c3RlbS5SZXNvdXJjZXMuUmVzb3VyY2VSZWFkZXIsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OSNTeXN0ZW0uUmVzb3VyY2VzLlJ1bnRpbWVSZXNvdXJjZVNldAIAAAACAAAAAAAAAFBBRFBBRFBIXnLBBfVjNgAAAAArAAAAFgEAACYkAHQAaABpAHMALgBTAGMAcgBpAHAAdABzAFMAbwB1AHIAYwBlAAAAAAAiWAB0AHIAYQBSAGUAcABvAHIAdAAuAEUAdgBlAG4AdABzAGUCAAAB4gRwcml2YXRlIHZvaWQgdGltZUxhYmVsX0JlZm9yZVByaW50KG9iamVjdCBzZW5kZXIsIFN5c3RlbS5EcmF3aW5nLlByaW50aW5nLlByaW50RXZlbnRBcmdzIGUpIHsN
+/// CiAgICAvLyBPYnRhaW4gdGhlIGN1cnJlbnQgbGFiZWwuDQoJWFJMYWJlbCBsYWJlbCA9IChYUkxhYmVsKXNlbmRlcjsNCiAgICAgICAgICAgICANCglkb3VibGUgZG1pbnM7DQoJaWYoIWRvdWJsZS5UcnlQYXJzZShsYWJlbC5UZXh0LCBvdXQgZG1pbnMpKQ0KCQlyZXR1cm47DQoNCglzdHJpbmcgbmV3X3QgPSAiIjsNCg0KCVRpbWVTcGFuIHRzID0gVGltZVNwYW4uRnJvbU1pbnV0ZXMoZG1pbnMpOw0KDQoJaWYodHMuVG90YWxEYXlzID49IDEpDQoJCW5ld190ID0gdHMuVG9TdHJpbmcoQCJkZFwuaGhcOm1tXDpzc1wuZmYiKTsNCgllbHNlIGlmKHRzLlRvdGFsSG91cnMgPj0gMSkNCgkJbmV3X3QgPSB0cy5Ub1N0cmluZyhAImhoXDptbVw6c3NcLmZmIik7DQoJ
+/// ZWxzZSBpZih0cy5Ub3RhbE1pbnV0ZXMgPj0gMSkNCgkJbmV3X3QgPSB0cy5Ub1N0cmluZyhAIm1tXDpzc1wuZmYiKTsNCgllbHNlDQoJCW5ld190ID0gdHMuVG9TdHJpbmcoQCJzc1wuZmYiKTsNCg0KCWxhYmVsLlRleHQgPSBuZXdfdDsJCQ0KfQ0KAacDc3JfTmVzdERldGFpbCxCZWZvcmVQcmludCxTdWJyZXBvcnRfQmVmb3JlUHJpbnQsU3VicmVwb3J0X0JlZm9yZVByaW50O3NyX1Byb2plY3REZXRhaWxzLEJlZm9yZVByaW50LFN1YnJlcG9ydF9CZWZvcmVQcmludCxTdWJyZXBvcnRfQmVmb3JlUHJpbnQ7c3JfU2hlZXRzTGlzdCxCZWZvcmVQcmludCxTdWJyZXBvcnRfQmVmb3JlUHJpbnQsU3VicmVwb3J0X0JlZm9yZVByaW50O3NyX1BhcnRzTGlzdCxCZWZv
+/// cmVQcmludCxTdWJyZXBvcnRfQmVmb3JlUHJpbnQsU3VicmVwb3J0X0JlZm9yZVByaW50O3NyX05lc3RzTGlzdCxCZWZvcmVQcmludCxTdWJyZXBvcnRfQmVmb3JlUHJpbnQsU3VicmVwb3J0X0JlZm9yZVByaW50O3NyX1JlcG9ydEhlYWRlcixCZWZvcmVQcmludCxTdWJyZXBvcnRfQmVmb3JlUHJpbnQsU3VicmVwb3J0X0JlZm9yZVByaW50</Resource>
+///   </Resources>
+/// </XRTypeInfo>
+namespace XtraReportSerialization {
+    
+    public class NestProjectOverview : DevExpress.XtraReports.UI.XtraReport {
+        private DevExpress.XtraReports.UI.TopMarginBand TopMargin;
+        private DevExpress.XtraReports.UI.DetailBand Detail;
+        private DevExpress.XtraReports.UI.XRSubreport sr_NestDetail;
+        private DevExpress.XtraReports.UI.XRSubreport sr_ProjectDetails;
+        private DevExpress.XtraReports.UI.XRLine line4;
+        private DevExpress.XtraReports.UI.XRSubreport sr_SheetsList;
+        private DevExpress.XtraReports.UI.XRSubreport sr_PartsList;
+        private DevExpress.XtraReports.UI.XRSubreport sr_NestsList;
+        private DevExpress.XtraReports.UI.BottomMarginBand BottomMargin;
+        private DevExpress.XtraReports.UI.ReportHeaderBand ReportHeader;
+        private DevExpress.XtraReports.UI.XRSubreport sr_ReportHeader;
+        private DevExpress.XtraReports.UI.FormattingRule finishedPart;
+        private DevExpress.XtraReports.UI.CalculatedField mt_materialThickness;
+        private DevExpress.XtraReports.UI.CalculatedField mt_sheetSize;
+        private DevExpress.XtraReports.UI.CalculatedField nwo_partSize;
+        private DevExpress.XtraReports.UI.CalculatedField nwo_colour;
+        private DevExpress.XtraReports.UI.CalculatedField myColor;
+        private DevExpress.XtraReports.UI.CalculatedField np_totalCycleTimeMins;
+        private DevExpress.XtraReports.UI.CalculatedField ns_totalCycleTime;
+        private DevExpress.XtraReports.UI.CalculatedField wol_materialThickness;
+        private System.Resources.ResourceManager _resources;
+        private string _resourceString;
+        public NestProjectOverview() {
+            this._resourceString = DevExpress.XtraReports.Serialization.XRResourceManager.GetResourceFor("XtraReportSerialization.NestProjectOverview");
+            this.InitializeComponent();
+        }
+        private System.Resources.ResourceManager resources {
+            get {
+                if (_resources == null) {
+                    this._resources = new DevExpress.XtraReports.Serialization.XRResourceManager(this._resourceString);
+                }
+                return this._resources;
+            }
+        }
+        private void InitializeComponent() {
+            this.TopMargin = new DevExpress.XtraReports.UI.TopMarginBand();
+            this.Detail = new DevExpress.XtraReports.UI.DetailBand();
+            this.BottomMargin = new DevExpress.XtraReports.UI.BottomMarginBand();
+            this.ReportHeader = new DevExpress.XtraReports.UI.ReportHeaderBand();
+            this.sr_NestDetail = new DevExpress.XtraReports.UI.XRSubreport();
+            this.sr_ProjectDetails = new DevExpress.XtraReports.UI.XRSubreport();
+            this.line4 = new DevExpress.XtraReports.UI.XRLine();
+            this.sr_SheetsList = new DevExpress.XtraReports.UI.XRSubreport();
+            this.sr_PartsList = new DevExpress.XtraReports.UI.XRSubreport();
+            this.sr_NestsList = new DevExpress.XtraReports.UI.XRSubreport();
+            this.sr_ReportHeader = new DevExpress.XtraReports.UI.XRSubreport();
+            this.finishedPart = new DevExpress.XtraReports.UI.FormattingRule();
+            this.mt_materialThickness = new DevExpress.XtraReports.UI.CalculatedField();
+            this.mt_sheetSize = new DevExpress.XtraReports.UI.CalculatedField();
+            this.nwo_partSize = new DevExpress.XtraReports.UI.CalculatedField();
+            this.nwo_colour = new DevExpress.XtraReports.UI.CalculatedField();
+            this.myColor = new DevExpress.XtraReports.UI.CalculatedField();
+            this.np_totalCycleTimeMins = new DevExpress.XtraReports.UI.CalculatedField();
+            this.ns_totalCycleTime = new DevExpress.XtraReports.UI.CalculatedField();
+            this.wol_materialThickness = new DevExpress.XtraReports.UI.CalculatedField();
+            ((System.ComponentModel.ISupportInitialize)(this)).BeginInit();
+            // 
+            // TopMargin
+            // 
+            this.TopMargin.Dpi = 254F;
+            this.TopMargin.HeightF = 121F;
+            this.TopMargin.Name = "TopMargin";
+            // 
+            // Detail
+            // 
+            this.Detail.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
+                        this.sr_NestDetail,
+                        this.sr_ProjectDetails,
+                        this.line4,
+                        this.sr_SheetsList,
+                        this.sr_PartsList,
+                        this.sr_NestsList});
+            this.Detail.Dpi = 254F;
+            this.Detail.HeightF = 1296.564F;
+            this.Detail.Name = "Detail";
+            // 
+            // BottomMargin
+            // 
+            this.BottomMargin.Dpi = 254F;
+            this.BottomMargin.HeightF = 121F;
+            this.BottomMargin.Name = "BottomMargin";
+            // 
+            // ReportHeader
+            // 
+            this.ReportHeader.Controls.AddRange(new DevExpress.XtraReports.UI.XRControl[] {
+                        this.sr_ReportHeader});
+            this.ReportHeader.Dpi = 254F;
+            this.ReportHeader.HeightF = 277.8125F;
+            this.ReportHeader.Name = "ReportHeader";
+            // 
+            // sr_NestDetail
+            // 
+            this.sr_NestDetail.Dpi = 254F;
+            this.sr_NestDetail.LocationFloat = new DevExpress.Utils.PointFloat(0F, 994.7274F);
+            this.sr_NestDetail.Name = "sr_NestDetail";
+            this.sr_NestDetail.ReportSourceUrl = "C:\\Mazak\\Configuration_Data\\dat\\nestprojectreports_data\\subreports\\sr_NestDetail." +
+                "repx";
+            this.sr_NestDetail.SizeF = new System.Drawing.SizeF(2462F, 256.8574F);
+            // 
+            // sr_ProjectDetails
+            // 
+            this.sr_ProjectDetails.Dpi = 254F;
+            this.sr_ProjectDetails.LocationFloat = new DevExpress.Utils.PointFloat(30F, 24.99998F);
+            this.sr_ProjectDetails.Name = "sr_ProjectDetails";
+            this.sr_ProjectDetails.ReportSourceUrl = "C:\\Mazak\\Configuration_Data\\dat\\nestprojectreports_data\\subreports\\sr_ProjectDeta" +
+                "ils.repx";
+            this.sr_ProjectDetails.SizeF = new System.Drawing.SizeF(2407F, 245.3337F);
+            // 
+            // line4
+            // 
+            this.line4.Dpi = 254F;
+            this.line4.LocationFloat = new DevExpress.Utils.PointFloat(24.99988F, 0F);
+            this.line4.Name = "line4";
+            this.line4.SizeF = new System.Drawing.SizeF(2412F, 12.34722F);
+            // 
+            // sr_SheetsList
+            // 
+            this.sr_SheetsList.Dpi = 254F;
+            this.sr_SheetsList.LocationFloat = new DevExpress.Utils.PointFloat(30.00075F, 317.5F);
+            this.sr_SheetsList.Name = "sr_SheetsList";
+            this.sr_SheetsList.ReportSourceUrl = "C:\\Mazak\\Configuration_Data\\dat\\nestprojectreports_data\\subreports\\sr_SheetsList." +
+                "repx";
+            this.sr_SheetsList.SizeF = new System.Drawing.SizeF(2407F, 215.7708F);
+            // 
+            // sr_PartsList
+            // 
+            this.sr_PartsList.Dpi = 254F;
+            this.sr_PartsList.LocationFloat = new DevExpress.Utils.PointFloat(30.00003F, 552.9792F);
+            this.sr_PartsList.Name = "sr_PartsList";
+            this.sr_PartsList.ReportSourceUrl = "C:\\Mazak\\Configuration_Data\\dat\\nestprojectreports_data\\subreports\\sr_PartsList.r" +
+                "epx";
+            this.sr_PartsList.SizeF = new System.Drawing.SizeF(2407F, 207.8332F);
+            // 
+            // sr_NestsList
+            // 
+            this.sr_NestsList.Dpi = 254F;
+            this.sr_NestsList.LocationFloat = new DevExpress.Utils.PointFloat(30.00075F, 808.1664F);
+            this.sr_NestsList.Name = "sr_NestsList";
+            this.sr_NestsList.ReportSourceUrl = "C:\\Mazak\\Configuration_Data\\dat\\nestprojectreports_data\\subreports\\sr_NestsList.r" +
+                "epx";
+            this.sr_NestsList.SizeF = new System.Drawing.SizeF(2407F, 152.5417F);
+            // 
+            // sr_ReportHeader
+            // 
+            this.sr_ReportHeader.Dpi = 254F;
+            this.sr_ReportHeader.LocationFloat = new DevExpress.Utils.PointFloat(30.00003F, 0F);
+            this.sr_ReportHeader.Name = "sr_ReportHeader";
+            this.sr_ReportHeader.ReportSourceUrl = "C:\\Mazak\\Configuration_Data\\dat\\nestprojectreports_data\\subreports\\sr_ReportHeade" +
+                "r.repx";
+            this.sr_ReportHeader.SizeF = new System.Drawing.SizeF(2407F, 277.8125F);
+            // 
+            // finishedPart
+            // 
+            this.finishedPart.Condition = "([NestedByThisNest]  > 0  And  [RemainingAfterThisNest]  <= 0)";
+            this.finishedPart.DataMember = "NestLines.NestedWorkOrderLines";
+            this.finishedPart.Formatting.Visible = DevExpress.Utils.DefaultBoolean.True;
+            this.finishedPart.Name = "finishedPart";
+            // 
+            // mt_materialThickness
+            // 
+            this.mt_materialThickness.DataMember = "NestBlankLines";
+            this.mt_materialThickness.Expression = "[NestBlank.Sheet.MaterialThickness.Material] + \'/\' + [NestBlank.Sheet.MaterialThi" +
+                "ckness.Thickness] + [NestBlank.Sheet.MaterialThickness.ThicknessUnits]";
+            this.mt_materialThickness.FieldType = DevExpress.XtraReports.UI.FieldType.String;
+            this.mt_materialThickness.Name = "mt_materialThickness";
+            // 
+            // mt_sheetSize
+            // 
+            this.mt_sheetSize.DataMember = "NestBlankLines";
+            this.mt_sheetSize.Expression = "[NestBlank.Sheet.SizeX] + \'x\' + [NestBlank.Sheet.SizeY] + [NestBlank.Sheet.SizeUn" +
+                "its]";
+            this.mt_sheetSize.Name = "mt_sheetSize";
+            // 
+            // nwo_partSize
+            // 
+            this.nwo_partSize.DataMember = "NestLines.NestedWorkOrderLines";
+            this.nwo_partSize.Expression = "Round([Part.Symbol.Attributes.CommonAttributes.BoundingBoxX], 2) + \'x\' + Round([P" +
+                "art.Symbol.Attributes.CommonAttributes.BoundingBoxY], 2) + [Part.Symbol.Attribut" +
+                "es.CommonAttributes.GeometryUnits]";
+            this.nwo_partSize.Name = "nwo_partSize";
+            // 
+            // nwo_colour
+            // 
+            this.nwo_colour.DataMember = "NestLines.NestedWorkOrderLines";
+            this.nwo_colour.Name = "nwo_colour";
+            this.nwo_colour.Scripts.OnGetValue = "nwo_colour_GetValue";
+            // 
+            // myColor
+            // 
+            this.myColor.DataMember = "NestLines.NestedWorkOrderLines";
+            this.myColor.Expression = "[Colour.R] + \' \' + [Colour.G] + \' \' + [Colour.B]";
+            this.myColor.Name = "myColor";
+            // 
+            // np_totalCycleTimeMins
+            // 
+            this.np_totalCycleTimeMins.Expression = "[NestLines].Sum([Nest.Drawing.Attributes.MachineSpecificAttributes.CycleTime]*[Ne" +
+                "st.Drawing.Attributes.MachineSpecificAttributes.CycleTime])";
+            this.np_totalCycleTimeMins.FieldType = DevExpress.XtraReports.UI.FieldType.Double;
+            this.np_totalCycleTimeMins.Name = "np_totalCycleTimeMins";
+            // 
+            // ns_totalCycleTime
+            // 
+            this.ns_totalCycleTime.DataMember = "NestLines";
+            this.ns_totalCycleTime.Expression = "[Nest.Drawing.Attributes.MachineSpecificAttributes.CycleTime] * [Nest.Drawing.Att" +
+                "ributes.ManufacturingAttributes.NumSheets]";
+            this.ns_totalCycleTime.FieldType = DevExpress.XtraReports.UI.FieldType.Double;
+            this.ns_totalCycleTime.Name = "ns_totalCycleTime";
+            // 
+            // wol_materialThickness
+            // 
+            this.wol_materialThickness.DataMember = "WorkOrderLines";
+            this.wol_materialThickness.Expression = "[MaterialThickness.Material] + \', \' + [MaterialThickness.Thickness] + [MaterialTh" +
+                "ickness.ThicknessUnits]";
+            this.wol_materialThickness.Name = "wol_materialThickness";
+            // 
+            // NestProjectOverview
+            // 
+            this.Bands.AddRange(new DevExpress.XtraReports.UI.Band[] {
+                        this.TopMargin,
+                        this.Detail,
+                        this.BottomMargin,
+                        this.ReportHeader});
+            this.CalculatedFields.AddRange(new DevExpress.XtraReports.UI.CalculatedField[] {
+                        this.mt_materialThickness,
+                        this.mt_sheetSize,
+                        this.nwo_partSize,
+                        this.nwo_colour,
+                        this.myColor,
+                        this.np_totalCycleTimeMins,
+                        this.ns_totalCycleTime,
+                        this.wol_materialThickness});
+            this.DisplayName = "Nest Project Overview - Copy";
+            this.Dpi = 254F;
+            this.Font = new System.Drawing.Font("Arial", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.FormattingRuleSheet.AddRange(new DevExpress.XtraReports.UI.FormattingRule[] {
+                        this.finishedPart});
+            this.Landscape = true;
+            this.Margins = new System.Drawing.Printing.Margins(254, 254, 121, 121);
+            this.Name = "NestProjectOverview";
+            this.PageHeight = 2100;
+            this.PageWidth = 2970;
+            this.PaperKind = System.Drawing.Printing.PaperKind.A4;
+            this.ReportUnit = DevExpress.XtraReports.UI.ReportUnit.TenthsOfAMillimeter;
+            this.ScriptReferencesString = "Radan.Shared.Reporting.Attributes.dll\r\nRadan.Shared.Reporting.NestBlanks.dll\r\nRad" +
+                "an.Shared.Reporting.NestProjects.dll\r\nRadan.Shared.Reporting.Nests.dll\r\nRadan.Sh" +
+                "ared.Reporting.Parts.dll";
+            this.ScriptsSource = resources.GetString("$this.ScriptsSource");
+            this.SnapGridSize = 10F;
+            this.Version = "18.2";
+            ((System.ComponentModel.ISupportInitialize)(this)).EndInit();
+        }
+    }
+}

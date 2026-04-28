@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RadanCompoundDocument xmlns="http://www.radan.com/ns/rcd">
+  <RadanAttributes>
+    <Group class="system" name="System"
+        desc="These attributes describe the Mazak Smart System system used to create this file." ord="7">
+      <Attr num="13" name="Language" desc="Mazak Smart System language code." type="i" ord="1" value="1">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="14" name="Licence" desc="Mazak Smart System licence code." type="s" ord="2"
+          value="8341-8159-8477-6673-9885-7909">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="15" name="Build" desc="Mazak Smart System software build." type="s" ord="3" value="2025.1.2523">
+        <Valid perm="r"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Workflow state" desc="Attributes used for updating the workflow status" ord="12">
+      <Attr num="16" name="Geometry time" desc="Time the geometry was last modified." type="t" ord="1">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="18" name="Tooling time" desc="Time the tooling was last modified." type="t" ord="3">
+        <Valid perm="h"/>
+      </Attr>
+    </Group>
+    <Group class="system" name="File" desc="These attributes are basic properties of the file." ord="1">
+      <Attr num="101" name="Created" desc="Time file was created." type="t" ord="3" value="2026-04-27T16:23:50-04:00">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="102" name="Modified" desc="Time file was last modified." type="t" ord="4"
+          value="2026-04-27T16:24:07-04:00">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="103" name="File size" desc="File size in bytes." type="i" ord="5" value="12659">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="105" name="Associated files" desc="Associated files." type="s" ord="6">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="107" name="Extension" desc="File name extension." type="s" ord="2" value="sym">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="110" name="File name" desc="File name without its extension." type="s" ord="1" value="donor">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="141" name="Checkout user" desc="The username to which this file is checked out" type="s" ord="7">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="142" name="Checkout time" desc="The time at which this file was checked out" type="t" ord="8">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="143" name="Filestore" desc="Radcontrol local filestore path" type="s" ord="9">
+        <Valid perm="h"/>
+      </Attr>
+      <Attr num="144" name="Current version"
+          desc='A flag to show (when set to "yes") that this is the current version of a file' type="s" ord="10">
+        <Valid perm="r"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Description" desc="Use these attributes to give a description of the file." ord="2">
+      <Attr num="108" name="Title" desc="The title of this file." type="s" ord="1">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="109" name="Comments" desc="Comments about this file." type="s" ord="2">
+        <Valid perm="e"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Manufacturing" desc="These attributes are the manufacturing properties of the file."
+        ord="6">
+      <Attr num="119" name="Material" desc="Material." type="s" ord="1" value="-">
+        <Valid perm="e" max="100"/>
+      </Attr>
+      <Attr num="120" name="Thickness" desc="Thickness." type="r" ord="2" value="0.1">
+        <Valid perm="e" min="0" max="99999"/>
+      </Attr>
+      <Attr num="121" name="Thickness units" desc="Thickness units." type="s" ord="4" value="mm">
+        <Valid perm="e" expr="mm|in|swg" max="80"/>
+      </Attr>
+      <Attr num="122" name="Orientation"
+          desc="Allowed nest orientations (1=0°, 2=90°, 3=0/90°, 5=0/180°, 6=90/270°, 7=0/90/180/270°, 8=any)." type="i"
+          ord="6" value="3">
+        <Valid perm="e" min="1" max="8"/>
+      </Attr>
+      <Attr num="123" name="Cycle time" desc="Cycle time in minutes." type="r" ord="27">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="127" name="Machine" desc="Machine name." type="s" ord="21">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="132" name="Mirror" desc="Whether the part can be mirrored in nesting." type="s" ord="8">
+        <Valid perm="e" expr="yes|no" max="80"/>
+      </Attr>
+      <Attr num="139" name="STL id" desc="Standard Tool Loading file id." type="i" ord="22">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="145" name="Common cutting" desc="Whether the part is suitable for common line cutting in nesting."
+          type="s" ord="9">
+        <Valid perm="e" expr="none|unrestricted|same part" max="80"/>
+      </Attr>
+      <Attr num="146" name="Strategy" desc="Autotooling strategy." type="s" ord="23" value="">
+        <Valid perm="e" max="60"/>
+        <MC machine="psys_Mazak_OPCF_510_3.0kw_TT" value=""/>
+      </Attr>
+      <Attr num="158" name="Orientation mode"
+          desc="Orientation mode of the part (0=Free, 1=Single or Opposite, 2=Single)." type="i" ord="7">
+        <Valid perm="e" min="0" max="2"/>
+      </Attr>
+      <Attr num="160" name="Picking cluster"
+          desc="Whether to nest the part in clusters that are suitable for a part picker." type="s" ord="11">
+        <Valid perm="e" expr="yes|no" max="80"/>
+      </Attr>
+      <Attr num="164" name="Weight"
+          desc="The weight of the part in lb or kg, depending on the geometry units attribute value." type="r" ord="5"
+          value="0">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="181" name="Maximum CC group" desc="The maximum number of parts in a common cut group." type="i"
+          ord="10">
+        <Valid perm="e" min="2" max="999999"/>
+      </Attr>
+      <Attr num="186" name="Workflow status" desc="The workflow status of this file." type="s" ord="29"
+          value="2 - Part has no geometry">
+        <Valid perm="e" max="80"/>
+        <MC machine="psys_Mazak_OPCF_510_3.0kw_TT" value="2 - Part has no geometry"/>
+      </Attr>
+      <Attr num="196" name="Kit of parts" desc="Symbol is a kit of parts (yes=(Non-rigid) kit, no=Rigid nest of parts)."
+          type="s" ord="12">
+        <Valid perm="e" expr="yes|no" max="80"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Geometry" desc="These attributes are the geometry properties of the part." ord="5">
+      <Attr num="162" name="Area" desc="The area of the part." type="r" ord="6" value="0">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="163" name="Area including holes" desc="The area of the part, ignoring any holes." type="r" ord="7"
+          value="0">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="165" name="Bounding box X" desc="The maximum extent of the symbol's geometry in the X direction."
+          type="r" ord="2" value="0">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="166" name="Bounding box Y" desc="The maximum extent of the symbol's geometry in the Y direction."
+          type="r" ord="3" value="0">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="167" name="Outer perimeter"
+          desc="The total length of all the lines and arcs in the outermost loop of the geometry only." type="r" ord="5"
+          value="0">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="168" name="Perimeter" desc="The total length of all the lines and arcs in the geometry." type="r"
+          ord="4" value="0">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="169" name="Geometry units" desc="The units in which the part's geometric attributes are measured."
+          type="s" ord="1" value="in">
+        <Valid perm="e" expr="mm|in|m|ft" max="80"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Cost estimate" desc="These attributes are used to estimate costs." ord="10">
+      <Attr num="172" name="Last estimated cost" desc="The last estimated cost per item in run of quantity-off."
+          type="r" ord="1">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="173" name="Setup cost" desc="The setting up component of the last cost estimate." type="r" ord="2">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="174" name="Runtime cost" desc="The runtime component of the last cost estimate." type="r" ord="3">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="175" name="Material cost" desc="The material component of the last cost estimate." type="r" ord="4">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="176" name="Last estimate sheet cost" desc="The cost of the sheet used in the last cost estimate."
+          type="r" ord="5">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="177" name="Last estimate quantity" desc="The quantity used to produce the last cost estimate." type="i"
+          ord="6">
+        <Valid perm="e" min="1"/>
+      </Attr>
+      <Attr num="178" name="Last estimate sheet X dimension"
+          desc="The X dimension of the sheet used in the last cost estimate." type="r" ord="7">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="179" name="Last estimate sheet Y dimension"
+          desc="The Y dimension of the sheet used in the last cost estimate." type="r" ord="8">
+        <Valid perm="e" min="0"/>
+      </Attr>
+      <Attr num="180" name="Last estimate sheet units"
+          desc="The units of the dimensions of the sheet used in the last cost estimate." type="s" ord="9">
+        <Valid perm="e" expr="mm|inches" max="80"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="Radbend" desc="These attributes record the file's Radbend properties." ord="11">
+      <Attr num="197" name="3D bounding box X" desc="The X component of the 3D bounding box" type="r" ord="8">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="198" name="3D bounding box Y" desc="The Y component of the 3D bounding box" type="r" ord="9">
+        <Valid perm="r"/>
+      </Attr>
+      <Attr num="199" name="3D bounding box Z" desc="The Z component of the 3D bounding box" type="r" ord="10">
+        <Valid perm="r"/>
+      </Attr>
+    </Group>
+    <Group class="custom" name="User" desc="You can use these attributes for your own purposes." ord="13">
+      <Attr num="200" name="User string" type="s" ord="0">
+        <Valid perm="e" max="80"/>
+      </Attr>
+      <Attr num="300" name="User integer" type="i" ord="100">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="400" name="User time" type="t" ord="200">
+        <Valid perm="e"/>
+      </Attr>
+      <Attr num="500" name="User real" type="r" ord="300">
+        <Valid perm="e"/>
+      </Attr>
+    </Group>
+  </RadanAttributes>
+  <RadanFile extension="ddc">
+    <![CDATA[A,2,
+B,D,>,,1,2,3,4,5,6,7,8,9,:,<,=,>,
+B,E,],?,@,E1,R1,A,B,C,D,E,F,G,k1,H,I,J,F1,;,K,L,:,M,N,O,P,Q,R,S,T,<,=,>,U,m1,n1,52,62,:2,>2,?2,U2,V2,e2,i2,j2,k2,
+D,-1,6,.5@8e67PaJPE..5@1SZ@NEmWL..5@8e67PaJPE..5@1SZ@NEmWL.3@9IVIVIVIV.o?0.o?0.$donor
+E,,-1,1,,,,,,,1,1,1,,,1,1,o?0...o?0.........o?0.o?0.$/
+C,$
+U,,$
+U,$
+U,,,,2,,,,,,,
+]]>
+  </RadanFile>
+  <History>
+    <![CDATA[_VQr
+CFA@'iv'<8GEuT(B4v6b=G#Trq_]^YFIlOO>wuBM[p
+=GE":3.Y+d\p<}&3.ErBg%sW>@uLZ5p93u:j.xjQ+T
+]]>
+    <![CDATA[
+UEsDBBQACQAIAA6Dm1wAAAAAAAAAAPsDAAAJABEAQ2FjaGUueG1sVVQNAAenje9pp43vaaeN72nF
+g7JI2qQoaJzLooP463Un9k0nXNjW9ypUXbrxmmwqlpYJ4bfLyuLF1oyJOXH+Ya5Pp0sTOj7c/jTZ
+H7k/VHz0VepkMpJeUvTlkaP52tRu6p6hagZuV9AbBswJnpLab0oNHWjUF/UXUykoFKLgaWL3OFLx
+6oIUlmeZCaRuQ6ceqFDfthGvOEqC0mkImcXPAp++KB/jSO7Rnh9KlGz+nDV9XalWEsiFA/pWs8RK
+k0CcnT2q1BR2dqhxSz/PI5w/Jq3MBBYrEQCnvBq/iTvbVzjfQvVrF8q1HEzhAOS9rc7v/oLLkiBL
+Ndcx0pIrv7b7bbjnKDBm1L6Qy9qxbAQ1OcES/Qo33gy9DSBnzrSWhw8UFMj25Ds483Endb6778fk
+b22vMSFgp5/qeoaVw+cGjm9Pi+pq6h6JV29c4DSypQiNSLFcTrc+Dcq/Ef+ZhE/nrQh1O0x91hcH
+B1cI20jfAyO3PH5ZwHQ/yQlLyJrYT4WxXtkM0qRWg7rurK3mAl722/pwXH9OKTlUVBZBNe8wrxT+
+REEAv31olyyxgkZ54IFkn0lksPx7bG4oKdEy0rcwF+tnsPiuMHrET2iqtdCskyha67g3M1KnCgXi
+naAZVbNI5x6SNjNl1l3N35+RgorZldv7RKMYf+n+EqtEIA2WIsMTeqt33K+zEPR/8bHRUvkynNKB
+ms4fji8K469IsHNq92dzJznFBKn5z038WujDe148Wgu0xemqX6qLiWzhTkVQSwcIjjqj7C4CAAD7
+AwAAUEsBAhcLFAAJAAgADoObXI46o+wuAgAA+wMAAAkACQAAAAAAAAAAAACAAAAAAENhY2hlLnht
+bFVUBQAHp43vaVBLBQYAAAAAAQABAEAAAAB2AgAAAAA=
+]]>
+  </History>
+  <QuotationInfo/>
+</RadanCompoundDocument>
