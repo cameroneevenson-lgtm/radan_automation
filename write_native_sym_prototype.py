@@ -21,6 +21,12 @@ DDC_BLOCK_RE = re.compile(
 )
 DDC_LINE_DEFINITION = r"B,G,N,?,@,E1,R1,J,V,W,I,l1,O,P,Q,R,V1,W1,A2,B2,C2,D2,E2,F2,G2,H2,O2,P2,Q2,R2,W2,[2,\2,"
 DDC_ARC_DEFINITION = "B,H,N,?,@,E1,R1,J,V,W,I,F,O,P,Q,R,S,T,X,Y,Z,[,V1,W1,A2,B2,C2,D2,E2,F2,G2,H2,W2,"
+DDC_VIEW_BASE_X = Fraction("99.318474")
+DDC_VIEW_BASE_Y = Fraction("70.228767")
+DDC_VIEW_BASE_X_TOKEN = "5@8e67PaJPE"
+DDC_VIEW_BASE_Y_TOKEN = "5@1SZ@NEmWL"
+DDC_INCH_TO_MM_TOKEN = "3@9IVIVIVIV"
+DDC_ONE_TOKEN = "o?0"
 
 
 def _round_optional(value: float, digits: int | None) -> float:
@@ -52,6 +58,91 @@ def _pad_fraction_tokens(tokens: dict[int, Fraction], length: int, *, continuati
 
 def _decimal_fraction(value: float, digits: int | None) -> Fraction:
     return Fraction(str(_round_optional(value, digits)))
+
+
+def _bounds_decimal_fraction(value: float) -> Fraction:
+    return Fraction(f"{_round_optional(value, 6):.6f}")
+
+
+def _symbol_view_extents(bounds: Bounds) -> tuple[Fraction, Fraction]:
+    """Return the RADAN D-record view/cache extents for a lower-left-origin symbol.
+
+    RADAN stores a padded symbol view rectangle separate from G/H cut geometry.
+    The observed F54410 formula uses a 99.318474 x 70.228767 base rectangle
+    with sqrt(2)-ish aspect, scaled to contain 3x the part bounding box.
+    """
+
+    width = _bounds_decimal_fraction(bounds.width)
+    height = _bounds_decimal_fraction(bounds.height)
+    scale = max(
+        Fraction(1, 1),
+        Fraction(3, 1) * width / DDC_VIEW_BASE_X,
+        Fraction(3, 1) * height / DDC_VIEW_BASE_Y,
+    )
+    return DDC_VIEW_BASE_X * scale, DDC_VIEW_BASE_Y * scale
+
+
+def _encode_view_extent(value: Fraction, *, default_value: Fraction, default_token: str) -> str:
+    if abs(float(value - default_value)) <= 1e-12:
+        return default_token
+    return encode_ddc_number_fraction(value, continuation_digits=8)
+
+
+def _symbol_view_record_field(bounds: Bounds, *, part_name: str) -> str:
+    view_x, view_y = _symbol_view_extents(bounds)
+    view_x_token = _encode_view_extent(
+        view_x,
+        default_value=DDC_VIEW_BASE_X,
+        default_token=DDC_VIEW_BASE_X_TOKEN,
+    )
+    view_y_token = _encode_view_extent(
+        view_y,
+        default_value=DDC_VIEW_BASE_Y,
+        default_token=DDC_VIEW_BASE_Y_TOKEN,
+    )
+    tokens = [
+        "",
+        view_x_token,
+        "",
+        view_y_token,
+        "",
+        view_x_token,
+        "",
+        view_y_token,
+        DDC_INCH_TO_MM_TOKEN,
+        DDC_ONE_TOKEN,
+        DDC_ONE_TOKEN,
+        "",
+    ]
+    return ".".join(tokens) + f"${part_name}"
+
+
+def _format_sym_attr_number(value: float) -> str:
+    rounded = _round_optional(value, 6)
+    return f"{rounded:.6f}".rstrip("0").rstrip(".")
+
+
+def _replace_attr_value(text: str, *, attr_num: str, value: str) -> str:
+    pattern = re.compile(
+        rf'(<Attr\b(?=[^>]*\bnum="{re.escape(str(attr_num))}")[^>]*\bvalue=)(["\'])(.*?)(\2)',
+        re.DOTALL,
+    )
+    return pattern.sub(lambda match: f"{match.group(1)}{match.group(2)}{value}{match.group(4)}", text)
+
+
+def _refresh_symbol_metadata_attrs(text: str, *, bounds: Bounds, part_name: str) -> str:
+    refreshed = _replace_attr_value(text, attr_num="110", value=part_name)
+    refreshed = _replace_attr_value(
+        refreshed,
+        attr_num="165",
+        value=_format_sym_attr_number(bounds.width),
+    )
+    refreshed = _replace_attr_value(
+        refreshed,
+        attr_num="166",
+        value=_format_sym_attr_number(bounds.height),
+    )
+    return refreshed
 
 
 def _canonical_encoded_fraction(
@@ -383,6 +474,7 @@ def _replace_ddc_geometry_block(
     template_text: str,
     dxf_rows: list[dict[str, Any]],
     *,
+    bounds: Bounds | None = None,
     coordinate_digits: int | None = None,
     canonicalize_endpoints: bool = False,
     part_name: str | None = None,
@@ -479,7 +571,10 @@ def _replace_ddc_geometry_block(
             fields[3] = _encode_ddc_small_int(len(dxf_rows) + 2)
             line = ",".join(fields)
         elif fields and fields[0] == "D" and len(fields) > 3 and part_name:
-            fields[3] = re.sub(r"\$.*$", f"${part_name}", fields[3])
+            if bounds is None:
+                fields[3] = re.sub(r"\$.*$", f"${part_name}", fields[3])
+            else:
+                fields[3] = _symbol_view_record_field(bounds, part_name=part_name)
             line = ",".join(fields)
         body_lines.append(line)
         if fields and fields[0] == "B":
@@ -560,10 +655,12 @@ def write_native_prototype(
     output_text, stats = _replace_ddc_geometry_block(
         template_text,
         dxf_rows,
+        bounds=bounds,
         coordinate_digits=coordinate_digits,
         canonicalize_endpoints=canonicalize_endpoints,
         part_name=out_path.stem,
     )
+    output_text = _refresh_symbol_metadata_attrs(output_text, bounds=bounds, part_name=out_path.stem)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = out_path.with_name(f"{out_path.name}.tmp")
     temp_path.write_text(output_text, encoding="utf-8")

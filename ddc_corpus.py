@@ -57,7 +57,7 @@ class Bounds:
         }
 
 
-def _round_float(value: float, digits: int = 9) -> float:
+def _round_float(value: float, digits: int = 15) -> float:
     rounded = round(float(value), digits)
     if rounded == 0:
         return 0.0

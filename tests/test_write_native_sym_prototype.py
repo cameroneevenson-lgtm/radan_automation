@@ -8,8 +8,11 @@ import ezdxf
 from ddc_corpus import Bounds
 from ddc_number_codec import decode_ddc_number_fraction
 from write_native_sym_prototype import (
+    _refresh_symbol_metadata_attrs,
     _rows_with_rounded_source_coordinates,
     _rows_with_topology_snapped_endpoints,
+    _symbol_view_extents,
+    _symbol_view_record_field,
     encode_geometry_data,
     write_native_prototype,
 )
@@ -123,6 +126,57 @@ class WriteNativeSymPrototypeTests(unittest.TestCase):
         )
 
         self.assertEqual(start_x + delta_x, end_x)
+
+    def test_symbol_view_extents_match_observed_radan_padding_rule(self) -> None:
+        small = Bounds(min_x=0.0, min_y=0.0, max_x=24.0, max_y=3.68869)
+        large = Bounds(min_x=0.0, min_y=0.0, max_x=114.0, max_y=35.68869)
+
+        small_x, small_y = _symbol_view_extents(small)
+        large_x, large_y = _symbol_view_extents(large)
+
+        self.assertAlmostEqual(float(small_x), 99.318474, places=6)
+        self.assertAlmostEqual(float(small_y), 70.228767, places=6)
+        self.assertAlmostEqual(float(large_x), 342.0, places=6)
+        self.assertAlmostEqual(float(large_y), 241.830521, places=5)
+
+    def test_symbol_view_record_field_keeps_lower_left_origin_and_unit_scale(self) -> None:
+        field = _symbol_view_record_field(
+            Bounds(min_x=0.0, min_y=0.0, max_x=114.0, max_y=35.68869),
+            part_name="B-185",
+        )
+        numeric_field, part_name = field.split("$", 1)
+        tokens = numeric_field.split(".")
+
+        self.assertEqual(part_name, "B-185")
+        self.assertEqual(tokens[0], "")
+        self.assertEqual(tokens[2], "")
+        self.assertEqual(tokens[4], "")
+        self.assertEqual(tokens[6], "")
+        self.assertAlmostEqual(float(decode_ddc_number_fraction(tokens[1])), 342.0, places=6)
+        self.assertAlmostEqual(float(decode_ddc_number_fraction(tokens[3])), 241.830521, places=5)
+        self.assertAlmostEqual(float(decode_ddc_number_fraction(tokens[8])), 25.4, places=6)
+        self.assertAlmostEqual(float(decode_ddc_number_fraction(tokens[9])), 1.0, places=6)
+        self.assertAlmostEqual(float(decode_ddc_number_fraction(tokens[10])), 1.0, places=6)
+
+    def test_refresh_symbol_metadata_attrs_updates_filename_and_bounding_box(self) -> None:
+        text = """<RadanCompoundDocument>
+<Attr num="110" name="File name" type="s" value="donor">
+</Attr>
+<Attr num="165" name="Bounding box X" type="r" value="1">
+</Attr>
+<Attr num="166" name="Bounding box Y" type="r" value="2">
+</Attr>
+</RadanCompoundDocument>"""
+
+        refreshed = _refresh_symbol_metadata_attrs(
+            text,
+            bounds=Bounds(min_x=0.0, min_y=0.0, max_x=31.160938, max_y=10.098437),
+            part_name="F54410-B-49",
+        )
+
+        self.assertIn('num="110" name="File name" type="s" value="F54410-B-49"', refreshed)
+        self.assertIn('num="165" name="Bounding box X" type="r" value="31.160938"', refreshed)
+        self.assertIn('num="166" name="Bounding box Y" type="r" value="10.098437"', refreshed)
 
     def test_blank_donor_template_gets_geometry_definitions_and_rows(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

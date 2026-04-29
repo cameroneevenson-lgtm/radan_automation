@@ -3,7 +3,14 @@ from __future__ import annotations
 import unittest
 from fractions import Fraction
 
-from ddc_number_codec import decode_ddc_number, decode_ddc_number_fraction, encode_ddc_number, encode_ddc_number_fraction
+from ddc_number_codec import (
+    ddc_number_mantissa_digits,
+    ddc_number_mantissa_integer,
+    decode_ddc_number,
+    decode_ddc_number_fraction,
+    encode_ddc_number,
+    encode_ddc_number_fraction,
+)
 
 
 class DdcNumberCodecTests(unittest.TestCase):
@@ -65,6 +72,17 @@ class DdcNumberCodecTests(unittest.TestCase):
         value = decode_ddc_number_fraction(token)
 
         self.assertEqual(encode_ddc_number_fraction(value, min_continuation_digits=8), token)
+
+    def test_mantissa_digits_strip_sign_and_can_pad(self) -> None:
+        self.assertEqual(ddc_number_mantissa_digits("k?9VIVIVIX0"), [9, 38, 25, 38, 25, 38, 25, 40, 0])
+        self.assertEqual(ddc_number_mantissa_digits("k?YVIVIVIX0"), [9, 38, 25, 38, 25, 38, 25, 40, 0])
+        self.assertEqual(ddc_number_mantissa_digits("m?0", pad_to=4), [0, 0, 0, 0])
+
+    def test_mantissa_integer_reports_token_unit_delta(self) -> None:
+        radan = ddc_number_mantissa_integer("k?9VIVIVIX0", pad_to=9)
+        current = ddc_number_mantissa_integer("k?9VIVIVIVJ", pad_to=9)
+
+        self.assertEqual(radan - current, 102)
 
 
 if __name__ == "__main__":

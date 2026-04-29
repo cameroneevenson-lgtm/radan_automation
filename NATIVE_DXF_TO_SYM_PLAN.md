@@ -1,6 +1,6 @@
 # Native DXF to SYM Plan
 
-Last updated: 2026-04-28
+Last updated: 2026-04-29
 
 ## Goal
 
@@ -257,6 +257,131 @@ Completed Phase 1 deliverable:
 - `ddc_corpus.py`
 - tests: `tests/test_ddc_corpus.py`
 - corpus output: `C:\Tools\radan_automation\_sym_lab\f54410_ddc_corpus.json`
+
+## Progress 2026-04-29
+
+New lab-only writer/evaluator:
+
+- `write_coordinate_model_sym_prototype.py`
+- tests: `tests/test_write_coordinate_model_sym_prototype.py`
+- run folder: `C:\Tools\radan_automation\_sym_lab\radan_import_emulator_20260429_123634`
+
+Important correction:
+
+- The exported-DXF hidden-coordinate model now supports `CIRCLE` records. Earlier canary output under the same run folder without the `_v2` suffix is obsolete because circle rows were left blank.
+
+Current full-corpus results using RADAN-exported DXFs and L-side known-good SYMs:
+
+| Mode | Exact parts | Exact records | Exact token slots | Meaning |
+| --- | ---: | ---: | ---: | --- |
+| strict leave-one-part-out | `20/98` | `1009/4053` | `65396/72553` (`90.135%`) | Best non-oracle predictive result so far. |
+| same-part hidden-coordinate fallback | `38/98` | `2181/4053` | `69652/72553` (`96.002%`) | Shows hidden coordinates are the main missing state. |
+| same-part coordinate + token spelling fallback | `48/98` | `3420/4053` | `71601/72553` (`98.688%`) | Upper bound still not perfect because repeated visible coordinates can map to different hidden RADAN coordinates. |
+
+Canary results from `strict_v2`:
+
+- `B-17`: `1/8` exact records, `137/152` exact slots; decoded geometry close in all slots.
+- `F54410-B-49`: `0/20` exact records, `285/340` exact slots; decoded geometry close in all slots.
+- `B-14`: `0/16` exact records, `226/272` exact slots; decoded geometry close in all slots.
+- `B-27`: `31/181` exact records, `2649/3173` exact slots; circle handling is now fixed.
+- `B-28`, `B-30`, and `F54410-B-41` still have non-close arc slots tied to repeated six-decimal visible coordinates.
+
+New key insight:
+
+- RADAN's DDC geometry cannot be predicted from exported six-decimal coordinates alone.
+- `B-17`, `F54410-B-49`, and `B-14` have no same-part hidden-coordinate ambiguity, and the model reaches decoded-close parity for them.
+- `B-28`, `B-30`, and `F54410-B-41` have repeated visible coordinate keys that map to multiple hidden RADAN fractions. Example artifact: `same_part_coordinate_ambiguity.json`.
+- Therefore the next crack target is not basic DXF entity mapping. It is recovering RADAN's row/topology-specific hidden coordinate identity before token spelling.
+
+Next useful research:
+
+1. Build a topology-aware hidden-coordinate resolver that keys coordinates by entity index, previous/next entity, endpoint role, arc center/radius, and loop traversal, not just `(axis, six-decimal value)`.
+2. Retest the same writer with that resolver against the 98-part exported-DXF corpus.
+3. Only after strict exact slots improve materially should any visual RADAN check be run.
+
+## Progress 2026-04-29, Topology Resolver Follow-Up
+
+New run folder:
+
+`C:\Tools\radan_automation\_sym_lab\topology_coordinate_resolver_20260429_125627`
+
+Report:
+
+`TOPOLOGY_COORDINATE_RESOLVER_REPORT.md`
+
+Changes:
+
+- Added `--coordinate-resolver context` to `write_coordinate_model_sym_prototype.py`.
+- The context resolver uses entity type, point role, visible point pair, previous/next entity type, arc/circle radius, and exact row/point identity in explicit oracle mode.
+- Preserved arc point precision in `ddc_corpus.py` to 15 decimals. The prior 9-decimal rounding created artificial non-close geometry on non-cardinal arcs such as `B-28`, `B-30`, and `F54410-B-41`.
+- Added tests for context row-coordinate fallback and high-precision arc point preservation.
+
+Best current results:
+
+| Mode | Exact parts | Exact records | Exact token slots | Decoded-close slots |
+| --- | ---: | ---: | ---: | ---: |
+| context strict | `21/98` | `1024/4053` | `65405/72553` (`90.148%`) | `72533/72553` (`99.972%`) |
+| context coordinate oracle | `51/98` | `2740/4053` | `70521/72553` (`97.199%`) | `72553/72553` |
+| context coordinate + token oracle | `98/98` | `4053/4053` | `72553/72553` (`100%`) | `72553/72553` |
+
+Interpretation:
+
+- The native writer can reproduce all 98 known-good geometry blocks exactly when it is given row-specific hidden coordinates and same-part token spelling.
+- Strict mode is now geometrically close for nearly all slots, and all seven hard canaries are decoded-close in every slot.
+- Exact token spelling remains the main blocker.
+
+Dead end:
+
+- `--fallback-continuation type-role` and `--fallback-continuation role` both reduced exact token matches, so role-level continuation length frequency is not a safe predictor.
+
+Next useful research:
+
+1. Build a residual analyzer for close-but-not-exact tokens.
+2. Group mismatches by mantissa-unit delta, final-character delta, role, and whether decoded values are exactly equal or merely close.
+3. Test whether RADAN's final mantissa digits follow a deterministic decimal/floating parse rule rather than a role-level continuation rule.
+
+## Progress 2026-04-29, Token Residuals
+
+New analyzer:
+
+- `analyze_token_residuals.py`
+- tests: `tests/test_analyze_token_residuals.py`
+
+Run artifacts:
+
+- `C:\Tools\radan_automation\_sym_lab\topology_coordinate_resolver_20260429_125627\TOKEN_RESIDUALS_REPORT.md`
+- `context_rawarc_strict_token_residuals.json`
+- `context_rawarc_strict_token_residuals.csv`
+
+Strict context/raw-arc residual summary:
+
+- total token slots: `72553`
+- exact token slots: `65405` (`90.148%`)
+- mismatches: `7148`
+- decoded-close within `1e-12`: `72533` (`99.972%`)
+
+Mismatch buckets:
+
+| Bucket | Count |
+| --- | ---: |
+| decoded equal but spelling differs | `50` |
+| close within `1e-15` | `358` |
+| close within `1e-12` | `6720` |
+| far | `20` |
+
+Key conclusions:
+
+- `7128/7148` mismatches are decoded-close.
+- `3527/7148` mismatches share the full token prefix and differ only in the final character.
+- Most common mantissa-unit deltas are small: `+1`, `+2`, `-1`, `+3`, `-2`.
+- The `20` far residuals are mostly radius-derived X slots in `F54410-B-01`, `F54410-B-02`, `F54410-B-19`, and `F54410-B-35`.
+- `F54410-B-02` shows exported circle radius `0.101562`, while known-good DDC uses `0.1015625`, suggesting a targeted dyadic-radius snapping hypothesis.
+
+Next useful research:
+
+1. Test a targeted `CIRCLE` radius snap from six-decimal exported radii to nearby dyadic fractions.
+2. For non-cardinal `ARC` endpoints, prefer raw center/radius/angle-derived points over corpus values keyed only by six-decimal visible coordinates.
+3. Rerun residual analysis and check whether far residuals drop to zero without hurting exact-token count.
 
 Phase 1 pass gate result:
 
@@ -559,3 +684,162 @@ Recovery:
 - Restore manifest:
   `L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\_headless_import_backups\restore_from_backups_20260428_125053.csv`
 - Post-restore donor attribute count: `0`.
+
+## 2026-04-29 RADAN Exported-DXF Oracle Pass
+
+New controlled RADAN oracle runs used the user's RADAN-exported DXFs from:
+
+- `L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\Exported DXFs`
+
+The machine was checked for RADAN/Radraft processes before and after each COM run; the lab runs ended with no RADAN processes alive.
+
+Artifacts:
+
+- raw exported-DXF reimport oracle:
+  `C:\Tools\radan_automation\_sym_lab\far_radius_radan_oracle_20260429_132022`
+- circle-radius snap RADAN oracle:
+  `C:\Tools\radan_automation\_sym_lab\circle_radius_textpatch_oracle_20260429_132339`
+- full exported-vs-good geometry scan:
+  `C:\Tools\radan_automation\_sym_lab\exported_vs_good_geometry_scan_20260429_1328\geometry_scan.json`
+- full radius-snapped exported DXF corpus:
+  `C:\Tools\radan_automation\_sym_lab\exported_dxfs_circle_radius_snap_128_20260429_132615`
+- best current strict synthetic run:
+  `C:\Tools\radan_automation\_sym_lab\radius_snap_literal_context_writer_20260429_1330\strict`
+
+Findings:
+
+- RADAN reimport of unmodified exported DXFs did not exactly recreate all trusted symbols.
+- `F54410-B-35` proved the export can be lossy: exported DXF circle radius `0.085938` needed to be restored to `0.0859375` (`11/128`) to recreate the trusted DDC exactly.
+- `F54410-B-02` had four exported circle radii `0.101562` that needed to be restored to `0.1015625` (`13/128`). That removed the real decoded geometry error, although many tiny line token deltas remain.
+- Across all 98 exported DXFs, only `F54410-B-02` and `F54410-B-35` had trusted-SYM decoded geometry differences above `1e-12`, and all were circle-radius/start-X consequences of six-decimal export.
+- A literal-geometry-priority resolver fixed the remaining synthetic far misses by:
+  - keeping dyadic LINE values literal,
+  - keeping cardinal-arc dyadic values literal,
+  - using raw computed points for non-cardinal arcs instead of borrowing rounded-key coordinates from other parts.
+
+Best current strict synthetic result, using radius-snapped exported DXFs plus `--prefer-literal-geometry`:
+
+- generated parts: `98 / 98`
+- decoded-close slots within `1e-12`: `72553 / 72553` (`100%`)
+- far decoded mismatches: `0`
+- exact token slots: `65417 / 72553` (`90.164%`)
+- exact geometry records: `1042 / 4053` (`25.709%`)
+
+Oracle-mode sanity check, with same-part coordinate and token spelling allowed, still reaches:
+
+- exact token slots: `72553 / 72553`
+- exact geometry records: `4053 / 4053`
+- exact parts: `98 / 98`
+
+Current conclusion:
+
+- We now have a no-RADAN synthetic writer that is decoded-geometry faithful across the F54410 exported-DXF corpus when the small radius-snap and literal-geometry rules are applied.
+- This is a real improvement over the earlier visible-failure stage, but it still does not crack RADAN's exact token spelling/cache behavior: about `9.8%` of token slots differ while decoding to the same or near-identical geometry.
+- Promotion recommendation remains `do not promote`; the next useful validation is opening/nesting a copied lab project with these strict outputs to see whether decoded-geometry fidelity is enough operationally.
+
+## 2026-04-29 Symbol Origin / D-Record Cache Pass
+
+User-observed RADAN behavior:
+
+- every symbol has an inherent origin point
+- deleting it in RADAN and saving causes RADAN to recreate it
+- the practical origin appears to be the lower-left corner of the symbol bounding box
+
+Corpus inspection:
+
+- all 98 RADAN-exported F54410 DXFs have modelspace geometry normalized to `min_x = 0`, `min_y = 0`
+- all DDC G/H geometry records already match that lower-left-origin model: coordinates are stored relative to DXF bounding-box min X/Y
+- the non-geometry `E` record payload is constant across the 98-part corpus:
+  `o?0...o?0.........o?0.o?0.$/`
+- the non-geometry `D` record contains a symbol view/cache rectangle plus unit scale, not cut geometry
+- the `25.4` token in D is the inch-to-mm scale marker
+
+Observed D-record decoded shape:
+
+```text
+D,-1,6,.<view_x>..<view_y>..<view_x>..<view_y>.<25.4>.<1>.<1>.$<part>
+```
+
+The decoded `view_x/view_y` rule across the 98 fresh RADAN symbols is:
+
+```text
+base_x = 99.318474
+base_y = 70.228767
+scale = max(1, 3 * bbox_x / base_x, 3 * bbox_y / base_y)
+view_x = base_x * scale
+view_y = base_y * scale
+```
+
+This is a padded landscape view rectangle with roughly A-series / sqrt(2) aspect ratio. It is separate from attrs `165` and `166`, which remain the actual part bounding-box X/Y in inches.
+
+Code update:
+
+- `write_native_sym_prototype.py` now rebuilds the D-record view/cache field from DXF bounds when writing lab native prototypes
+- it also refreshes XML attrs:
+  - `110` File name
+  - `165` Bounding box X
+  - `166` Bounding box Y
+- tests now cover the observed D-record padding rule and metadata refresh behavior
+
+Implication:
+
+- stale donor metadata was a real lab risk: a donor-created symbol could carry another part's D-record view extents and filename/bounding-box attrs even when G/H decoded geometry validated
+- this does not solve exact RADAN geometry token spelling, but it removes one derived-cache/source-of-truth mismatch from lab prototypes
+- production recommendation remains `do not promote synthetic SYM generation`
+
+## 2026-04-29 RADAN Save Canonicalization Probe
+
+Purpose:
+
+- use RADAN proper as a microscope, not as a production repair flow
+- open/save decoded-correct strict synthetic symbols and compare RADAN's saved result to the fresh RADAN oracle
+
+Artifact:
+
+`C:\Tools\radan_automation\_sym_lab\radan_save_canonicalization_20260429_1400\RADAN_SAVE_CANONICALIZATION_REPORT.md`
+
+Run:
+
+- input strict synthetic folder:
+  `C:\Tools\radan_automation\_sym_lab\radius_snap_literal_context_writer_20260429_1330\strict`
+- copied lab save folder:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_canonicalization_20260429_1400\syms`
+- opened/saved all `98` copied symbols through one hidden RADAN instance
+- RADAN PID `21268`
+- elapsed `22.786s`
+- errors `0`
+- final RADAN process check clean
+
+Aggregate result vs fresh RADAN oracle:
+
+| Metric | Before save | After save |
+| --- | ---: | ---: |
+| token match ratio | `0.902030` | `0.909471` |
+| exact geometry record ratio | `0.260054` | `0.511675` |
+| exact token slots | `65445 / 72553` | `64336 / 70739` |
+
+Interpretation:
+
+- RADAN save performs a real canonicalization pass and often moves synthetic DDC closer to RADAN's own spelling.
+- It is not safe as a repair shortcut: 20 parts had after-save decoded row-pair differences greater than `1.0` inch against the fresh RADAN oracle.
+- Some of that may be row deletion/reordering or RADAN geometry repair, but operationally it confirms decoded geometry validation alone is not sufficient.
+
+Notable improvements:
+
+- `B-14`: `0.830882 -> 0.977941` token ratio
+- `F54410-B-49`: `0.838235 -> 0.952941`
+- `B-17`: `0.894737 -> 0.986842`
+
+Notable failures/worsening:
+
+- `B-27`: after-save max decoded row-pair diff `54.409952`
+- `F54410-B-12`: `58.1875`
+- `F54410-B-27`: `63.5`
+- `F54410-B-10`: `68.994306`
+- `F54410-B-01`: `70.160859`
+
+Conclusion:
+
+- use RADAN save canonicalization as a reverse-engineering oracle only
+- do not promote it or synthetic SYM generation into production
+- next research target is to compare before/after-save token deltas for the improved symbols (`B-14`, `B-17`, `F54410-B-49`) against the symbols that RADAN repaired destructively (`B-27`, `F54410-B-12`)

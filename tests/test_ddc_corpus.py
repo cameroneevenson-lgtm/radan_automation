@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import tempfile
 import unittest
 from pathlib import Path
@@ -70,6 +71,27 @@ class DdcCorpusTests(unittest.TestCase):
         self.assertEqual(payload["pairs"][0]["dxf"]["normalized_start"], [0.0, 0.0])
         self.assertEqual(payload["pairs"][0]["dxf"]["normalized_end"], [2.0, 0.0])
         self.assertEqual(payload["pairs"][1]["dxf"]["normalized_center"], [1.0, 1.0])
+
+    def test_read_dxf_entities_preserves_arc_point_precision(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            dxf_path = Path(tmpdir) / "Arc.dxf"
+            doc = ezdxf.new("R2010")
+            msp = doc.modelspace()
+            msp.add_line((0, 0, 0), (0, 1, 0), dxfattribs={"layer": "IV_INTERIOR_PROFILES"})
+            msp.add_arc(
+                (0.721007, 0.25, 0),
+                0.25,
+                200.0,
+                270.0,
+                dxfattribs={"layer": "IV_INTERIOR_PROFILES"},
+            )
+            doc.saveas(dxf_path)
+
+            rows, _bounds = ddc_corpus.read_dxf_entities(dxf_path)
+
+        expected_x = 0.721007 + 0.25 * math.cos(math.radians(200.0))
+        self.assertAlmostEqual(rows[1]["normalized_start_point"][0], expected_x, places=14)
+        self.assertNotEqual(rows[1]["normalized_start_point"][0], round(expected_x, 9))
 
     def test_build_corpus_summarizes_csv(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

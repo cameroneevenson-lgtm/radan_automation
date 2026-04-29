@@ -62,6 +62,53 @@ def decode_ddc_number_fraction(token: str) -> Fraction:
     return Fraction(sign, 1) * (Fraction(2, 1) ** exponent) * (1 + fraction)
 
 
+def ddc_number_mantissa_digits(token: str, *, pad_to: int | None = None) -> list[int]:
+    """Return the numeric mantissa digits encoded in a compact DDC token.
+
+    The first returned digit is the 4-bit sign-folded mantissa digit with the
+    sign removed. Remaining digits are base-64 continuation digits. Empty DDC
+    tokens represent zero and therefore have no mantissa digits.
+    """
+
+    if token == "":
+        return []
+    if len(token) < 3:
+        raise ValueError(f"DDC number token is too short: {token!r}")
+    _exponent_from_prefix(token)
+
+    mantissa = token[2:]
+    first = ord(mantissa[0])
+    if 48 <= first <= 63:
+        first_digit = first - 48
+    elif 80 <= first <= 95:
+        first_digit = first - 80
+    else:
+        raise ValueError(f"Unsupported DDC number sign/mantissa digit in token: {token!r}")
+
+    digits = [first_digit]
+    for char in mantissa[1:]:
+        digit = ord(char) - 48
+        if digit < 0 or digit >= 64:
+            raise ValueError(f"Unsupported DDC number continuation digit in token: {token!r}")
+        digits.append(digit)
+
+    if pad_to is not None and len(digits) < int(pad_to):
+        digits.extend([0] * (int(pad_to) - len(digits)))
+    return digits
+
+
+def ddc_number_mantissa_integer(token: str, *, pad_to: int | None = None) -> int:
+    """Return mantissa digits packed as an integer for token-delta analysis."""
+
+    digits = ddc_number_mantissa_digits(token, pad_to=pad_to)
+    if not digits:
+        return 0
+    total = digits[0]
+    for digit in digits[1:]:
+        total = total * 64 + digit
+    return total
+
+
 def _prefix_from_exponent(exponent: int) -> str:
     if exponent <= 0:
         return chr(ord("o") + exponent) + "?"
