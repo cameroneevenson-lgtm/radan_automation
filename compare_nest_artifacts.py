@@ -17,6 +17,7 @@ SYM_PATH_RE = re.compile(r"[A-Za-z]:[\\/][^,\r\n<>$]*[\\/](?P<name>[^\\/,\r\n<>$
 SLASH_PATH_RE = re.compile(r"[A-Za-z]:/[^\r\n<>$]*?/(?P<name>[^/\r\n<>$]+\.sym)", re.IGNORECASE)
 LAB_JOB_RE = re.compile(r"F54410 PAINT PACK\.[A-Za-z0-9_.-]+")
 NEST_DIR_RE = re.compile(r"[A-Za-z]:[/\\][^,\r\n<>$]*[/\\]nests", re.IGNORECASE)
+DDC_RECORD_RE = re.compile(r"^(?P<prefix>[A-Z\]])(?:,|$)")
 
 
 def _sha256_bytes(data: bytes) -> str:
@@ -167,10 +168,84 @@ def normalize_drg_text(text: str) -> str:
     return text
 
 
+def extract_ddc_text(path: Path) -> str:
+    try:
+        root = ET.parse(path).getroot()
+    except ET.ParseError:
+        return ""
+    for node in root.iter():
+        if _local_name(node) == "RadanFile" and node.attrib.get("extension", "").casefold() == "ddc":
+            return node.text or ""
+    return ""
+
+
+def _ddc_record_prefix(line: str) -> str:
+    match = DDC_RECORD_RE.match(line.strip())
+    if not match:
+        return ""
+    return match.group("prefix")
+
+
+def ddc_lines(path: Path) -> list[str]:
+    text = extract_ddc_text(path)
+    return [line.rstrip() for line in text.splitlines() if line.strip()]
+
+
+def count_ddc_records(lines: list[str]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for line in lines:
+        prefix = _ddc_record_prefix(line)
+        if not prefix:
+            continue
+        counts[prefix] = counts.get(prefix, 0) + 1
+    return dict(sorted(counts.items()))
+
+
+def compare_ddc_lines(left_path: Path, right_path: Path) -> dict[str, Any]:
+    left_lines = [normalize_drg_text(line) for line in ddc_lines(left_path)]
+    right_lines = [normalize_drg_text(line) for line in ddc_lines(right_path)]
+    changed_by_prefix: dict[str, int] = {}
+    same = 0
+    changed = 0
+    max_len = max(len(left_lines), len(right_lines))
+    first_changes: list[dict[str, Any]] = []
+    for index in range(max_len):
+        left = left_lines[index] if index < len(left_lines) else None
+        right = right_lines[index] if index < len(right_lines) else None
+        if left == right:
+            same += 1
+            continue
+        changed += 1
+        left_prefix = "" if left is None else _ddc_record_prefix(left)
+        right_prefix = "" if right is None else _ddc_record_prefix(right)
+        key = f"{left_prefix or '<none>'}->{right_prefix or '<none>'}"
+        changed_by_prefix[key] = changed_by_prefix.get(key, 0) + 1
+        if len(first_changes) < 8:
+            first_changes.append(
+                {
+                    "index": index,
+                    "left_prefix": left_prefix,
+                    "right_prefix": right_prefix,
+                    "left": left,
+                    "right": right,
+                }
+            )
+    return {
+        "left_line_count": len(left_lines),
+        "right_line_count": len(right_lines),
+        "line_count_match": len(left_lines) == len(right_lines),
+        "same_lines": same,
+        "changed_lines": changed,
+        "changed_by_prefix": dict(sorted(changed_by_prefix.items())),
+        "first_changes": first_changes,
+    }
+
+
 def summarize_drg(path: Path) -> dict[str, Any]:
     data = path.read_bytes()
     text = data.decode("utf-8", errors="replace")
     normalized = normalize_drg_text(text)
+    records = ddc_lines(path)
     contained = sorted(
         (
             {"name": name, "count": int(count)}
@@ -187,6 +262,8 @@ def summarize_drg(path: Path) -> dict[str, Any]:
         "sha256": _sha256_bytes(data),
         "normalized_sha256": _sha256_text(normalized),
         "line_count": text.count("\n") + 1,
+        "ddc_line_count": len(records),
+        "ddc_record_counts": count_ddc_records(records),
         "contained_symbols": contained,
         "sym_refs": sym_refs,
     }
@@ -245,9 +322,12 @@ def compare_gate_dirs(left_dir: Path, right_dir: Path, *, left_name: str = "left
             "contained_symbols_match": bool(
                 left_row and right_row and left_row["contained_symbols"] == right_row["contained_symbols"]
             ),
+            "ddc": None,
             "left_size": None if left_row is None else left_row["size"],
             "right_size": None if right_row is None else right_row["size"],
         }
+        if left_row and right_row:
+            row["ddc"] = compare_ddc_lines(Path(left_row["path"]), Path(right_row["path"]))
         if (
             first_diff is None
             and left_row
@@ -260,6 +340,12 @@ def compare_gate_dirs(left_dir: Path, right_dir: Path, *, left_name: str = "left
             }
         drg_rows.append(row)
 
+    ddc_changed_by_prefix: dict[str, int] = {}
+    for row in drg_rows:
+        ddc = row.get("ddc") or {}
+        for key, value in ddc.get("changed_by_prefix", {}).items():
+            ddc_changed_by_prefix[key] = ddc_changed_by_prefix.get(key, 0) + int(value)
+
     comparison = {
         "schema_version": 1,
         "left": left,
@@ -270,6 +356,9 @@ def compare_gate_dirs(left_dir: Path, right_dir: Path, *, left_name: str = "left
         "drg_full_hash_matches": sum(1 for row in drg_rows if row["full_hash_match"]),
         "drg_normalized_hash_matches": sum(1 for row in drg_rows if row["normalized_hash_match"]),
         "drg_contained_symbols_matches": sum(1 for row in drg_rows if row["contained_symbols_match"]),
+        "ddc_changed_by_prefix": dict(sorted(ddc_changed_by_prefix.items())),
+        "ddc_changed_lines": sum(int((row.get("ddc") or {}).get("changed_lines", 0)) for row in drg_rows),
+        "ddc_same_lines": sum(int((row.get("ddc") or {}).get("same_lines", 0)) for row in drg_rows),
         "first_normalized_diff": first_diff,
     }
     return comparison
@@ -291,23 +380,30 @@ def write_markdown_report(comparison: dict[str, Any], path: Path) -> None:
         f"- Full DRG hash matches: `{comparison['drg_full_hash_matches']} / {len(rows)}`",
         f"- Normalized DRG hash matches: `{comparison['drg_normalized_hash_matches']} / {len(rows)}`",
         f"- Contained-symbol summaries match: `{comparison['drg_contained_symbols_matches']} / {len(rows)}`",
+        f"- DDC changed lines: `{comparison['ddc_changed_lines']}`",
+        f"- DDC same lines: `{comparison['ddc_same_lines']}`",
         "",
         "## DRG Rows",
         "",
-        "| Nest | Full hash | Normalized hash | Contained symbols | Sizes |",
-        "| ---: | --- | --- | --- | --- |",
+        "| Nest | Full hash | Normalized hash | Contained symbols | DDC changed | Sizes |",
+        "| ---: | --- | --- | --- | ---: | --- |",
     ]
     for row in rows:
         lines.append(
-            "| `{nest_id}` | `{full}` | `{norm}` | `{symbols}` | `{left_size}` / `{right_size}` |".format(
+            "| `{nest_id}` | `{full}` | `{norm}` | `{symbols}` | `{changed}` | `{left_size}` / `{right_size}` |".format(
                 nest_id=row["nest_id"],
                 full=row["full_hash_match"],
                 norm=row["normalized_hash_match"],
                 symbols=row["contained_symbols_match"],
+                changed=(row.get("ddc") or {}).get("changed_lines"),
                 left_size=row["left_size"],
                 right_size=row["right_size"],
             )
         )
+    if comparison.get("ddc_changed_by_prefix"):
+        lines.extend(["", "## DDC Changed By Prefix", ""])
+        for key, count in comparison["ddc_changed_by_prefix"].items():
+            lines.append(f"- `{key}`: `{count}`")
     first_diff = comparison.get("first_normalized_diff")
     if first_diff:
         lines.extend(

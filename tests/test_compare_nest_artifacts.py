@@ -83,6 +83,35 @@ class CompareNestArtifactsTests(unittest.TestCase):
         self.assertEqual(result["drg_full_hash_matches"], 0)
         self.assertEqual(result["drg_normalized_hash_matches"], 1)
         self.assertEqual(result["drg_contained_symbols_matches"], 1)
+        self.assertEqual(result["ddc_changed_lines"], 0)
+
+    def test_compare_ddc_lines_counts_prefix_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            left = root / "left.drg"
+            right = root / "right.drg"
+            left.write_text(
+                '<RadanCompoundDocument><RadanFile extension="ddc"><![CDATA[\n'
+                "G,,same\n"
+                "H,,left\n"
+                "I,,left-note\n"
+                "]]></RadanFile></RadanCompoundDocument>\n",
+                encoding="utf-8",
+            )
+            right.write_text(
+                '<RadanCompoundDocument><RadanFile extension="ddc"><![CDATA[\n'
+                "G,,same\n"
+                "H,,right\n"
+                "N,,right-note\n"
+                "]]></RadanFile></RadanCompoundDocument>\n",
+                encoding="utf-8",
+            )
+
+            result = compare.compare_ddc_lines(left, right)
+
+        self.assertEqual(result["same_lines"], 1)
+        self.assertEqual(result["changed_lines"], 2)
+        self.assertEqual(result["changed_by_prefix"], {"H->H": 1, "I->N": 1})
 
 
 if __name__ == "__main__":
