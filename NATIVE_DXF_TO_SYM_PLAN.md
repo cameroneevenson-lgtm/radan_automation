@@ -1704,7 +1704,18 @@ Full95 result:
 | raw pre-save baseline | `0.903673` | `6690` | pass | yes | `28 / 28` | `7 / 7` |
 | context-unanimous | `0.910498` | `6216` | pass | no, swaps nests `27`/`28` | `26 / 28` | not rerun |
 | B-194 row10 context only | `0.910469` | `6218` | pass | yes | `28 / 28` | not rerun |
-| B-194 circle-pair context only | `0.910484` | `6217` | pass | yes | `28 / 28` | `7 / 7` |
+| B-194 circle-pair context only | `0.910484` | `6217` | pass | yes | `28 / 28` | `7 / 7`, plus `B-194` exact |
+
+Circle-pair DRG layout deltas:
+
+- versus raw pre-save:
+  - layout changed rows: `17`
+  - layout token mismatches: `79`
+  - decoded buckets: `79 close_1e-12`
+- versus L-side known-good:
+  - layout changed rows: `142`
+  - layout token mismatches: `541`
+  - decoded buckets: `541 close_1e-12`
 
 Interpretation:
 
