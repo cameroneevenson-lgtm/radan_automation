@@ -1876,3 +1876,46 @@ Both selected B-185 rows use the same raw/context token text
 (`4@7Tollog\K` -> `4@7Tollog\L`), but only row `11` perturbs the full95 nest.
 That rules out a purely global token-string effect. Entity row context, local
 geometry, or downstream cached placement state also matters.
+
+### 2026-04-29 B-185/B-186 Known-Good Geometry Interaction
+
+The B-185/B-186 follow-up separated token spelling from wrapper/cache metadata:
+
+- `B-185` known-good alone in the raw corpus passed the full95 count envelope
+  but reproduced the nests `27`/`28` `B-3 R1` / `B-5 R1` swap.
+- `B-186` known-good alone did the same.
+- `B-185` + `B-186` known-good together restored raw used-nest semantics.
+- `B-185` + `B-186` context-only still swapped.
+- mixed pairs (`B-185` known-good + `B-186` context, and `B-185` context +
+  `B-186` known-good) both still swapped.
+
+`sym_section_diff.py` localized the B-185/B-186 differences to G/H geometry
+token spelling only. Wrapper, history, attributes, and non-geometry DDC lines
+matched between raw/context/known-good symbols. The cancellation is therefore a
+geometry-token interaction, not hidden metadata/cache repair.
+
+B-186 residual split with `B-185` known-good:
+
+| B-186 state | Used-nest match vs raw | Notes |
+| --- | --- | --- |
+| context-only | no | same nests `27`/`28` swap |
+| context + 18 known-good `start_y` residuals | no | count envelope passed |
+| context + `start_y` + 3 known-good `delta_y` residuals | no | count envelope passed |
+| context + only row 24 `center_delta_y` residual | no | center token is not sufficient alone |
+| full known-good residual set with DDC raw text preserved | yes | B-186 byte-identical to known-good; raw used-nest semantics restored |
+
+Tooling note:
+
+- `build_sym_token_patch_variant.py` now builds lab-only token-patched corpus
+  variants and records an exact patch manifest.
+- The patcher preserves the final newline inside the DDC CDATA block. An initial
+  pre-fix patch stripped that newline and produced a confounded nester result,
+  so exact DDC text preservation is now part of the token-transplant harness.
+
+Interpretation:
+
+- local exact-token improvement remains unsafe without corpus-level nester
+  validation
+- some token effects are additive/interacting across independent parts
+- raw synthetic remains the simpler operational benchmark, while targeted
+  exact-token variants need a semantic guard before they are considered better
