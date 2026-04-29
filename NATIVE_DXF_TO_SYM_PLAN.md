@@ -1590,6 +1590,28 @@ Operational regression:
   - nest `28`: token-majority has `B-5 R1 x1`; raw/known-good has `B-3 R1 x1`
 - the directly swapped symbol files `B-3 R1.sym` and `B-5 R1.sym` were byte-identical between the raw and token-majority symbol folders, so the layout change is likely caused by other nearby token changes or nester tie-breaking sensitivity, not mutation of those two symbol files
 
+Repeat check:
+
+- a second full95 token-majority nester run was created at:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_full95_token_majority_repeat1`
+- repeat metrics matched the first token-majority count envelope:
+  - part rows: `95`
+  - sheet rows: `8`
+  - nest rows: `42`
+  - made/nonzero count: `431`
+  - DRG files: `28`
+  - `lay_run_nest(0)`: `0`
+  - elapsed: `56.549 s`
+  - final RADAN-family process list: empty
+- repeat versus original token-majority:
+  - `rpd_used_nests_match=True`
+  - contained-symbol summaries matched `28 / 28`
+- repeat versus raw:
+  - `rpd_used_nests_match=False`
+  - contained-symbol summaries matched `26 / 28`
+  - the same `B-3 R1` / `B-5 R1` swap occurred in nests `27` and `28`
+- this makes random nester tie-breaking a weaker explanation than a stable layout perturbation caused by the token-majority symbol corpus
+
 Interpretation:
 
 - token-majority is RADAN-acceptable: it displays correctly on hard canaries and nests the full accepted corpus
