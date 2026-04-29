@@ -1340,3 +1340,68 @@ Interpretation:
 - the remaining three blockers reproduce with known-good RADAN-created symbols, so they should be investigated as nester/setup/geometry-fit cases rather than native SYM encoding failures
 - the likely production-shaped headless nester path is `prj_add_part` + `UpdateSheetsList` + `lay_run_nest(0)`, with explicit process ownership checks and copied-project validation gates
 - promotion is still not automatic: we need user visual review and a report/packet validation pass before using this beyond lab/copied-project contexts
+
+### 2026-04-29 Overnight Raw Synthetic Nester Gate
+
+Fresh overnight run folder:
+
+`C:\Tools\radan_automation\_sym_lab\overnight_crack_and_nest_validate_20260429_174834`
+
+New reusable harness:
+
+- `copied_project_nester_gate.py`
+- tests: `tests/test_copied_project_nester_gate.py`
+- validation: `C:\Tools\.venv\Scripts\python.exe -m unittest discover -v`
+- result: `162` tests / `OK`
+
+Harness behavior:
+
+- copies a source `.rpd` into `_sym_lab`
+- clears copied project part and sheet rows but preserves existing nest numbering/history
+- adds selected rows through `Mac.prj_clear_part_data`, `PRJ_PART_*`, and `Mac.prj_add_part()`
+- refreshes sheets with `prg_notify('rpr_sheets_controls', 'UpdateSheetsList')`
+- runs `Mac.lay_run_nest(0)`
+- saves, closes, quits the automation-owned RADAN process, then logs final process cleanup
+- refuses lab outputs outside `_sym_lab`
+
+RADAN-saved synthetic validation ladder:
+
+| Rung | Parts | Sheets | Nests | Made nonzero | DRGs | Result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `B-10` | `1` | `1` | `15` | `4` | `1` | pass |
+| `F54410-B-49` | `1` | `2` | `15` | `4` | `1` | pass |
+| `B-14`, `B-17`, `F54410-B-49` | `3` | `5` | `16` | `12` | `2` | pass |
+| seven hard canaries | `7` | `5` | `16` | `28` | `2` | pass |
+| arc/circle stress set | `6` | `6` | `17` | `24` | `3` | pass |
+| first 10 | `10` | `5` | `18` | `43` | `4` | pass |
+| first 25 | `25` | `8` | `23` | `115` | `9` | pass |
+| first 49 | `49` | `8` | `27` | `232` | `13` | pass |
+| 95-part subset excluding oversized blockers | `95` | `8` | `42` | `431` | `28` | pass |
+
+Raw pre-save synthetic validation ladder:
+
+| Rung | Parts | Sheets | Nests | Made nonzero | DRGs | Result |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| `B-10` | `1` | `1` | `15` | `4` | `1` | pass |
+| `F54410-B-49` | `1` | `2` | `15` | `4` | `1` | pass |
+| seven hard canaries | `7` | `5` | `16` | `28` | `2` | pass |
+| first 25 | `25` | `8` | `23` | `115` | `9` | pass |
+| first 49 | `49` | `8` | `27` | `232` | `13` | pass |
+| 95-part subset excluding oversized blockers | `95` | `8` | `42` | `431` | `28` | pass |
+
+Interpretation:
+
+- Raw pre-save synthetic symbols are practically nestable in the copied F54410 project for the same `95 / 98` subset as the RADAN-saved synthetic symbols.
+- This does not crack exact DDC token spelling, but it materially changes the risk model: token-exact mismatch and prior RADAN-save canonicalization deltas are not automatically nester blockers.
+- The next format-cracking target should compare raw-vs-saved-vs-known-good at the DRG/nest-output level, not only at the SYM token level, to identify which token/cache deltas are operationally irrelevant.
+- Report generation through `prj_output_report` / `stp_output_report` remained blocked in this headless Nest Project context with `Wrong mode for DevExpress reports`.
+
+Known-good blocker fit check:
+
+| Part | DXF size | Biggest matching sheet | Fit result |
+| --- | --- | --- | --- |
+| `F54410-B-09` | `215.000 x 47.000 in` | `120.0 x 60.0 in` | oversized |
+| `F54410-B-11` | `60.813 x 101.754 in` | `120.0 x 60.0 in` | oversized |
+| `F54410-B-17` | `65.754 x 60.813 in` | `120.0 x 60.0 in` | oversized |
+
+Those three should remain excluded from synthetic-SYM pass/fail classification unless a larger matching sheet setup is intentionally added to the copied project.
