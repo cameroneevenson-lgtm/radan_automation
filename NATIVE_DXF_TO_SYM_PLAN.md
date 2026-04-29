@@ -919,3 +919,70 @@ Conclusion:
 - RADAN save is a very strong token-canonicalization oracle for the `78` count-matched parts
 - RADAN save is still disqualified as a production repair step because `20` symbols are rebuilt into different row counts
 - next useful cracking work is to mine the `599` remaining after-save token residuals and infer the final RADAN token spelling rule for the non-destructive group
+
+## 2026-04-29 Lab RADAN-Save Token Model Pass
+
+Added:
+
+- `radan_save_token_model.py`
+- tests: `tests/test_radan_save_token_model.py`
+- lab-only writer flags in `write_coordinate_model_sym_prototype.py`:
+  - `--radan-save-token-model-mode off`
+  - `--radan-save-token-model-mode fallback-context-unanimous`
+  - `--radan-save-token-model-mode fallback-token-majority`
+  - `--radan-save-token-model-mode fallback-shorter-majority`
+
+Purpose:
+
+- turn the `before synthetic -> after RADAN save -> L-side good` evidence into an explicit offline token-spelling model
+- keep the model lab-only and opt-in
+- exclude same-part observations during prediction so the run measures generalization instead of memorizing the answer
+- only train from the `78` non-destructive/count-matched after-save symbols
+- keep the `20` row-count-changing symbols quarantined as RADAN repair/destructive cases
+
+Artifact:
+
+`C:\Tools\radan_automation\_sym_lab\radan_save_token_model_writer_20260429_141849`
+
+Input folders:
+
+- DXF input:
+  `C:\Tools\radan_automation\_sym_lab\exported_dxfs_circle_radius_snap_128_20260429_132615\dxfs`
+- before-save synthetic symbols:
+  `C:\Tools\radan_automation\_sym_lab\radius_snap_literal_context_writer_20260429_1330\strict`
+- after-save RADAN symbols:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_canonicalization_20260429_1400\syms`
+- L-side known-good oracle:
+  `L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK`
+
+Model summary:
+
+- eligible count-matched training parts: `78`
+- quarantined/skipped row-count-changing parts: `20`
+- learned before/save/oracle correction observations: `1284`
+
+Full-corpus writer results against L-side known-good symbols:
+
+| Mode | Exact token slots | Exact token ratio | Exact geometry records | Canonicalized slots | Far decoded mismatches |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| baseline strict | `65417 / 72553` | `0.901644` | `1042 / 4053` | `0` | `0` |
+| `fallback-shorter-majority` | `65440 / 72553` | `0.901961` | `1042 / 4053` | `23` | `0` |
+| `fallback-context-unanimous` | `65471 / 72553` | `0.902389` | `1037 / 4053` | `120` | `0` |
+| `fallback-token-majority` | `65484 / 72553` | `0.902568` | `1047 / 4053` | `282` | `0` |
+
+Cross-validation read:
+
+- `fallback-token-majority` gives the largest net token gain but also applies wrong canonicalizations:
+  `130` helps, `63` hurts, and `89` changed-but-still-wrong coordinate-slot substitutions in the inspected coordinate slots
+- `fallback-context-unanimous` is less noisy but still not safe:
+  `73` helps, `19` hurts, and `28` changed-but-still-wrong coordinate-slot substitutions
+- `fallback-shorter-majority` is intentionally conservative:
+  `23` observed coordinate-slot helps with no observed hurt/wrong substitutions in this corpus
+
+Conclusion:
+
+- this is a useful offline harness, not a breakthrough
+- the learned save-token model proves RADAN has transferable spelling preferences, but the current keys are still too coarse for production
+- the safest learned rule is currently "only adopt a RADAN-save spelling when it shortens a fallback-generated token"; it improves exact token count only slightly
+- promotion recommendation remains `do not promote synthetic SYM generation`
+- next useful work is a stronger local context model around row neighborhoods and exact source fractions, especially for the count-matched canaries `B-14`, `B-17`, and `F54410-B-49`

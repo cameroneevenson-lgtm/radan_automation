@@ -19,6 +19,7 @@ from evaluate_exported_coordinate_token_model import (
     token_fraction,
 )
 from path_safety import assert_w_drive_write_allowed
+from radan_save_token_model import build_radan_save_token_model, choose_radan_save_canonical_token
 from write_native_sym_prototype import DDC_BLOCK_RE, DEFAULT_LAB_ROOT, _ensure_lab_output
 
 
@@ -877,6 +878,8 @@ def predict_geometry_tokens(
     allow_same_part_token_spelling: bool = False,
     prefer_literal_geometry: bool = False,
     use_slot_value_fractions: bool = False,
+    radan_save_token_model: dict[str, Any] | None = None,
+    radan_save_token_model_mode: str = "off",
 ) -> tuple[list[str], list[dict[str, Any]]]:
     token_count = len(list(template_ddc_row.get("tokens") or []))
     tokens = [""] * token_count
@@ -934,6 +937,19 @@ def predict_geometry_tokens(
             fallback_continuation=fallback_continuation,
             allow_same_part_token_spelling=allow_same_part_token_spelling,
         )
+        canonical_token, canonical_source = choose_radan_save_canonical_token(
+            model=radan_save_token_model,
+            mode=radan_save_token_model_mode,
+            target_part=target_part,
+            dxf_type=str(dxf_row["type"]),
+            role=slot_role(str(dxf_row["type"]), slot),
+            visible_value_key=visible_value_key,
+            before_token=token,
+            token_source=source,
+        )
+        if canonical_source:
+            token = canonical_token
+            source = f"{source}->{canonical_source}"
         tokens[slot] = token
         slot_reports.append(
             {
@@ -1029,6 +1045,8 @@ def write_coordinate_model_prototype(
     allow_same_part_token_spelling: bool = False,
     prefer_literal_geometry: bool = False,
     use_slot_value_fractions: bool = False,
+    radan_save_token_model: dict[str, Any] | None = None,
+    radan_save_token_model_mode: str = "off",
     allow_outside_lab: bool = False,
 ) -> dict[str, Any]:
     _ensure_lab_output(out_path, allow_outside_lab=allow_outside_lab)
@@ -1061,6 +1079,8 @@ def write_coordinate_model_prototype(
             allow_same_part_token_spelling=allow_same_part_token_spelling,
             prefer_literal_geometry=prefer_literal_geometry,
             use_slot_value_fractions=use_slot_value_fractions,
+            radan_save_token_model=radan_save_token_model,
+            radan_save_token_model_mode=radan_save_token_model_mode,
         )
         generated_geometry_data.append(".".join(tokens))
         comparison = _compare_tokens(tokens, list(ddc_row.get("tokens") or []))
@@ -1106,6 +1126,13 @@ def write_coordinate_model_prototype(
         "allow_same_part_token_spelling": allow_same_part_token_spelling,
         "prefer_literal_geometry": prefer_literal_geometry,
         "use_slot_value_fractions": use_slot_value_fractions,
+        "radan_save_token_model_mode": radan_save_token_model_mode,
+        "radan_save_token_canonicalized_slots": sum(
+            1
+            for row in row_reports
+            for slot in row["slots"]
+            if "radan_save_token:" in str(slot.get("token_source", ""))
+        ),
         "rows": row_reports,
     }
 
@@ -1170,12 +1197,59 @@ def main() -> int:
         action="store_true",
         help="Lab mode: use leave-one-part-out hidden fractions learned for direct slot value/type/role keys.",
     )
+    parser.add_argument(
+        "--radan-save-token-model-mode",
+        choices=(
+            "off",
+            "fallback-context-unanimous",
+            "fallback-token-majority",
+            "fallback-shorter-majority",
+        ),
+        default="off",
+        help=(
+            "Lab-only token spelling experiment learned from before synthetic -> RADAN save -> oracle symbols. "
+            "Only fallback-encoded tokens are eligible for replacement."
+        ),
+    )
+    parser.add_argument(
+        "--radan-save-token-model-before-folder",
+        type=Path,
+        help="Synthetic .sym folder before RADAN save for the lab token model.",
+    )
+    parser.add_argument(
+        "--radan-save-token-model-after-folder",
+        type=Path,
+        help="Copied .sym folder after RADAN save for the lab token model.",
+    )
+    parser.add_argument(
+        "--radan-save-token-model-oracle-folder",
+        type=Path,
+        help="Known-good oracle .sym folder for the lab token model.",
+    )
     parser.add_argument("--allow-outside-lab", action="store_true")
     args = parser.parse_args()
 
     out_dir = Path(args.out_dir)
     _ensure_lab_output(out_dir / "__probe__.sym", allow_outside_lab=bool(args.allow_outside_lab))
     model = build_coordinate_model(args.dxf_folder, args.sym_folder, value_digits=int(args.value_digits))
+    radan_save_model = None
+    if str(args.radan_save_token_model_mode) != "off":
+        required = [
+            args.radan_save_token_model_before_folder,
+            args.radan_save_token_model_after_folder,
+            args.radan_save_token_model_oracle_folder,
+        ]
+        if any(path is None for path in required):
+            parser.error(
+                "--radan-save-token-model-mode requires before, after, and oracle folders when not off."
+            )
+        radan_save_model = build_radan_save_token_model(
+            dxf_folder=args.dxf_folder,
+            before_folder=args.radan_save_token_model_before_folder,
+            after_folder=args.radan_save_token_model_after_folder,
+            oracle_folder=args.radan_save_token_model_oracle_folder,
+            value_digits=int(args.value_digits),
+        )
     part_reports: list[dict[str, Any]] = []
     skipped: list[dict[str, str]] = list(model["skipped"])
     for part in _part_names(args, args.dxf_folder, args.sym_folder):
@@ -1197,6 +1271,8 @@ def main() -> int:
                 allow_same_part_token_spelling=bool(args.allow_same_part_token_spelling),
                 prefer_literal_geometry=bool(args.prefer_literal_geometry),
                 use_slot_value_fractions=bool(args.use_slot_value_fractions),
+                radan_save_token_model=radan_save_model,
+                radan_save_token_model_mode=str(args.radan_save_token_model_mode),
                 allow_outside_lab=bool(args.allow_outside_lab),
             )
         except Exception as exc:
@@ -1220,6 +1296,17 @@ def main() -> int:
         "allow_same_part_token_spelling": bool(args.allow_same_part_token_spelling),
         "prefer_literal_geometry": bool(args.prefer_literal_geometry),
         "use_slot_value_fractions": bool(args.use_slot_value_fractions),
+        "radan_save_token_model_mode": str(args.radan_save_token_model_mode),
+        "radan_save_token_model_summary": None
+        if radan_save_model is None
+        else {
+            "eligible_part_count": radan_save_model["eligible_part_count"],
+            "observation_count": radan_save_model["observation_count"],
+            "skipped_count": len(radan_save_model["skipped"]),
+            "before_folder": radan_save_model["before_folder"],
+            "after_folder": radan_save_model["after_folder"],
+            "oracle_folder": radan_save_model["oracle_folder"],
+        },
         "training_part_count": len(model["pairs"]),
         "coordinate_entry_count": len(model["coordinate_entries"]),
         "coordinate_point_observation_count": len(model["coordinate_point_observations"]),
@@ -1233,6 +1320,9 @@ def main() -> int:
         "exact_slots": exact_slots,
         "total_slots": total_slots,
         "exact_slot_ratio": exact_slots / total_slots if total_slots else 0.0,
+        "radan_save_token_canonicalized_slots": sum(
+            int(row.get("radan_save_token_canonicalized_slots", 0)) for row in part_reports
+        ),
         "parts": part_reports,
     }
     write_json(out_dir / "coordinate_model_writer_report.json", payload)
