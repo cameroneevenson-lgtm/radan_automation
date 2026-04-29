@@ -1272,4 +1272,71 @@ Interpretation:
 - the current RADAN-saved synthetic corpus passes file-level validation, RADAN save validation, copied-project membership validation, sheet-refresh validation, and automated canary thumbnail parity
 - this is materially stronger than the previous raw synthetic attempts, where several canaries visibly failed or were destructively repaired
 - it is still not promoted: the remaining gate is an actual copied-project nest/report validation and user visual review inside RADAN
-- no proven headless `RunNester` path is wired yet; existing evidence marks nest mode automation as live/UI-tested, while typed `lay_run_nest` / managed `RunNester` remain research items
+- at this checkpoint, no proven headless nester path was wired yet; the follow-up nester gate below resolves that for `Mac.lay_run_nest(0)` but not for the managed `Application.RunNester()` surface
+
+### 2026-04-29 Headless Copied-Project Nester Gate
+
+Ran lab-only copied-project nester probes under:
+
+`C:\Tools\radan_automation\_sym_lab\nester_probe_20260429_154029`
+
+This used the RADAN-saved synthetic symbol corpus from:
+
+`C:\Tools\radan_automation\_sym_lab\radan_save_validate_line_repair_zero_arc_start_full98_20260429_151926\after_radan_save`
+
+Production files were read-only inputs. No W: writes and no production RPD/SYM writes.
+
+Important API findings:
+
+- `Application.RunNester()` appears in the interop dump, but was not exposed on the current automation COM object; a direct call raised `AttributeError: Radraft.Application.RunNester`.
+- `Mac.nst_add_part(...)` / `Mac.nst_add_sheet(...)` returned success-like values, but did not populate the top-level nest project rows needed by `lay_run_nest(0)`.
+- the working headless path is the nest project API:
+  - open a copied `.rpd`
+  - add rows with `Mac.prj_clear_part_data`, `PRJ_PART_*`, and `Mac.prj_add_part()`
+  - refresh sheet rows with `Mac.prg_notify('rpr_sheets_controls', 'UpdateSheetsList')`
+  - run `Mac.lay_run_nest(0)`
+  - save and quit the automation-owned RADAN instance
+
+Small proof:
+
+- first `10` parts added by `prj_add_part`
+- before sheet refresh: `10` parts, `0` sheets
+- after `UpdateSheetsList`: `10` parts, `5` sheets
+- `lay_run_nest(0)` returned `0` in `3.248s`
+- generated `4` `.drg` nest drawings
+
+Full-corpus blocker isolation:
+
+- full `98` with all known sheet definitions added manually returned `11006` with `0` nest drawings
+- ten-part batch isolation found the failing range was rows `61-70`
+- single-part isolation identified three blockers:
+  - `F54410-B-09`
+  - `F54410-B-11`
+  - `F54410-B-17`
+- each of those three also failed as a single part with the L-side known-good RADAN symbol, returning `11039`
+- therefore those failures are not synthetic-symbol failures
+- all three are `Aluminum 5052`, `0.18 in`, quantity `1`; sheet refresh covered all BOM material/thickness groups
+
+Full copied-project synthetic nester proof with blockers excluded:
+
+- excluded `F54410-B-09`, `F54410-B-11`, and `F54410-B-17`
+- added `95` parts through `prj_add_part`
+- called `UpdateSheetsList`
+- sheet rows after refresh: `8`
+- `lay_run_nest(0)` returned `0` in `56.024s`
+- generated `28` `.drg` nest drawings
+- after nest:
+  - part rows: `95`
+  - sheet rows: `8`
+  - nest rows: `42`
+  - made nonzero count: `431`
+  - `NextNestNum`: `43`
+- no visible RADAN accept/confirm dialog was detected during the run
+- `Application.Quit()` returned `true`; no RADAN/Radraft process remained afterward
+
+Interpretation:
+
+- the RADAN-saved synthetic corpus is now proven nestable headlessly in a copied project for `95 / 98` F54410 parts
+- the remaining three blockers reproduce with known-good RADAN-created symbols, so they should be investigated as nester/setup/geometry-fit cases rather than native SYM encoding failures
+- the likely production-shaped headless nester path is `prj_add_part` + `UpdateSheetsList` + `lay_run_nest(0)`, with explicit process ownership checks and copied-project validation gates
+- promotion is still not automatic: we need user visual review and a report/packet validation pass before using this beyond lab/copied-project contexts

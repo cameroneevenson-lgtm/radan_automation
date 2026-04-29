@@ -17,6 +17,8 @@ This file is intended to bridge:
   - executed successfully against an attached, automation-backed visible RADAN session
 - `tested-file`
   - executed successfully as a direct file transformation without opening RADAN
+- `tested-headless-negative`
+  - exercised headlessly and proven not to be the right path, or not exposed through the automation surface we can currently reach
 - `wrapper-tested`
   - covered by unit tests or wrapper contract checks, but not yet proven against a live RADAN workflow here
 - `doc-only`
@@ -40,12 +42,18 @@ These are the highest-value typed calls to prefer when possible.
 | `Application.OpenSymbol(...)` | PDF, interop, wrapper | headless/live | n/a | `API with process guard` | `wrapper-tested` | Routed by `open_document()`. A local probe showed that requesting a fresh COM instance can still bind to the visible user-owned `RADRAFT.exe`; do not treat this as isolated unless the resolved PID is validated. |
 | `Application.OpenSymbolFromRasterImage(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `wrapper-tested` | Exposed and routed; still needs real raster import test. |
 | `Application.Quit()` | PDF, interop, wrapper | headless/live | n/a | `API with process guard` | `tested-headless` | Safe for a positively identified automation-owned instance. Unsafe as generic cleanup while a user-owned RADAN session is open, because a requested fresh COM object can bind back to the visible `RADRAFT.exe`. |
+| `Application.RunNester()` | interop reflection | headless | `Mac.lay_run_nest(0)` after project rows/sheets exist | `do not use directly yet` | `tested-headless-negative` | Present in `INTEROP_SURFACE_DUMP.md`, but the current COM automation object raised `AttributeError: Radraft.Application.RunNester`. |
 | `Document.Close(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Used in headless save/export flows. |
 | `Document.SaveAs(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Verified in temp drawing save probe. |
 | `Document.SaveCopyAs(...)` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Verified in `headless_export_document_artifacts.py`. |
 | `Mac.lic_get_holder()` / `lic_get_servercode()` | PDF, interop, wrapper | headless/live | n/a | `API` | `tested-headless` | Confirmed live license info through wrapper. |
 | `Mac.fla_thumbnail(...)` | wrapper, interop | headless | n/a | `API` | `tested-headless` | Verified to produce PNG output in isolated automation instance. |
 | `Mac.prj_get_file_path()` | PDF page 80 | live nest | guessing from symbol folders or recent files | `API` | `doc-only` | Use this to discover the currently open Nest Project path before inspecting `.rpd` contents. The `PLAYGROUND.rpd` path from 2026-04-24 was operator-confirmed after an earlier inferred path was wrong. |
+| `Mac.prj_clear_part_data()` + `PRJ_PART_*` + `prj_add_part()` | live observation, COM probe | headless copied project | direct `.rpd` XML row edits | `API` | `tested-headless` | Proven to populate top-level nest project part rows. A 95-part copied-project probe successfully nested after adding parts this way and refreshing sheets. |
+| `Mac.prj_clear_sheet_data()` + `PRJ_SHEET_*` + `prj_add_sheet()` | COM probe | headless copied project | direct `.rpd` XML row edits | `API` | `tested-headless` | Manual sheet-row insertion worked for batch and 95-part copied-project nester probes. For production-shaped flow, prefer the `UpdateSheetsList` handler so only needed sheets are added. |
+| `Mac.prg_notify('rpr_sheets_controls', 'UpdateSheetsList')` | live observation, COM probe | headless copied project | manually adding all sheet rows | `API` | `tested-headless` | Matches the Nest Editor button behavior. In a 95-part copied project it refreshed `0 -> 8` sheet rows before `lay_run_nest(0)`. |
+| `Mac.lay_run_nest(0)` | interop reflection, COM probe | headless copied project | UI nester button | `API` | `tested-headless` | Proven to create nest `.drg` files headlessly once project part rows and sheet rows exist. First-10 probe returned `0` in `3.248s`; 95-part probe returned `0` in `56.024s` and generated `28` nest drawings. |
+| `Mac.nst_add_part(...)` / `Mac.nst_add_sheet(...)` | COM probe | headless | `prj_add_part` / `prj_add_sheet` project APIs | `avoid for project import` | `tested-headless-negative` | Calls returned success-like values but did not persist the top-level project rows needed by `lay_run_nest(0)`. |
 | `Mac.prj_output_report(...)` / `stp_output_report(...)` | wrapper, interop | headless/live | n/a | `API` | `wrapper-tested` | Interface present; setup report path unit-covered, real workflow still pending. |
 | `Mac.scan(...)` / `next()` / `rewind()` | PDF, interop | headless/live | keystroke find workflows | `API` | `tested-live` | Proven on an attached Part Editor session for deterministic feature counting and candidate collection ahead of pen remap work. Important live nuance: `scan(...)` armed the iterator, but `next()` had to be called before reading `FI0` / `FP0` to avoid a stale prior feature. |
 | `Mac.find_xy_identifier(...)` | PDF, interop | live/headless | keystroke find workflows | `API` | `tested-live` | Proven as the missing re-mark step needed before edit-mode pen changes in a live attached Part Editor session. |
