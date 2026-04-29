@@ -1678,3 +1678,41 @@ Interpretation:
 - the three `B-194` token choices are likely coupled to aggregate nester behavior under the context-unanimous corpus
 - mixing token-spelling regimes can be worse than either consistent regime: raw full95 passes, context-unanimous full95 passes, but context-unanimous with raw `B-194` fails
 - next token rules should avoid per-part transplant assumptions and should validate consistency at the corpus/subset level, not just per-symbol display or decoded-close geometry
+
+### 2026-04-29 Minimal B-194 Token Restore Probe
+
+Built three lab variants from the failing context-unanimous plus raw-`B-194` hybrid:
+
+- row10 context only:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\writer_context_unanimous_B194_row10_context_only`
+- circle-pair context only:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\writer_context_unanimous_B194_circle_pair_context_only`
+- all three context tokens restored:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\writer_context_unanimous_B194_all3_context_restored`
+
+First25 result:
+
+- raw `B-194` hybrid: `lay_run_nest(0)=11088`, `0` DRGs
+- row10 context only: pass, `9` DRGs, made/nonzero `115`
+- circle-pair context only: pass, `9` DRGs, made/nonzero `115`
+- all three restored: pass, `9` DRGs, made/nonzero `115`
+
+Full95 result:
+
+| Candidate | Exact token rate | Mismatches | Full95 nester | Used-nest match vs raw | Contained symbols vs raw | Thumbnail canaries |
+| --- | ---: | ---: | --- | --- | --- | --- |
+| raw pre-save baseline | `0.903673` | `6690` | pass | yes | `28 / 28` | `7 / 7` |
+| context-unanimous | `0.910498` | `6216` | pass | no, swaps nests `27`/`28` | `26 / 28` | not rerun |
+| B-194 row10 context only | `0.910469` | `6218` | pass | yes | `28 / 28` | not rerun |
+| B-194 circle-pair context only | `0.910484` | `6217` | pass | yes | `28 / 28` | `7 / 7` |
+
+Interpretation:
+
+- restoring either the row10 `LINE:delta_y` context token or the two row23/24 `CIRCLE:center_delta_x` context tokens is enough to recover first25/full95 nester acceptance from the raw-`B-194` hybrid
+- both minimal variants preserve the raw full95 used-nest semantics, unlike full context-unanimous
+- the circle-pair variant is the best current improved-token lab candidate:
+  - exact token rate improves over raw by about `0.006811`
+  - all accepted95 mismatches remain decoded-close
+  - full95 copied-project nester semantics match raw and L-side known-good
+  - hard-canary thumbnails are pixel-identical to L-side known-good
+- this still is not a production promotion candidate; it is evidence that final token spelling rules can improve while preserving practical RADAN behavior, but they need corpus-level nester guards
