@@ -48,6 +48,19 @@ class CopiedProjectNesterGateTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "outside lab root"):
                 gate.assert_lab_output_path(outside, lab_root=lab_root)
 
+    def test_path_length_summary_flags_near_radan_limit_paths(self) -> None:
+        project = Path(
+            "C:/Tools/radan_automation/_sym_lab/run/"
+            "F54410 PAINT PACK.full95_B194_circle_pair_context_only_repeat1.rpd"
+        )
+        out_dir = project.parent
+
+        summary = gate.path_length_summary(project, out_dir, warning_chars=len(str(project)))
+
+        self.assertEqual(summary["project_path_length"], len(str(project)))
+        self.assertEqual(summary["out_dir_length"], len(str(out_dir)))
+        self.assertTrue(summary["project_path_warning"])
+
     def test_prepare_copied_project_clears_parts_and_sheets_but_preserves_nests(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             source = Path(tmpdir) / "source.rpd"

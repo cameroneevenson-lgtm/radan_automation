@@ -30,6 +30,7 @@ RADAN_PROJECT_NS = "http://www.radan.com/ns/project"
 DEFAULT_LAB_ROOT = Path(__file__).resolve().parent / "_sym_lab"
 DEFAULT_OVERSIZED_EXCLUDES = ("F54410-B-09", "F54410-B-11", "F54410-B-17")
 RADAN_PROCESS_PATTERN = r"(?i)radan|radraft|radnest|radpunch|radbend|mazak"
+RADAN_PROJECT_PATH_WARNING_CHARS = 200
 REPORT_FILE_TYPE_PDF = 4
 
 ET.register_namespace("", RADAN_PROJECT_NS)
@@ -50,6 +51,23 @@ def assert_lab_output_path(path: Path, *, lab_root: Path | None = None, operatio
     root = (lab_root or DEFAULT_LAB_ROOT).expanduser().resolve()
     if resolved != root and root not in resolved.parents:
         raise RuntimeError(f"Refusing to {operation} outside lab root {root}: {path}")
+
+
+def path_length_summary(
+    project_path: Path,
+    out_dir: Path,
+    *,
+    warning_chars: int = RADAN_PROJECT_PATH_WARNING_CHARS,
+) -> dict[str, Any]:
+    project_text = str(project_path)
+    out_text = str(out_dir)
+    return {
+        "out_dir_length": len(out_text),
+        "project_path_length": len(project_text),
+        "project_file_name_length": len(project_path.name),
+        "warning_chars": warning_chars,
+        "project_path_warning": len(project_text) >= warning_chars,
+    }
 
 
 def _project_tag(name: str) -> str:
@@ -337,6 +355,13 @@ def run_gate(
     if csv_path.resolve() != copied_csv.resolve():
         shutil.copy2(csv_path, copied_csv)
     project_path = out_dir / f"{source_rpd.stem}.{safe_label}.rpd"
+    path_lengths = path_length_summary(project_path, out_dir)
+    if path_lengths["project_path_warning"]:
+        logger.write(
+            "WARNING: copied project path length "
+            f"{path_lengths['project_path_length']} >= {path_lengths['warning_chars']}; "
+            "use a shorter out-dir/label before interpreting nester failures."
+        )
 
     all_parts = read_import_csv(csv_path)
     selected_parts, missing_in_csv = select_parts(
@@ -373,6 +398,7 @@ def run_gate(
         "process_preflight": preflight_processes,
         "process_cleanup_before": cleanup_before,
         "before": before_snapshot,
+        "path_lengths": path_lengths,
     }
 
     app = None
@@ -414,6 +440,7 @@ def run_gate(
         payload["after"] = project_snapshot(project_path)
         payload["drg_files"] = sorted(str(path) for path in out_dir.rglob("*.drg"))
         payload["drg_count"] = len(payload["drg_files"])
+        payload["path_lengths"]["max_drg_path_length"] = max((len(path) for path in payload["drg_files"]), default=0)
 
         if attempt_reports:
             payload["reports"] = _attempt_reports(app, out_dir / "reports", logger)

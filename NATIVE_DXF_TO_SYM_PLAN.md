@@ -1736,6 +1736,9 @@ Repeat stability check:
 - interpretation:
   - the failed repeat is a path/label-length sensitivity suspect, not current evidence that the circle-pair token candidate is semantically unstable
   - use short labels/output paths for future copied-project nester gates and treat long-path failures near this envelope as harness evidence to isolate before token conclusions
+- harness follow-up:
+  - `copied_project_nester_gate.py` now records copied-project path lengths in `result.json`
+  - it logs a warning when the copied project path reaches `200` characters, so long-path nester failures are not misclassified as token evidence
 
 Interpretation:
 
