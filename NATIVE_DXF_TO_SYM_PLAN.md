@@ -1740,6 +1740,35 @@ Repeat stability check:
   - `copied_project_nester_gate.py` now records copied-project path lengths in `result.json`
   - it logs a warning when the copied project path reaches `200` characters, so long-path nester failures are not misclassified as token evidence
 
+Raw-corpus B-194 all-three isolation:
+
+- variant:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\writer_raw_B194_all3_context_only`
+- construction:
+  - copied the raw pre-save corpus from `_sym_lab\radan_save_validate_line_repair_zero_arc_start_full98_20260429_151926\before`
+  - replaced only `B-194.sym` with the all-three context-token B-194 variant
+  - verified `98` `.sym` files and exactly one hash difference versus raw: `B-194.sym`
+- full95 nester:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_raw_b194_all3`
+  - `lay_run_nest(0)=0`
+  - `95` parts, `8` sheets, `42` nest rows, `431` made/nonzero
+  - `28` DRGs
+  - `path_lengths.project_path_length=141`, `project_path_warning=False`
+  - report attempts still blocked with `Wrong mode for DevExpress reports`
+  - no lingering RADAN-family processes
+- comparison:
+  - versus raw synthetic: `rpd_used_nests_match=True`, `0` RPD used-nest differences
+  - versus context-unanimous: `rpd_used_nests_match=False`, same nest `27`/`28` `B-3 R1` / `B-5 R1` swap
+- token residuals versus L-side known-good:
+  - exact tokens: `62764 / 69451`
+  - exact rate: `0.903716`
+  - mismatches: `6687`
+  - far mismatches: `0`
+- interpretation:
+  - the three B-194 context tokens are not sufficient by themselves to perturb raw nester semantics
+  - the context-unanimous swap needs broader corpus spelling context plus the all-three B-194 spelling state
+  - this points away from a simple per-symbol token rule and toward corpus-level or neighboring-part layout sensitivity in the nester oracle
+
 Interpretation:
 
 - restoring either the row10 `LINE:delta_y` context token or the two row23/24 `CIRCLE:center_delta_x` context tokens is enough to recover first25/full95 nester acceptance from the raw-`B-194` hybrid
