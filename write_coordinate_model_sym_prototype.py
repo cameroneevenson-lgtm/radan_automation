@@ -739,6 +739,24 @@ def predicted_context_slot_fractions(
         )
 
     value_digits = int(model["value_digits"])
+
+    def prefer_dyadic_delta(
+        fraction: Fraction,
+        visible_delta: float,
+        covered: bool,
+        source: str,
+        *,
+        allow: bool = True,
+    ) -> tuple[Fraction, bool, str]:
+        if not prefer_literal_geometry or not allow:
+            return fraction, covered, source
+        dyadic_fraction = _visible_dyadic_fraction(float(visible_delta), digits=value_digits)
+        if dyadic_fraction is None:
+            return fraction, covered, source
+        if abs(float(dyadic_fraction) - float(visible_delta)) > 1e-12:
+            return fraction, covered, source
+        return dyadic_fraction, True, f"{source}->literal_dyadic_delta"
+
     if entity_type == "LINE":
         start = dxf_row["normalized_start"]
         end = dxf_row["normalized_end"]
@@ -746,6 +764,20 @@ def predicted_context_slot_fractions(
         start_y, start_y_covered, start_y_source = pick("y", "start", start)
         end_x, end_x_covered, end_x_source = pick("x", "end", end)
         end_y, end_y_covered, end_y_source = pick("y", "end", end)
+        delta_x_value = float(end[0]) - float(start[0])
+        delta_y_value = float(end[1]) - float(start[1])
+        delta_x, delta_x_covered, delta_x_source = prefer_dyadic_delta(
+            end_x - start_x,
+            delta_x_value,
+            start_x_covered and end_x_covered,
+            f"{start_x_source}->{end_x_source}",
+        )
+        delta_y, delta_y_covered, delta_y_source = prefer_dyadic_delta(
+            end_y - start_y,
+            delta_y_value,
+            start_y_covered and end_y_covered,
+            f"{start_y_source}->{end_y_source}",
+        )
         return {
             0: (
                 start_x,
@@ -760,16 +792,16 @@ def predicted_context_slot_fractions(
                 start_y_source,
             ),
             2: (
-                end_x - start_x,
-                _value_key(float(end[0]) - float(start[0]), digits=value_digits),
-                start_x_covered and end_x_covered,
-                f"{start_x_source}->{end_x_source}",
+                delta_x,
+                _value_key(delta_x_value, digits=value_digits),
+                delta_x_covered,
+                delta_x_source,
             ),
             3: (
-                end_y - start_y,
-                _value_key(float(end[1]) - float(start[1]), digits=value_digits),
-                start_y_covered and end_y_covered,
-                f"{start_y_source}->{end_y_source}",
+                delta_y,
+                _value_key(delta_y_value, digits=value_digits),
+                delta_y_covered,
+                delta_y_source,
             ),
         }
 
@@ -783,6 +815,39 @@ def predicted_context_slot_fractions(
         end_y, end_y_covered, end_y_source = pick("y", "end", end)
         center_x, center_x_covered, center_x_source = pick("x", "center", center)
         center_y, center_y_covered, center_y_source = pick("y", "center", center)
+        delta_x_value = float(end[0]) - float(start[0])
+        delta_y_value = float(end[1]) - float(start[1])
+        center_delta_x_value = float(center[0]) - float(start[0])
+        center_delta_y_value = float(center[1]) - float(start[1])
+        allow_arc_dyadic_delta = _arc_has_cardinal_endpoints(dxf_row)
+        delta_x, delta_x_covered, delta_x_source = prefer_dyadic_delta(
+            end_x - start_x,
+            delta_x_value,
+            start_x_covered and end_x_covered,
+            f"{start_x_source}->{end_x_source}",
+            allow=allow_arc_dyadic_delta,
+        )
+        delta_y, delta_y_covered, delta_y_source = prefer_dyadic_delta(
+            end_y - start_y,
+            delta_y_value,
+            start_y_covered and end_y_covered,
+            f"{start_y_source}->{end_y_source}",
+            allow=allow_arc_dyadic_delta,
+        )
+        center_delta_x, center_delta_x_covered, center_delta_x_source = prefer_dyadic_delta(
+            center_x - start_x,
+            center_delta_x_value,
+            center_x_covered and start_x_covered,
+            f"{start_x_source}->{center_x_source}",
+            allow=allow_arc_dyadic_delta,
+        )
+        center_delta_y, center_delta_y_covered, center_delta_y_source = prefer_dyadic_delta(
+            center_y - start_y,
+            center_delta_y_value,
+            center_y_covered and start_y_covered,
+            f"{start_y_source}->{center_y_source}",
+            allow=allow_arc_dyadic_delta,
+        )
         return {
             0: (
                 start_x,
@@ -797,28 +862,28 @@ def predicted_context_slot_fractions(
                 start_y_source,
             ),
             2: (
-                end_x - start_x,
-                _value_key(float(end[0]) - float(start[0]), digits=value_digits),
-                start_x_covered and end_x_covered,
-                f"{start_x_source}->{end_x_source}",
+                delta_x,
+                _value_key(delta_x_value, digits=value_digits),
+                delta_x_covered,
+                delta_x_source,
             ),
             3: (
-                end_y - start_y,
-                _value_key(float(end[1]) - float(start[1]), digits=value_digits),
-                start_y_covered and end_y_covered,
-                f"{start_y_source}->{end_y_source}",
+                delta_y,
+                _value_key(delta_y_value, digits=value_digits),
+                delta_y_covered,
+                delta_y_source,
             ),
             4: (
-                center_x - start_x,
-                _value_key(float(center[0]) - float(start[0]), digits=value_digits),
-                center_x_covered and start_x_covered,
-                f"{start_x_source}->{center_x_source}",
+                center_delta_x,
+                _value_key(center_delta_x_value, digits=value_digits),
+                center_delta_x_covered,
+                center_delta_x_source,
             ),
             5: (
-                center_y - start_y,
-                _value_key(float(center[1]) - float(start[1]), digits=value_digits),
-                center_y_covered and start_y_covered,
-                f"{start_y_source}->{center_y_source}",
+                center_delta_y,
+                _value_key(center_delta_y_value, digits=value_digits),
+                center_delta_y_covered,
+                center_delta_y_source,
             ),
             6: (Fraction(1), _value_key(1.0, digits=value_digits), True, "constant"),
             9: (Fraction(1), _value_key(1.0, digits=value_digits), True, "constant"),
@@ -832,6 +897,20 @@ def predicted_context_slot_fractions(
         start_y, start_y_covered, start_y_source = pick("y", "start", start)
         center_x, center_x_covered, center_x_source = pick("x", "center", center)
         center_y, center_y_covered, center_y_source = pick("y", "center", center)
+        center_delta_x_value = float(center[0]) - float(start[0])
+        center_delta_y_value = float(center[1]) - float(start[1])
+        center_delta_x, center_delta_x_covered, center_delta_x_source = prefer_dyadic_delta(
+            center_x - start_x,
+            center_delta_x_value,
+            center_x_covered and start_x_covered,
+            f"{start_x_source}->{center_x_source}",
+        )
+        center_delta_y, center_delta_y_covered, center_delta_y_source = prefer_dyadic_delta(
+            center_y - start_y,
+            center_delta_y_value,
+            center_y_covered and start_y_covered,
+            f"{start_y_source}->{center_y_source}",
+        )
         return {
             0: (
                 start_x,
@@ -846,16 +925,16 @@ def predicted_context_slot_fractions(
                 start_y_source,
             ),
             4: (
-                center_x - start_x,
-                _value_key(float(center[0]) - float(start[0]), digits=value_digits),
-                center_x_covered and start_x_covered,
-                f"{start_x_source}->{center_x_source}",
+                center_delta_x,
+                _value_key(center_delta_x_value, digits=value_digits),
+                center_delta_x_covered,
+                center_delta_x_source,
             ),
             5: (
-                center_y - start_y,
-                _value_key(float(center[1]) - float(start[1]), digits=value_digits),
-                center_y_covered and start_y_covered,
-                f"{start_y_source}->{center_y_source}",
+                center_delta_y,
+                _value_key(center_delta_y_value, digits=value_digits),
+                center_delta_y_covered,
+                center_delta_y_source,
             ),
             6: (Fraction(1), _value_key(1.0, digits=value_digits), True, "constant"),
             9: (Fraction(1), _value_key(1.0, digits=value_digits), True, "constant"),

@@ -334,6 +334,51 @@ class WriteCoordinateModelSymPrototypeTests(unittest.TestCase):
         self.assertEqual(tokens[0], encode_ddc_number_fraction(Fraction("1.000000001")))
         self.assertEqual(slot_reports[0]["coordinate_source"], "literal_raw_noncardinal_arc")
 
+    def test_prefer_literal_geometry_keeps_dyadic_arc_deltas_exact(self) -> None:
+        pair = PartPair(
+            part="P2",
+            dxf_path=None,  # type: ignore[arg-type]
+            sym_path=None,  # type: ignore[arg-type]
+            dxf_rows=[
+                {
+                    "type": "ARC",
+                    "normalized_start_point": [1.000000000000001, 2.25],
+                    "normalized_end_point": [1.000000000000001, 2.0],
+                    "normalized_center": [0.0, 2.25],
+                    "radius": 1.0,
+                    "start_angle": 180.0,
+                    "end_angle": 270.0,
+                }
+            ],
+            ddc_rows=[{"tokens": ["", "", "", "", "", ""]}],
+        )
+        observations = _coordinate_point_observations_for_pair(pair)
+        model = {
+            "coordinate_lookup": {},
+            "coordinate_entries": [],
+            "coordinate_fallback_lookup": {},
+            "coordinate_point_observations": observations,
+            "context_coordinate_lookup": _build_context_coordinate_lookup(observations),
+            "same_part_coordinate_lookup": _build_same_part_coordinate_lookup(observations),
+            "token_observations": [],
+            "token_lookup": {},
+            "value_digits": 6,
+        }
+
+        tokens, slot_reports = predict_geometry_tokens(
+            target_part="P1",
+            dxf_row=pair.dxf_rows[0],
+            dxf_rows=pair.dxf_rows,
+            row_index=0,
+            template_ddc_row={"tokens": ["", "", "", "", "", ""]},
+            model=model,
+            coordinate_resolver="context",
+            prefer_literal_geometry=True,
+        )
+
+        self.assertEqual(tokens[3], encode_ddc_number_fraction(Fraction(-1, 4)))
+        self.assertIn("literal_dyadic_delta", slot_reports[3]["coordinate_source"])
+
     def test_slot_value_fraction_lookup_can_override_line_delta(self) -> None:
         learned_fraction = Fraction(299999999, 100000000)
         model = {

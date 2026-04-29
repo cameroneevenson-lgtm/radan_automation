@@ -986,3 +986,122 @@ Conclusion:
 - the safest learned rule is currently "only adopt a RADAN-save spelling when it shortens a fallback-generated token"; it improves exact token count only slightly
 - promotion recommendation remains `do not promote synthetic SYM generation`
 - next useful work is a stronger local context model around row neighborhoods and exact source fractions, especially for the count-matched canaries `B-14`, `B-17`, and `F54410-B-49`
+
+## 2026-04-29 RADAN Save Start-State / Transplant Probes
+
+Purpose:
+
+- use RADAN proper in copied lab folders only
+- test whether RADAN open/save output is deterministic from decoded geometry/metadata, or whether the starting DDC token spelling changes the saved result
+- isolate why some decoded-close synthetic symbols are destructively repaired on save while L-side known-good copies are not
+
+Artifacts:
+
+- run folder:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_start_state_probe_20260429_142457`
+- start-state report:
+  `RADAN_SAVE_START_STATE_PROBE.md`
+- chunk transplant report:
+  `RADAN_TOKEN_TRANSPLANT_PROBE.md`
+- fine window report:
+  `RADAN_TRANSPLANT_WINDOW_PROBE.md`
+- single-token report:
+  `RADAN_SINGLE_TOKEN_TRANSPLANT_PROBE.md`
+- trigger row details:
+  `trigger_row_token_details.json`
+
+RADAN/process notes:
+
+- all experiment inputs and outputs were copied lab files under `_sym_lab`
+- no `W:` writes
+- production L-side `.sym` files were read-only oracles
+- RADAN was launched headlessly for copied symbols and cleaned up after each probe
+- a process-filter false positive was observed: Microsoft Edge can match a naive `RADAN` window-title scan when the browser title contains `radan_automation`; future process cleanup should prefer actual process names (`RADRAFT`, `Radnest`, `Radpunch`, etc.) or exclude browser titles
+
+Start-state result:
+
+- copied L-side known-good controls save back exact against L-side good for the tested canaries
+- synthetic starts do not all converge to one saved output; the initial DDC spelling can affect the saved result
+- for `B-14`, `B-17`, and `F54410-B-49`, baseline/shorter/context synthetic starts saved to the same DDC geometry, while known-good saved exact and `token_majority` could preserve worse residuals
+- for destructive canaries, L-side good copies remained exact, but synthetic starts were rebuilt:
+  - `B-27`: `181 -> 170` geometry records
+  - `F54410-B-12`: `194 -> 184` geometry records before the dyadic-delta fix below
+
+Chunk transplant result:
+
+- starting from the L-side good symbol, replacing selected DDC geometry rows with baseline synthetic geometry rows can trigger RADAN repair
+- this points at geometry token spelling/value representation, not broad XML metadata, as a repair trigger
+
+`B-27`:
+
+- synthetic ARC rows alone were safe: `181 / 181`
+- synthetic LINE rows alone triggered repair: `181 -> 170`
+- individual synthetic rows that trigger repair by themselves:
+  - row `22`
+  - row `24`
+  - row `29`
+  - row `45`
+  - row `82`
+  - row `134`
+- single-token transplant proved the exact trigger slots:
+  - rows `22`, `24`, `29`, `45`, `82`: slot `0` / `LINE:start_x`
+  - row `134`: slot `2` / `LINE:delta_x`
+- the common row `22/24/29/45/82` shape is a fallback token that decodes equal but is shorter than RADAN's good token, e.g. good `...0` vs synthetic trimmed `...`
+
+`F54410-B-12`:
+
+- synthetic ARC rows alone triggered repair: `194 -> 192`
+- synthetic LINE rows alone triggered repair: `194 -> 186`
+- individual `H` row `18` triggered repair by itself
+- single-token transplant proved row `18` slot `3` / `ARC:delta_y` was sufficient:
+  - good token: `m?P`
+  - synthetic token: `l?_ooooool`
+  - both decode near `-0.25`, but RADAN treats the synthetic approximate spelling as a repair trigger
+- line-window repair still exists in ranges:
+  - rows `16-20`
+  - `21-25`
+  - `56-60`
+  - `71-75`
+  - `81-85`
+  - `146-150`
+  - `151-155`
+  - `166-170`
+
+Code update:
+
+- `write_coordinate_model_sym_prototype.py`
+  - when `--prefer-literal-geometry` is active, cardinal-endpoint ARC deltas that are visibly dyadic are now kept as exact dyadic fractions
+  - this is intentionally restricted to cardinal ARC endpoints; applying it to non-cardinal arcs caused decoded misses in `B-185`, `B-186`, `F54410-B-01`, `F54410-B-05`, `F54410-B-10`, `F54410-B-14`, and `F54410-B-21`
+- `tests/test_write_coordinate_model_sym_prototype.py`
+  - added coverage for preserving exact dyadic cardinal-arc deltas
+
+Full-corpus result after the cardinal-arc dyadic-delta fix:
+
+- output folder:
+  `C:\Tools\radan_automation\_sym_lab\dyadic_cardinal_delta_writer_20260429_1500\strict`
+- generated parts: `98 / 98`
+- decoded-close slots within `1e-12`: `72553 / 72553`
+- far decoded mismatches: `0`
+- exact token slots: `65515 / 72553` (`90.300%`)
+- exact geometry records: `1054 / 4053` (`26.005%`)
+- improvement over previous strict baseline:
+  - `+98` exact token slots
+  - `+12` exact geometry records
+
+Patched RADAN save check:
+
+- `B-27` still repairs destructively: `181 -> 170`
+- `F54410-B-12` improves but still repairs destructively: `194 -> 186`
+- this confirms the row `18` arc fix removes one concrete repair trigger, but B-12 still has additional cumulative line-window triggers and B-27 still needs a fallback-token spelling rule
+
+Current cracking hypothesis:
+
+- RADAN's repair gate is sensitive to exact compact-number spelling, not only decoded geometry
+- some one-token differences that decode equal or within `1e-14` can mark a profile as repairable/destructive
+- cardinal-arc dyadic deltas must be represented as compact exact dyadics when possible
+- LINE fallback tokens may need a non-trimmed continuation rule in specific contexts, but broad continuation padding (`role` / `type-role`) is too noisy and reduced exact-token performance
+
+Next useful experiment:
+
+- build a targeted fallback continuation model for `LINE:start_x` and `LINE:delta_x` that predicts when RADAN wants a trailing `0`/longer continuation without broadly padding every fallback token
+- validate it first on the known single-token B-27 repair triggers, then on full-corpus exact-token ratio and RADAN save repair count
