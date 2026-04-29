@@ -1717,6 +1717,26 @@ Circle-pair DRG layout deltas:
   - layout token mismatches: `541`
   - decoded buckets: `541 close_1e-12`
 
+Repeat stability check:
+
+- long-label repeat:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_full95_B194_circle_pair_context_only_repeat1`
+  - project path length: `203`
+  - `lay_run_nest(0)=11088`
+  - `0` DRGs
+  - after sheet refresh/nest attempt: `95` parts, `8` sheets, `14` nest rows, `0` made/nonzero
+  - no lingering RADAN-family processes
+- short-label repeat:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_cp_b194_repeat2`
+  - project path length: `145`
+  - `lay_run_nest(0)=0`
+  - `28` DRGs, `42` nest rows, `431` made/nonzero
+  - `rpd_used_nests_match=True` versus both raw synthetic and the first circle-pair full95 run
+  - no lingering RADAN-family processes
+- interpretation:
+  - the failed repeat is a path/label-length sensitivity suspect, not current evidence that the circle-pair token candidate is semantically unstable
+  - use short labels/output paths for future copied-project nester gates and treat long-path failures near this envelope as harness evidence to isolate before token conclusions
+
 Interpretation:
 
 - restoring either the row10 `LINE:delta_y` context token or the two row23/24 `CIRCLE:center_delta_x` context tokens is enough to recover first25/full95 nester acceptance from the raw-`B-194` hybrid
