@@ -1779,3 +1779,54 @@ Interpretation:
   - full95 copied-project nester semantics match raw and L-side known-good
   - hard-canary thumbnails are pixel-identical to L-side known-good
 - this still is not a production promotion candidate; it is evidence that final token spelling rules can improve while preserving practical RADAN behavior, but they need corpus-level nester guards
+
+### 2026-04-29 B-194 Partner Split Probe
+
+To isolate the broader context needed for the context-unanimous `B-3 R1` / `B-5 R1`
+nest swap, built raw-corpus variants with `B-194.sym` carrying all three
+context-unanimous tokens plus progressively smaller sets of other
+context-unanimous symbols.
+
+All runs used the full `95`-part copied-project nester gate with
+`F54410-B-09`, `F54410-B-11`, and `F54410-B-17` excluded as oversized known-good
+blockers.
+
+| Variant | Context symbols beyond raw | `lay_run_nest(0)` | DRGs | Used-nest match vs raw | Difference |
+| --- | --- | ---: | ---: | --- | --- |
+| A | `B-194` + `B-14`, `B-185`, `B-186`, `B-193`, `B-25 R2`, `B-31`, `F54410-B-01`, `F54410-B-02`, `F54410-B-05`, `F54410-B-07`, `F54410-B-08`, `F54410-B-10`, `F54410-B-12`, `F54410-B-13` | `0` | `28` | no | nests `27`/`28` swap `B-3 R1` and `B-5 R1` |
+| A1 | `B-194` + `B-14`, `B-185`, `B-186`, `B-193`, `B-25 R2`, `B-31`, `F54410-B-01` | `0` | `28` | no | same nests `27`/`28` swap |
+| A1a | `B-194` + `B-14`, `B-185`, `B-186` | `0` | `28` | no | same nests `27`/`28` swap |
+| single B-14 | `B-194` + `B-14` | `0` | `28` | no | same nests `27`/`28` swap |
+| single B-185 | `B-194` + `B-185` | `0` | `28` | no | same nests `27`/`28` swap |
+| single B-186 | `B-194` + `B-186` | `0` | `28` | no | same nests `27`/`28` swap |
+
+Every listed variant preserved the envelope:
+
+- `95` project parts
+- `8` sheet rows
+- `42` nest rows
+- `431` made/nonzero count
+- `28` generated DRGs
+- final RADAN-family process list empty
+- report attempts still blocked with `Wrong mode for DevExpress reports`
+
+Raw-to-context token deltas for the three single trigger partners are small and
+decoded-close:
+
+- `B-14`: four `LINE:delta_y` spellings, all about `6.66e-16` decoded delta
+- `B-185`: nine arc token spellings on rows `11` and `13`, all about
+  `1.1e-14` or smaller decoded delta
+- `B-186`: four arc token spellings on rows `22` and `24`, all about
+  `7.1e-15` or smaller decoded delta
+
+Interpretation:
+
+- the all-three `B-194` context-token state is harmless by itself in the raw
+  corpus, but it becomes layout-perturbing when paired with at least one of
+  several other small decoded-close token spelling changes
+- the trigger is not unique to `B-14`; `B-185` and `B-186` independently produce
+  the same stable used-nest swap when paired with `B-194`
+- exact-token improvement rules need a nester semantic guard, because small
+  decoded-close token changes in unrelated symbols can alter aggregate layout
+  ordering without changing parser, thumbnail, part-count, sheet-count, made, or
+  DRG-count gates
