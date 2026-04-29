@@ -1439,6 +1439,29 @@ Interpretation:
 - Raw-vs-saved residuals are also all decoded-close, reinforcing that RADAN save mostly changes compact spelling/canonicalization, not the decoded geometry RADAN's nester uses for this corpus.
 - The largest residual groups remain line `start_x`, `start_y`, `delta_x`, and `delta_y`, so any next token-spelling rule should be judged against practical acceptance, not decoded geometry alone.
 
+Raw pre-save thumbnail parity:
+
+- harness: `run_thumbnail_parity_gate.py`
+- report: `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\thumbnail_parity_raw_canaries\thumbnail_parity_result.json`
+- candidate folder: `_sym_lab\radan_save_validate_line_repair_zero_arc_start_full98_20260429_151926\before`
+- oracle folder: `L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK`
+- mode: read-only symbol opens, no symbol saves
+- parts:
+  - `B-14`
+  - `B-17`
+  - `B-27`
+  - `B-30`
+  - `F54410-B-49`
+  - `F54410-B-12`
+  - `F54410-B-27`
+- result: `7 / 7` exact pixel matches at `900 x 700`
+- all per-render RADAN `process_final` lists were empty
+
+Interpretation:
+
+- The current raw pre-save synthetic symbols now pass the same hard-canary thumbnail parity that previously required RADAN-saved synthetic symbols.
+- Together with the `95 / 98` nester pass, this is the strongest current evidence that normal RADAN conversion/save may not be required for practical F54410 copied-project acceptance, even though exact token spelling is still not cracked.
+
 Known-good blocker fit check:
 
 | Part | DXF size | Biggest matching sheet | Fit result |
