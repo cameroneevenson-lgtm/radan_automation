@@ -1418,6 +1418,27 @@ Interpretation:
 - The raw-vs-saved deltas still propagate into generated DRG DDC payloads, mainly as same-prefix `F`, `I`, and `N` token changes rather than row insertion/deletion or changed nest membership.
 - This supports treating exact token spelling as a display/report/canonicalization research target, while copied-project nesting is already accepting the raw writer's current token spelling.
 
+Accepted-subset token residual benchmark:
+
+- analyzer: `analyze_token_residuals.py`
+- summary tool: `summarize_token_residual_runs.py`
+- summary report: `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\TOKEN_RESIDUAL_ACCEPTED95_SUMMARY.md`
+- subset: `95 / 98`, excluding oversized `F54410-B-09`, `F54410-B-11`, `F54410-B-17`
+- total compared compact-token slots per run: `69451`
+
+| Comparison | Exact token slots | Exact token rate | Mismatches | Close mismatches | Far mismatches | Same-prefix last-char-ish |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| raw pre-save synthetic vs known-good | `62761` | `0.903673` | `6690` | `6690` | `0` | `3421` |
+| RADAN-saved synthetic vs known-good | `67931` | `0.978114` | `1520` | `1520` | `0` | `630` |
+| raw pre-save synthetic vs RADAN-saved synthetic | `62963` | `0.906582` | `6488` | `6488` | `0` | `3473` |
+
+Interpretation:
+
+- RADAN save canonicalization strongly improves exact token spelling versus the known-good L-side symbols.
+- The raw writer's current residuals are all decoded-close within the analyzer tolerance for the accepted `95 / 98` subset; none are far decoded.
+- Raw-vs-saved residuals are also all decoded-close, reinforcing that RADAN save mostly changes compact spelling/canonicalization, not the decoded geometry RADAN's nester uses for this corpus.
+- The largest residual groups remain line `start_x`, `start_y`, `delta_x`, and `delta_y`, so any next token-spelling rule should be judged against practical acceptance, not decoded geometry alone.
+
 Known-good blocker fit check:
 
 | Part | DXF size | Biggest matching sheet | Fit result |
