@@ -1212,3 +1212,64 @@ Full 98-part RADAN open/save validation:
 - after-save exact geometry records: `2919 / 4053` (`72.021%`)
 
 This is the first full F54410 corpus where RADAN save did not destructively repair any synthetic symbol. It is still lab-only: the writer output is not token-exact before save, and promotion still requires visual inspection plus copied-project nesting/report validation.
+
+### 2026-04-29 Copied-Project Synthetic Gate
+
+Ran the first copied-project gate using the RADAN-saved synthetic corpus, not the raw pre-save writer output.
+
+Lab project setup:
+
+- run folder:
+  `C:\Tools\radan_automation\_sym_lab\copied_project_gate_20260429_153330`
+- copied source RPD:
+  `L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd`
+- copied lab RPD:
+  `C:\Tools\radan_automation\_sym_lab\copied_project_gate_20260429_153330\F54410 PAINT PACK.synthetic_gate.rpd`
+- copied synthetic symbols:
+  `C:\Tools\radan_automation\_sym_lab\copied_project_gate_20260429_153330\symbols_after_radan_save`
+- symbol paths rewritten in the copied RPD: `98 / 98`
+- production files were read-only inputs; no W: writes and no production RPD/SYM writes.
+
+Doctor result:
+
+- `ok=True`
+- `fail_count=0`
+- `warn_count=1`
+- expected warning: all `98` lab symbols already existed in the copied RPD, so repeat import skipped row creation
+
+Headless copied-project import/refresh result:
+
+- checked `98 / 98` reused symbols for feature-pen remap; no pen-7 line/arc records needed remapping
+- skipped `98 / 98` existing copied-project part rows
+- opened copied RPD through a fresh hidden RADAN automation instance
+- ran the same `UpdateSheetsList` handler used by the Nest Editor button
+- RADAN `Quit()` result: `true`
+- post-write validation passed:
+  - expected symbols: `98`
+  - project part rows: `98`
+  - sheet rows: `8`
+  - `NextID`: `1294`
+- timing: conversion `0.0s`, project `1.1s`, total `2.0s`
+
+Canary visual thumbnail comparison:
+
+- rendered RADAN flat thumbnails for these lab synthetic symbols and matching L-side known-good symbols:
+  - `B-14`
+  - `B-17`
+  - `B-27`
+  - `B-30`
+  - `F54410-B-49`
+  - `F54410-B-12`
+  - `F54410-B-27`
+- all `7 / 7` synthetic thumbnails rendered successfully
+- all `7 / 7` known-good thumbnails rendered successfully
+- all `7 / 7` pairs were pixel-identical at `900x700`
+- diff summary:
+  `C:\Tools\radan_automation\_sym_lab\copied_project_gate_20260429_153330\canary_thumbnail_diff_summary.json`
+
+Interpretation:
+
+- the current RADAN-saved synthetic corpus passes file-level validation, RADAN save validation, copied-project membership validation, sheet-refresh validation, and automated canary thumbnail parity
+- this is materially stronger than the previous raw synthetic attempts, where several canaries visibly failed or were destructively repaired
+- it is still not promoted: the remaining gate is an actual copied-project nest/report validation and user visual review inside RADAN
+- no proven headless `RunNester` path is wired yet; existing evidence marks nest mode automation as live/UI-tested, while typed `lay_run_nest` / managed `RunNester` remain research items
