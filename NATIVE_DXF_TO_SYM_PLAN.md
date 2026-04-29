@@ -1411,11 +1411,18 @@ Raw-vs-RADAN-saved nest artifact comparison:
   - `F -> F`: `55`
   - `I -> I`: `125`
   - `N -> N`: `112`
+- DDC change classification:
+  - `F layout entity token payload`: `55`
+  - `I layout annotation token payload`: `69`
+  - `I report date text`: `28`
+  - `I report drawing-name text`: `28`
+  - `N numeric cache/timestamp`: `112`
 
 Interpretation:
 
 - RADAN's nesting plan and part counts are insensitive to the raw-vs-saved token spelling deltas for this `95 / 98` corpus.
 - The raw-vs-saved deltas still propagate into generated DRG DDC payloads, mainly as same-prefix `F`, `I`, and `N` token changes rather than row insertion/deletion or changed nest membership.
+- The upgraded delta classifier localizes all `N` differences as numeric cache/timestamp rows and all report-name/date differences as report text rows; the remaining crack-relevant nest DRG payloads are the `F` layout entity and `I` layout annotation token classes.
 - This supports treating exact token spelling as a display/report/canonicalization research target, while copied-project nesting is already accepting the raw writer's current token spelling.
 
 Known-good L-side full95 nester oracle:
@@ -1449,11 +1456,18 @@ Raw-vs-known-good nest artifact comparison:
   - `F -> F`: `61`
   - `I -> I`: `134`
   - `N -> N`: `112`
+- DDC change classification:
+  - `F layout entity token payload`: `61`
+  - `I layout annotation token payload`: `78`
+  - `I report date text`: `28`
+  - `I report drawing-name text`: `28`
+  - `N numeric cache/timestamp`: `112`
 
 Interpretation:
 
 - Raw pre-save synthetic symbols now reproduce the same copied-project nesting membership, part counts, sheet counts, nest counts, made counts, and contained-symbol layout semantics as the L-side known-good symbols for the accepted `95 / 98` corpus.
 - The remaining DRG differences are same-prefix compact-token/cache/report-text payload differences, not evidence of missing parts, changed DRG counts, changed used-nest semantics, or nester rejection.
+- Against the L-side known-good output, `168 / 307` DRG DDC deltas are volatile/report classes (`N` cache/timestamp plus report date/name text), leaving `139` same-prefix layout token payload deltas to keep mining.
 - This upgrades raw native generation from "decoded-close but visually risky" to "RADAN-open, thumbnail-identical on canaries, and nester-accepted against known-good operational state" for this copied-project corpus.
 
 Accepted-subset token residual benchmark:
