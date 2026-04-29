@@ -279,12 +279,15 @@ def analyze_token_residuals(
     oracle_sym_folder: Path,
     generated_sym_folder: Path,
     parts: list[str] | None = None,
+    exclude_parts: list[str] | None = None,
     value_digits: int = 6,
 ) -> dict[str, Any]:
     dxf_by_part = {path.stem.casefold(): path for path in Path(dxf_folder).glob("*.dxf")}
     oracle_by_part = {path.stem.casefold(): path for path in Path(oracle_sym_folder).glob("*.sym")}
     generated_by_part = {path.stem.casefold(): path for path in Path(generated_sym_folder).glob("*.sym")}
     requested = [part.casefold() for part in parts] if parts else sorted(set(dxf_by_part) & set(oracle_by_part) & set(generated_by_part))
+    excluded = {part.casefold() for part in (exclude_parts or [])}
+    requested = [part for part in requested if part not in excluded]
 
     rows: list[dict[str, Any]] = []
     part_summaries: list[dict[str, Any]] = []
@@ -341,6 +344,7 @@ def analyze_token_residuals(
         "oracle_sym_folder": str(oracle_sym_folder),
         "generated_sym_folder": str(generated_sym_folder),
         "value_digits": value_digits,
+        "exclude_parts": sorted(excluded),
         "part_count": len(part_summaries),
         "skipped": skipped,
         "summary": summarize_residual_rows(rows),
@@ -402,6 +406,7 @@ def main() -> int:
     parser.add_argument("--out-csv", type=Path)
     parser.add_argument("--value-digits", type=int, default=6)
     parser.add_argument("--part", action="append", help="Limit analysis to one or more part stems.")
+    parser.add_argument("--exclude-part", action="append", default=[], help="Exclude one or more part stems.")
     args = parser.parse_args()
 
     payload = analyze_token_residuals(
@@ -409,6 +414,7 @@ def main() -> int:
         oracle_sym_folder=args.oracle_sym_folder,
         generated_sym_folder=args.generated_sym_folder,
         parts=args.part,
+        exclude_parts=args.exclude_part,
         value_digits=int(args.value_digits),
     )
     if args.out_json:

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import unittest
+from pathlib import Path
+from unittest import mock
 
-from analyze_token_residuals import summarize_residual_rows, token_residual_row
+from analyze_token_residuals import analyze_token_residuals, summarize_residual_rows, token_residual_row
 
 
 class AnalyzeTokenResidualsTests(unittest.TestCase):
@@ -63,6 +65,41 @@ class AnalyzeTokenResidualsTests(unittest.TestCase):
         self.assertEqual(summary["mismatch_count"], 1)
         self.assertEqual(summary["same_prefix_except_last_char_count"], 1)
         self.assertIn("LINE:start_x", summary["by_role"])
+
+    def test_analyze_token_residuals_excludes_requested_parts(self) -> None:
+        dxf_rows = {
+            "keep": [{"type": "LINE", "normalized_start": (0.0, 0.0), "normalized_end": (1.0, 0.0)}],
+            "skip": [{"type": "LINE", "normalized_start": (0.0, 0.0), "normalized_end": (1.0, 0.0)}],
+        }
+        ddc_rows = {
+            "keep": [{"tokens": ["", "", "0@0", ""], "record": "G"}],
+            "skip": [{"tokens": ["", "", "0@0", ""], "record": "G"}],
+        }
+
+        def fake_read_dxf(path: Path):
+            return dxf_rows[path.stem], {}
+
+        def fake_read_ddc(path: Path):
+            return ddc_rows[path.stem]
+
+        with mock.patch("analyze_token_residuals.Path.glob") as glob_mock:
+            glob_mock.side_effect = [
+                [Path("keep.dxf"), Path("skip.dxf")],
+                [Path("keep.sym"), Path("skip.sym")],
+                [Path("keep.sym"), Path("skip.sym")],
+            ]
+            with mock.patch("analyze_token_residuals.read_dxf_entities", side_effect=fake_read_dxf):
+                with mock.patch("analyze_token_residuals.read_ddc_records", side_effect=fake_read_ddc):
+                    payload = analyze_token_residuals(
+                        dxf_folder=Path("dxf"),
+                        oracle_sym_folder=Path("oracle"),
+                        generated_sym_folder=Path("generated"),
+                        exclude_parts=["skip"],
+                    )
+
+        self.assertEqual(payload["exclude_parts"], ["skip"])
+        self.assertEqual(payload["part_count"], 1)
+        self.assertEqual(payload["parts"][0]["part"], "keep")
 
 
 if __name__ == "__main__":
