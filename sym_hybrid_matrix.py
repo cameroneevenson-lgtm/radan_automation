@@ -43,7 +43,13 @@ def _merge_geometry_lines(base_ddc: str, geometry_source_ddc: str) -> str:
             output_lines.append(line)
     if source_index != len(source_geometry):
         raise RuntimeError("Geometry source has more G/H records than base DDC.")
-    return "\n".join(output_lines)
+    newline = "\r\n" if "\r\n" in base_ddc else "\n"
+    trailing_newline = ""
+    if base_ddc.endswith("\r\n"):
+        trailing_newline = "\r\n"
+    elif base_ddc.endswith("\n"):
+        trailing_newline = "\n"
+    return newline.join(output_lines) + trailing_newline
 
 
 def build_hybrid_matrix(*, good_path: Path, compare_path: Path, out_dir: Path) -> dict[str, Any]:
