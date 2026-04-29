@@ -1,0 +1,961 @@
+﻿RADAN Update Sheets Observation
+Started: 2026-04-28T17:17:54.1410537-04:00
+Project: \\SVRDC\Laser\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd
+
+[17:17:54.366] READY: press the RADAN Update sheets list from current parts button once now.
+[17:17:54.544] BEFORE RPD exists size=12615 lastwrite=2026-04-28T17:13:38.5740819-04:00 sha256=0160CDD1A6E086CEAE7C259D965CE8B7D22A29180CE4A6B4D30132AED4B421F6
+[17:17:54.773] RADAN process count before=3
+[17:17:54.781] RADANPROC before pid=24452 name=RADRAFT.exe exe=C:\Program Files\Mazak\Mazak\bin\RADRAFT.exe cmd="C:\Program Files\Mazak\Mazak\bin\RADRAFT.exe" "L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd"
+[17:17:54.782] RADANPROC before pid=30264 name=RADRAFT.exe exe=C:\Program Files\Mazak\Mazak\bin\RADRAFT.exe cmd="C:\Program Files\Mazak\Mazak\bin\RADRAFT.exe" "L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd"
+[17:17:54.783] RADANPROC before pid=32848 name=powershell.exe exe=C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe cmd="C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -Command "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;
+$obsRoot = 'C:\Tools\radan_automation\_observations'
+New-Item -ItemType Directory -Force -Path $obsRoot | Out-Null
+$stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$obsPath = Join-Path $obsRoot \"radan_update_sheets_button_$stamp.txt\"
+$project = '\\SVRDC\Laser\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd'
+@\"
+RADAN Update Sheets Observation
+Started: $(Get-Date -Format o)
+Project: $project
+
+\"@ | Set-Content -Path $obsPath -Encoding UTF8
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class Win32Obs {
+    [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
+    [DllImport(\"user32.dll\")] public static extern bool GetCursorPos(out POINT lpPoint);
+    [DllImport(\"user32.dll\")] public static extern IntPtr WindowFromPoint(POINT point);
+    [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+    [DllImport(\"user32.dll\")] public static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
+}
+'@
+function Write-Obs($text) {
+    $line = \"[$(Get-Date -Format 'HH:mm:ss.fff')] $text\"
+    Add-Content -Path $obsPath -Value $line -Encoding UTF8
+}
+function Project-Snapshot($label) {
+    if (Test-Path -LiteralPath $project) {
+        $item = Get-Item -LiteralPath $project
+        $hash = (Get-FileHash -LiteralPath $project -Algorithm SHA256).Hash
+        Write-Obs \"$label RPD exists size=$($item.Length) lastwrite=$($item.LastWriteTime.ToString('o')) sha256=$hash\"
+    } else {
+        Write-Obs \"$label RPD missing/unavailable\"
+    }
+}
+Write-Obs 'READY: press the RADAN Update sheets list from current parts button once now.'
+Project-Snapshot 'BEFORE'
+$radanBefore = Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'radraft*' -or $_.CommandLine -like '*radan*' } | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine
+Write-Obs ('RADAN process count before=' + @($radanBefore).Count)
+foreach ($p in @($radanBefore)) { Write-Obs \"RADANPROC before pid=$($p.ProcessId) name=$($p.Name) exe=$($p.ExecutablePath) cmd=$($p.CommandLine)\" }
+$lastElementSig = ''
+$lastProjectWrite = $null
+if (Test-Path -LiteralPath $project) { $lastProjectWrite = (Get-Item -LiteralPath $project).LastWriteTimeUtc }
+$deadline = (Get-Date).AddSeconds(90)
+while ((Get-Date) -lt $deadline) {
+    $pt = New-Object Win32Obs+POINT
+    [void][Win32Obs]::GetCursorPos([ref]$pt)
+    $screenPoint = New-Object System.Windows.Point($pt.X, $pt.Y)
+    try {
+        $el = [System.Windows.Automation.AutomationElement]::FromPoint($screenPoint)
+        if ($null -ne $el) {
+            $name = $el.Current.Name
+            $autoId = $el.Current.AutomationId
+            $class = $el.Current.ClassName
+            $localized = $el.Current.LocalizedControlType
+            $framework = $el.Current.FrameworkId
+            $pid = $el.Current.ProcessId
+            $control = $el.Current.ControlType.ProgrammaticName
+            $sig = \"$pid|$name|$autoId|$class|$localized|$framework|$control\"
+            if ($sig -ne $lastElementSig) {
+                $hwnd = [Win32Obs]::WindowFromPoint($pt)
+                $root = [Win32Obs]::GetAncestor($hwnd, 2)
+                $sb = New-Object System.Text.StringBuilder 512
+                [void][Win32Obs]::GetWindowText($root, $sb, $sb.Capacity)
+                Write-Obs \"CURSOR x=$($pt.X) y=$($pt.Y) pid=$pid window='$($sb.ToString())' name='$name' automationId='$autoId' class='$class' type='$localized' control='$control' framework='$framework'\"
+                $lastElementSig = $sig
+            }
+        }
+    } catch {
+        Write-Obs \"UIA error: $($_.Exception.Message)\"
+    }
+    if (Test-Path -LiteralPath $project) {
+        $item = Get-Item -LiteralPath $project
+        if ($lastProjectWrite -ne $null -and $item.LastWriteTimeUtc -ne $lastProjectWrite) {
+            $lastProjectWrite = $item.LastWriteTimeUtc
+            Project-Snapshot 'CHANGED'
+        }
+    }
+    Start-Sleep -Milliseconds 100
+}
+Project-Snapshot 'AFTER'
+$radanAfter = Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'radraft*' -or $_.CommandLine -like '*radan*' } | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine
+Write-Obs ('RADAN process count after=' + @($radanAfter).Count)
+foreach ($p in @($radanAfter)) { Write-Obs \"RADANPROC after pid=$($p.ProcessId) name=$($p.Name) exe=$($p.ExecutablePath) cmd=$($p.CommandLine)\" }
+Write-Obs 'Observation complete.'
+Write-Output \"Observation saved: $obsPath\"
+Get-Content -Path $obsPath -Tail 120"
+[17:17:54.899] UIA error: Cannot convert argument "pt", with value: "", for "FromPoint" to type "System.Windows.Point": "Cannot convert null to type "System.Windows.Point"."
+[17:17:55.061] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:55.199] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:55.306] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:55.415] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:55.526] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:55.636] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:55.743] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:55.854] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:55.962] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:56.071] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:56.180] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:56.294] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:56.419] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:56.549] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:56.671] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:56.797] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:56.919] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:57.028] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:57.138] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:57.246] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:57.362] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:57.504] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:57.625] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:57.754] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:57.875] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.001] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.131] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.255] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.364] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.476] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.590] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.712] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.822] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:58.946] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.059] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.167] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.276] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.388] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.497] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.604] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.714] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.824] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:17:59.932] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:00.043] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:00.152] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:00.264] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:00.388] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:00.500] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:00.626] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:00.751] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:00.878] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.004] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.128] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.253] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.375] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.500] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.627] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.748] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.858] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:01.998] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:02.126] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:02.250] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:02.374] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:02.499] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:02.623] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:02.732] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:02.840] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:02.951] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:03.061] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:03.172] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:03.296] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:03.425] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:03.547] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:03.676] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:03.800] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:03.927] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:04.054] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:04.167] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:04.286] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:04.409] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:04.534] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:04.662] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:04.782] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:04.896] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:05.017] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:05.141] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:05.275] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:05.392] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:05.518] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:05.642] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:05.767] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:05.890] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.014] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.139] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.248] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.359] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.487] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.608] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.739] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.859] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:06.984] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:07.110] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:07.237] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:07.362] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:07.487] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:07.610] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:07.735] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:07.858] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:07.986] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:08.110] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:08.236] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:08.361] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:08.487] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:08.612] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:08.738] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:08.864] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:08.990] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.101] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.212] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.324] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.430] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.542] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.653] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.776] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.885] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:09.995] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:10.104] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:10.214] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:10.323] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:10.432] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:10.554] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:10.665] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:10.775] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:10.889] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.011] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.122] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.232] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.358] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.483] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.609] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.732] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.842] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:11.951] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:12.078] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:12.202] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:12.328] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:12.450] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:12.560] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:12.670] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:12.797] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:12.921] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:13.047] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:13.173] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:13.300] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:13.430] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:13.548] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:13.674] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:13.799] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:13.929] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.051] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.175] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.301] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.426] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.537] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.649] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.757] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.866] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:14.978] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.085] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.199] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.320] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.431] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.540] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.650] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.758] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.867] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:15.977] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.087] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.197] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.306] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.416] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.528] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.652] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.776] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.886] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:16.997] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.105] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.216] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.324] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.435] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.543] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.652] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.762] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.871] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:17.983] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:18.106] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:18.217] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:18.329] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:18.453] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:18.577] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:18.702] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:18.826] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:18.966] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.076] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.186] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.295] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.405] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.529] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.639] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.748] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.873] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:19.982] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.106] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.216] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.324] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.433] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.542] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.652] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.761] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.872] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:20.985] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:21.106] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:21.222] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:21.341] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:21.450] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:21.561] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:21.669] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:21.779] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:21.889] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.014] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.138] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.247] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.357] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.478] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.590] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.701] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.810] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:22.920] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:23.030] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:23.156] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:23.282] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:23.406] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:23.534] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:23.659] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:23.784] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:23.910] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.020] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.132] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.243] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.352] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.461] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.569] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.679] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.788] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:24.897] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.005] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.118] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.227] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.337] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.447] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.556] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.665] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.775] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.885] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:25.995] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:26.104] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:26.215] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:26.326] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:26.435] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:26.545] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:26.657] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:26.781] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:26.907] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:27.030] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:27.157] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:27.283] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:27.407] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:27.530] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:27.655] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:27.783] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:27.897] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.014] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.138] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.249] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.374] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.499] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.623] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.749] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.872] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:28.980] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:29.089] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:29.202] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:29.327] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:29.452] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:29.577] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:29.702] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:29.813] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:29.937] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:30.062] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:30.188] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:30.313] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:30.436] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:30.563] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:30.689] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:30.813] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:30.937] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:31.064] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:31.188] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:31.314] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:31.441] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:31.570] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:31.678] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:31.786] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:31.910] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:32.035] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:32.161] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:32.286] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:32.411] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:32.536] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:32.659] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:32.782] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:32.907] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:33.033] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:33.157] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:33.281] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:33.404] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:33.516] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:33.642] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:33.768] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:33.892] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.020] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.145] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.269] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.393] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.520] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.645] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.772] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.880] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:34.992] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.101] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.212] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.320] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.431] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.541] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.649] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.763] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.885] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:35.993] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.102] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.214] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.322] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.433] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.542] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.653] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.761] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.873] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:36.995] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.105] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.214] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.323] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.434] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.557] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.665] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.775] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.886] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:37.993] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.104] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.215] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.329] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.448] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.559] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.667] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.777] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.887] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:38.994] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:39.104] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:39.216] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:39.326] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:39.437] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:39.561] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:39.677] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:39.798] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:39.923] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:40.054] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:40.177] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:40.300] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:40.426] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:40.549] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:40.677] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:40.801] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:40.926] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.038] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.146] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.258] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.366] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.486] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.601] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.711] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.818] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:41.942] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.054] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.163] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.275] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.383] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.498] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.616] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.738] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.864] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:42.989] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:43.114] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:43.239] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:43.350] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:43.462] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:43.571] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:43.681] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:43.790] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:43.900] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.011] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.120] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.230] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.338] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.448] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.558] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.667] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.776] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.885] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:44.993] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.102] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.212] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.320] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.430] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.541] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.651] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.759] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.869] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:45.982] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:46.105] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:46.217] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:46.327] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:46.455] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:46.580] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:46.703] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:46.847] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:46.970] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:47.094] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:47.222] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:47.349] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:47.471] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:47.594] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:47.721] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:47.847] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:47.972] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:48.098] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:48.225] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:48.341] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:48.458] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:48.572] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:48.693] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:48.821] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:48.929] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.040] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.149] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.261] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.368] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.478] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.587] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.697] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.809] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:49.920] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.043] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.151] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.262] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.370] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.496] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.620] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.731] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.855] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:50.976] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:51.086] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:51.195] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:51.309] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:51.427] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:51.552] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:51.676] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:51.799] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:51.923] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.049] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.175] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.287] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.396] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.512] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.636] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.760] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.868] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:52.978] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:53.092] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:53.203] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:53.324] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:53.433] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:53.548] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:53.671] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:53.793] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:53.906] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:54.037] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:54.156] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:54.280] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:54.409] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:54.533] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:54.646] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:54.766] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:54.897] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:55.014] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:55.142] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:55.267] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:55.394] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:55.513] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:55.630] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:55.754] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:55.877] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.004] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.129] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.240] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.367] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.492] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.614] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.727] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.848] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:56.960] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.069] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.179] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.289] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.396] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.509] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.618] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.729] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.838] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:57.946] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.056] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.164] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.274] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.397] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.507] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.617] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.727] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.837] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:58.946] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.055] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.164] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.275] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.385] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.496] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.605] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.719] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.843] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:18:59.969] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:00.094] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:00.219] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:00.344] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:00.468] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:00.594] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:00.718] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:00.843] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:00.968] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:01.094] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:01.219] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:01.344] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:01.473] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:01.598] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:01.719] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:01.843] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:01.969] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:02.094] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:02.219] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:02.345] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:02.471] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:02.597] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:02.721] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:02.848] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:02.975] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:03.099] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:03.222] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:03.348] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:03.474] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:03.583] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:03.694] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:03.803] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:03.913] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.035] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.146] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.256] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.366] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.476] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.585] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.696] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.805] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:04.917] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.026] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.134] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.243] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.376] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.496] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.603] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.712] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.821] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:05.931] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.057] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.166] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.291] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.402] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.512] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.623] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.733] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.876] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:06.999] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:07.124] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:07.261] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:07.374] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:07.500] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:07.645] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:07.769] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:07.917] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.027] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.137] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.247] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.357] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.466] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.574] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.686] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.825] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:08.934] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:09.043] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:09.155] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:09.281] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:09.406] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:09.531] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:09.655] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:09.799] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:09.941] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:10.067] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:10.193] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:10.316] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:10.428] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:10.556] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:10.678] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:10.802] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:10.914] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.022] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.131] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.240] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.349] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.460] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.570] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.680] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.788] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:11.897] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.007] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.117] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.227] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.339] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.469] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.590] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.699] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.809] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:12.919] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:13.030] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:13.155] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:13.294] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:13.405] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:13.532] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:13.657] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:13.782] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:13.907] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:14.033] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:14.144] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:14.266] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:14.384] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:14.500] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:14.627] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:14.757] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:14.875] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.001] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.125] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.248] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.358] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.483] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.591] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.701] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.810] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:15.934] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.045] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.157] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.282] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.407] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.533] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.644] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.753] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.863] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:16.984] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:17.097] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:17.208] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:17.334] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:17.443] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:17.554] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:17.663] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:17.911] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.025] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.135] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.245] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.354] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.464] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.573] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.680] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.787] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:18.896] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.018] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.128] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.238] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.347] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.457] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.566] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.677] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.784] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:19.894] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.004] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.115] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.225] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.335] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.444] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.555] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.665] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.776] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.887] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:20.997] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:21.108] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:21.235] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:21.360] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:21.484] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:21.610] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:21.732] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:21.856] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:21.967] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:22.075] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:22.194] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:22.309] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:22.419] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:22.529] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:22.654] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:22.765] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:22.889] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.000] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.123] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.234] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.358] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.483] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.609] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.735] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.859] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:23.985] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:24.110] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:24.237] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:24.361] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:24.488] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:24.616] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:24.738] UIA error: Cannot overwrite variable PID because it is read-only or constant.
+[17:19:24.936] AFTER RPD exists size=12615 lastwrite=2026-04-28T17:13:38.5740819-04:00 sha256=0160CDD1A6E086CEAE7C259D965CE8B7D22A29180CE4A6B4D30132AED4B421F6
+[17:19:25.076] RADAN process count after=3
+[17:19:25.078] RADANPROC after pid=24452 name=RADRAFT.exe exe=C:\Program Files\Mazak\Mazak\bin\RADRAFT.exe cmd="C:\Program Files\Mazak\Mazak\bin\RADRAFT.exe" "L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd"
+[17:19:25.079] RADANPROC after pid=30264 name=RADRAFT.exe exe=C:\Program Files\Mazak\Mazak\bin\RADRAFT.exe cmd="C:\Program Files\Mazak\Mazak\bin\RADRAFT.exe" "L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd"
+[17:19:25.080] RADANPROC after pid=32848 name=powershell.exe exe=C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe cmd="C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe" -Command "[Console]::OutputEncoding=[System.Text.Encoding]::UTF8;
+$obsRoot = 'C:\Tools\radan_automation\_observations'
+New-Item -ItemType Directory -Force -Path $obsRoot | Out-Null
+$stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+$obsPath = Join-Path $obsRoot \"radan_update_sheets_button_$stamp.txt\"
+$project = '\\SVRDC\Laser\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd'
+@\"
+RADAN Update Sheets Observation
+Started: $(Get-Date -Format o)
+Project: $project
+
+\"@ | Set-Content -Path $obsPath -Encoding UTF8
+Add-Type -AssemblyName UIAutomationClient
+Add-Type -AssemblyName UIAutomationTypes
+Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public static class Win32Obs {
+    [StructLayout(LayoutKind.Sequential)] public struct POINT { public int X; public int Y; }
+    [DllImport(\"user32.dll\")] public static extern bool GetCursorPos(out POINT lpPoint);
+    [DllImport(\"user32.dll\")] public static extern IntPtr WindowFromPoint(POINT point);
+    [DllImport(\"user32.dll\")] public static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+    [DllImport(\"user32.dll\")] public static extern IntPtr GetAncestor(IntPtr hWnd, uint gaFlags);
+}
+'@
+function Write-Obs($text) {
+    $line = \"[$(Get-Date -Format 'HH:mm:ss.fff')] $text\"
+    Add-Content -Path $obsPath -Value $line -Encoding UTF8
+}
+function Project-Snapshot($label) {
+    if (Test-Path -LiteralPath $project) {
+        $item = Get-Item -LiteralPath $project
+        $hash = (Get-FileHash -LiteralPath $project -Algorithm SHA256).Hash
+        Write-Obs \"$label RPD exists size=$($item.Length) lastwrite=$($item.LastWriteTime.ToString('o')) sha256=$hash\"
+    } else {
+        Write-Obs \"$label RPD missing/unavailable\"
+    }
+}
+Write-Obs 'READY: press the RADAN Update sheets list from current parts button once now.'
+Project-Snapshot 'BEFORE'
+$radanBefore = Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'radraft*' -or $_.CommandLine -like '*radan*' } | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine
+Write-Obs ('RADAN process count before=' + @($radanBefore).Count)
+foreach ($p in @($radanBefore)) { Write-Obs \"RADANPROC before pid=$($p.ProcessId) name=$($p.Name) exe=$($p.ExecutablePath) cmd=$($p.CommandLine)\" }
+$lastElementSig = ''
+$lastProjectWrite = $null
+if (Test-Path -LiteralPath $project) { $lastProjectWrite = (Get-Item -LiteralPath $project).LastWriteTimeUtc }
+$deadline = (Get-Date).AddSeconds(90)
+while ((Get-Date) -lt $deadline) {
+    $pt = New-Object Win32Obs+POINT
+    [void][Win32Obs]::GetCursorPos([ref]$pt)
+    $screenPoint = New-Object System.Windows.Point($pt.X, $pt.Y)
+    try {
+        $el = [System.Windows.Automation.AutomationElement]::FromPoint($screenPoint)
+        if ($null -ne $el) {
+            $name = $el.Current.Name
+            $autoId = $el.Current.AutomationId
+            $class = $el.Current.ClassName
+            $localized = $el.Current.LocalizedControlType
+            $framework = $el.Current.FrameworkId
+            $pid = $el.Current.ProcessId
+            $control = $el.Current.ControlType.ProgrammaticName
+            $sig = \"$pid|$name|$autoId|$class|$localized|$framework|$control\"
+            if ($sig -ne $lastElementSig) {
+                $hwnd = [Win32Obs]::WindowFromPoint($pt)
+                $root = [Win32Obs]::GetAncestor($hwnd, 2)
+                $sb = New-Object System.Text.StringBuilder 512
+                [void][Win32Obs]::GetWindowText($root, $sb, $sb.Capacity)
+                Write-Obs \"CURSOR x=$($pt.X) y=$($pt.Y) pid=$pid window='$($sb.ToString())' name='$name' automationId='$autoId' class='$class' type='$localized' control='$control' framework='$framework'\"
+                $lastElementSig = $sig
+            }
+        }
+    } catch {
+        Write-Obs \"UIA error: $($_.Exception.Message)\"
+    }
+    if (Test-Path -LiteralPath $project) {
+        $item = Get-Item -LiteralPath $project
+        if ($lastProjectWrite -ne $null -and $item.LastWriteTimeUtc -ne $lastProjectWrite) {
+            $lastProjectWrite = $item.LastWriteTimeUtc
+            Project-Snapshot 'CHANGED'
+        }
+    }
+    Start-Sleep -Milliseconds 100
+}
+Project-Snapshot 'AFTER'
+$radanAfter = Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'radraft*' -or $_.CommandLine -like '*radan*' } | Select-Object ProcessId,ParentProcessId,Name,ExecutablePath,CommandLine
+Write-Obs ('RADAN process count after=' + @($radanAfter).Count)
+foreach ($p in @($radanAfter)) { Write-Obs \"RADANPROC after pid=$($p.ProcessId) name=$($p.Name) exe=$($p.ExecutablePath) cmd=$($p.CommandLine)\" }
+Write-Obs 'Observation complete.'
+Write-Output \"Observation saved: $obsPath\"
+Get-Content -Path $obsPath -Tail 120"
+[17:19:25.081] Observation complete.
