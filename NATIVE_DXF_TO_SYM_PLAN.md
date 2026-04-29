@@ -1864,3 +1864,15 @@ Interpretation update:
   about decoded geometry or per-symbol thumbnail parity; aggregate nester
   behavior can be sensitive to exact compact-token spellings below practical
   geometry tolerance
+
+B-185 common-token follow-up:
+
+| Variant | Context tokens beyond raw | Used-nest match vs raw | Difference |
+| --- | --- | --- | --- |
+| `B-185` row11 slot2 | one row `11` `ARC:delta_x` token only | no | nests `27`/`28` swap `B-3 R1` and `B-5 R1` |
+| `B-185` row13 slot2 | one row `13` `ARC:delta_x` token only | yes | none |
+
+Both selected B-185 rows use the same raw/context token text
+(`4@7Tollog\K` -> `4@7Tollog\L`), but only row `11` perturbs the full95 nest.
+That rules out a purely global token-string effect. Entity row context, local
+geometry, or downstream cached placement state also matters.
