@@ -1618,3 +1618,63 @@ Interpretation:
 - token-majority is not currently a better operational candidate than raw pre-save output because it perturbs the copied-project nest plan even while improving offline exact token rate
 - raw pre-save remains the best operational benchmark tonight because it matches L-side known-good used-nest semantics for the accepted `95 / 98` subset
 - future token-spelling rules should be gated by both exact token improvement and preservation of raw/known-good nester semantics
+
+### 2026-04-29 Context-Unanimous Token Probe
+
+Context-unanimous was the less aggressive RADAN-save token model:
+
+- accepted95 exact token rate: `0.910498`
+- exact token slots: `63235 / 69451`
+- mismatches: `6216`
+- far mismatches: `0`
+
+Validation ladder:
+
+| Rung | Parts | Sheets | Made/nonzero | DRGs | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `B-10` | `1` | `1` | `4` | `1` | pass |
+| `F54410-B-49` | `1` | `2` | `4` | `1` | pass |
+| seven hard canaries | `7` | `5` | `28` | `2` | pass |
+| first25 | `25` | `8` | `115` | `9` | pass |
+| full95 excluding oversized blockers | `95` | `8` | `431` | `28` | pass |
+
+Full95 metrics:
+
+- `lay_run_nest(0)`: `0`
+- elapsed: `56.625 s`
+- nest rows: `42`
+- `NextNestNum`: `43`
+- final RADAN-family process list: empty
+- report generation stayed blocked with `Wrong mode for DevExpress reports`
+
+Operational regression:
+
+- context-unanimous still did not preserve raw/known-good used-nest membership
+- context-unanimous versus raw:
+  - `rpd_used_nests_match=False`
+  - contained-symbol summaries matched `26 / 28`
+  - the same `B-3 R1` / `B-5 R1` swap appeared in nests `27` and `28`
+- context-unanimous versus known-good showed the same two-nest swap
+
+B-194 isolation:
+
+- among the symbols referenced by the affected nests, context-unanimous differs from raw only in `B-194.sym`
+- `B-194` context-unanimous versus raw has only `3` token differences, all decoded-close:
+  - row `10`, `LINE:delta_y`: context `2@7iVIVIVIP`, raw `2@7iVIVIVIT`
+  - row `23`, `CIRCLE:center_delta_x`: context ``j?W2Se`Xm00``, raw ``j?W2Se`XmL:``
+  - row `24`, `CIRCLE:center_delta_x`: context ``j?W2Se`Xm00``, raw ``j?W2Se`XmL:``
+- raw `B-194.sym` alone nests successfully
+- a lab hybrid using context-unanimous symbols except raw `B-194.sym` fails aggregate gates:
+  - first20: `lay_run_nest(0)=11088`, `0` DRGs
+  - first21: `lay_run_nest(0)=11088`, `0` DRGs
+  - first25: `lay_run_nest(0)=11088`, `0` DRGs
+  - first49: `lay_run_nest(0)=11088`, `0` DRGs
+  - full95: `lay_run_nest(0)=11088`, `0` DRGs
+- unmodified context-unanimous first20, first21, first25, and full95 all pass
+
+Interpretation:
+
+- context-unanimous is RADAN-accepted, but it is not layout-neutral
+- the three `B-194` token choices are likely coupled to aggregate nester behavior under the context-unanimous corpus
+- mixing token-spelling regimes can be worse than either consistent regime: raw full95 passes, context-unanimous full95 passes, but context-unanimous with raw `B-194` fails
+- next token rules should avoid per-part transplant assumptions and should validate consistency at the corpus/subset level, not just per-symbol display or decoded-close geometry
