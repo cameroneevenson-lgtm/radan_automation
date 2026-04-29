@@ -1105,3 +1105,110 @@ Next useful experiment:
 
 - build a targeted fallback continuation model for `LINE:start_x` and `LINE:delta_x` that predicts when RADAN wants a trailing `0`/longer continuation without broadly padding every fallback token
 - validate it first on the known single-token B-27 repair triggers, then on full-corpus exact-token ratio and RADAN save repair count
+
+### 2026-04-29 Targeted LINE Fallback Zero Experiment
+
+Added lab-only writer mode:
+
+```powershell
+C:\Tools\.venv\Scripts\python.exe .\write_coordinate_model_sym_prototype.py `
+  --dxf-folder "C:\Tools\radan_automation\_sym_lab\exported_dxfs_circle_radius_snap_128_20260429_132615\dxfs" `
+  --sym-folder "L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK" `
+  --out-dir "C:\Tools\radan_automation\_sym_lab\line_repair_zero_low_digit_writer_20260429_145710\strict" `
+  --coordinate-resolver context `
+  --prefer-literal-geometry `
+  --fallback-continuation line-repair-zero
+```
+
+Rule:
+
+- only applies to fallback-generated `LINE:start_x` and `LINE:delta_x` tokens
+- only when the generated token length is `10`, does not already end in `0`, and appending `0` decodes within `1e-12` of the original token
+- special `LINE:delta_x` sub-rule: if the final base-64 continuation digit is `1..9`, try replacing that final digit with `00` first; this is the shape needed by B-27 row `134`
+- source tag: `encoded_fraction_fallback:line-repair-zero:0->line_repair_zero_append0`
+- low-digit source tag: `encoded_fraction_fallback:line-repair-zero:0->line_repair_zero_low_digit_last00`
+
+Full-corpus result:
+
+- generated parts: `98 / 98`
+- decoded-close slots within `1e-12`: `72553 / 72553`
+- far decoded mismatches: `0`
+- exact token slots: `65546 / 72553` (`90.342%`)
+- exact geometry records: `1057 / 4053` (`26.079%`)
+- improvement over dyadic-cardinal baseline: `+31` exact token slots, `+3` exact geometry records
+
+Targeted canary movement:
+
+- `B-27` exact token slots improved `2649 -> 2655`
+- all six known B-27 single-token repair trigger slots now match the L-side oracle exactly:
+  - rows `22`, `24`, `29`, `45`, and `82`, slot `0` / `LINE:start_x`
+  - row `134`, slot `2` / `LINE:delta_x`, now emits `k?^3\M38100`
+- `B-28` gained one exact fallback slot
+- `B-30` gained six exact fallback slots
+- `F54410-B-12` gained one exact fallback slot
+- `F54410-B-49` did not improve; it remains `0 / 20` exact geometry records, so this specific rule does not explain the B-49 token/cache issue
+
+Interpretation:
+
+- this is real evidence that some destructive RADAN repair triggers are caused by trimmed fallback compact-number spellings
+- it is not a broad solution; unrestricted zero-padding or last-digit-zero transforms hurt exact-token performance heavily
+- next validation requires RADAN proper: save the new `line_repair_zero` B-27 and F54410-B-12 prototypes in a copied lab context and compare row counts against the previous `181 -> 170` / `194 -> 186` repair behavior
+
+### 2026-04-29 RADAN-Validated Repair-Token Expansion
+
+RADAN became available and the `line-repair-zero` mode was expanded in two more narrow steps:
+
+- `LINE:start_y`: append one trailing `0` for length-10 fallback tokens when decoded-close
+- `LINE:delta_y`: round down final continuation digit to an 8-boundary plus `0`, or carry the final digit into a `00` suffix for the observed high-tail case
+- `ARC:start_x`: append one trailing `0` for length-10 fallback tokens when decoded-close
+
+Key exact-name RADAN probes:
+
+- B-12 filename lesson:
+  - exact filename `F54410-B-12.sym` repaired `194 -> 190`
+  - suffixed filename `F54410-B-12__same_bytes.sym` failed/opened unreliably and could produce false no-repair results
+  - future RADAN save probes must put each variant in its own folder while preserving the real `.sym` filename
+- B-12 remaining trigger rows after B-27 rules:
+  - row `25`, slot `3`, `LINE:delta_y`: `l??Yd\`9\`ll -> l??Yd\`9\`lh0`
+  - row `82`, slot `3`, `LINE:delta_y`: `i?ZoZ?OKKU -> i?ZoZ?OKL00`
+  - row `154`, slot `1`, `LINE:start_y`: `3@23FP>1U< -> 3@23FP>1U<0`
+- Small destructive parts:
+  - `B-28` row `10`, slot `0`, `ARC:start_x`: `o?4M\5M;@7 -> o?4M\5M;@70`
+  - `F54410-B-40` row `4`, slot `0`, `ARC:start_x`: `5@0e^Un<BX -> 5@0e^Un<BX0`
+
+Best current strict writer run:
+
+```powershell
+C:\Tools\.venv\Scripts\python.exe .\write_coordinate_model_sym_prototype.py `
+  --dxf-folder "C:\Tools\radan_automation\_sym_lab\exported_dxfs_circle_radius_snap_128_20260429_132615\dxfs" `
+  --sym-folder "L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK" `
+  --out-dir "C:\Tools\radan_automation\_sym_lab\line_repair_zero_arc_start_writer_20260429_151909\strict" `
+  --coordinate-resolver context `
+  --prefer-literal-geometry `
+  --fallback-continuation line-repair-zero
+```
+
+Pre-save corpus result:
+
+- exact token slots: `65581 / 72553` (`90.390%`)
+- exact geometry records: `1063 / 4053` (`26.227%`)
+- decoded-close slots within `1e-12`: `72553 / 72553`
+- far decoded mismatches: `0`
+
+Full 98-part RADAN open/save validation:
+
+- run folder:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_validate_line_repair_zero_arc_start_full98_20260429_151926`
+- COM save failures: `0 / 98`
+- RADAN `Quit()` result: `true`
+- destructive row-count repairs: `0 / 98`
+- geometry-changed-after-save classifications: `0 / 98`
+- classifications:
+  - `exact_after_save`: `53`
+  - `canonicalized_closer`: `42`
+  - `decoded_close_no_token_change`: `2` (`B-49`, `B-50`)
+  - `decoded_close_but_token_worse`: `1` (`B-193`)
+- after-save exact token slots: `70953 / 72553` (`97.795%`)
+- after-save exact geometry records: `2919 / 4053` (`72.021%`)
+
+This is the first full F54410 corpus where RADAN save did not destructively repair any synthetic symbol. It is still lab-only: the writer output is not token-exact before save, and promotion still requires visual inspection plus copied-project nesting/report validation.

@@ -500,7 +500,7 @@ def _choose_min_continuation_digits(
     min_continuation_lookup: dict[str, dict[tuple[Any, ...], list[tuple[str, int]]]] | None,
     fallback_continuation: str,
 ) -> int:
-    if fallback_continuation == "trimmed" or min_continuation_lookup is None:
+    if fallback_continuation in {"trimmed", "line-repair-zero"} or min_continuation_lookup is None:
         return 0
     entity_type = str(dxf_row["type"])
     role = slot_role(entity_type, slot)
@@ -519,6 +519,86 @@ def _choose_min_continuation_digits(
         if candidates:
             return Counter(candidates).most_common(1)[0][0]
     return 0
+
+
+def _decoded_close_tokens(left: str, right: str, *, tolerance: float = 1e-12) -> bool:
+    try:
+        return abs(float(decode_ddc_number_fraction(left) - decode_ddc_number_fraction(right))) <= tolerance
+    except Exception:
+        return False
+
+
+def _apply_fallback_token_experiment(
+    *,
+    token: str,
+    fallback_continuation: str,
+    entity_type: str,
+    role: str,
+) -> tuple[str, str]:
+    if fallback_continuation != "line-repair-zero":
+        return token, ""
+    if len(token) != 10 or token.endswith("0"):
+        return token, ""
+    if entity_type == "ARC":
+        if role != "start_x":
+            return token, ""
+        candidate = f"{token}0"
+        if not _decoded_close_tokens(token, candidate):
+            return token, ""
+        return candidate, "line_repair_zero_arc_start_x_append0"
+    if entity_type != "LINE" or role not in {"start_x", "start_y", "delta_x", "delta_y"}:
+        return token, ""
+    final_digit = ord(token[-1]) - 48
+    if role == "delta_x":
+        if 0 < final_digit <= 9:
+            low_digit_candidate = f"{token[:-1]}00"
+            if _decoded_close_tokens(token, low_digit_candidate):
+                return low_digit_candidate, "line_repair_zero_low_digit_last00"
+    if role == "delta_y" and 0 <= final_digit < 64:
+        if final_digit % 8 == 4:
+            rounded_down_candidate = f"{token[:-1]}{chr(48 + final_digit - 4)}0"
+            if _decoded_close_tokens(token, rounded_down_candidate):
+                return rounded_down_candidate, "line_repair_zero_delta_y_round_down8"
+        previous_digit = ord(token[-2]) - 48
+        if final_digit > 32 and 0 <= previous_digit < 63:
+            carry_candidate = f"{token[:-2]}{chr(48 + previous_digit + 1)}00"
+            if _decoded_close_tokens(token, carry_candidate):
+                return carry_candidate, "line_repair_zero_delta_y_carry_last00"
+    candidate = f"{token}0"
+    if not _decoded_close_tokens(token, candidate):
+        return token, ""
+    return candidate, "line_repair_zero_append0"
+
+
+def _fallback_token_for_fraction(
+    *,
+    target_part: str,
+    dxf_row: dict[str, Any],
+    slot: int,
+    fraction: Fraction,
+    min_continuation_lookup: dict[str, dict[tuple[Any, ...], list[tuple[str, int]]]] | None,
+    fallback_continuation: str,
+) -> tuple[str, str]:
+    entity_type = str(dxf_row["type"])
+    role = slot_role(entity_type, slot)
+    min_digits = _choose_min_continuation_digits(
+        target_part=target_part,
+        dxf_row=dxf_row,
+        slot=slot,
+        min_continuation_lookup=min_continuation_lookup,
+        fallback_continuation=fallback_continuation,
+    )
+    token = encode_ddc_number_fraction(fraction, continuation_digits=8, min_continuation_digits=min_digits)
+    source = f"encoded_fraction_fallback:{fallback_continuation}:{min_digits}"
+    token, experiment_source = _apply_fallback_token_experiment(
+        token=token,
+        fallback_continuation=fallback_continuation,
+        entity_type=entity_type,
+        role=role,
+    )
+    if experiment_source:
+        source = f"{source}->{experiment_source}"
+    return token, source
 
 
 def build_coordinate_model(dxf_folder: Path, sym_folder: Path, *, value_digits: int = 6) -> dict[str, Any]:
@@ -588,16 +668,13 @@ def choose_token_for_fraction(
             if candidates:
                 return Counter(str(token) for token in candidates).most_common(1)[0][0], source
 
-        min_digits = _choose_min_continuation_digits(
+        return _fallback_token_for_fraction(
             target_part=target_part,
             dxf_row=dxf_row,
             slot=slot,
+            fraction=fraction,
             min_continuation_lookup=min_continuation_lookup,
             fallback_continuation=fallback_continuation,
-        )
-        return (
-            encode_ddc_number_fraction(fraction, continuation_digits=8, min_continuation_digits=min_digits),
-            f"encoded_fraction_fallback:{fallback_continuation}:{min_digits}",
         )
 
     candidate_sets = [
@@ -636,16 +713,13 @@ def choose_token_for_fraction(
         if candidates:
             return Counter(str(token) for token in candidates).most_common(1)[0][0], source
 
-    min_digits = _choose_min_continuation_digits(
+    return _fallback_token_for_fraction(
         target_part=target_part,
         dxf_row=dxf_row,
         slot=slot,
+        fraction=fraction,
         min_continuation_lookup=min_continuation_lookup,
         fallback_continuation=fallback_continuation,
-    )
-    return (
-        encode_ddc_number_fraction(fraction, continuation_digits=8, min_continuation_digits=min_digits),
-        f"encoded_fraction_fallback:{fallback_continuation}:{min_digits}",
     )
 
 
@@ -1249,7 +1323,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--fallback-continuation",
-        choices=("trimmed", "role", "type-role"),
+        choices=("trimmed", "role", "type-role", "line-repair-zero"),
         default="trimmed",
         help="How to choose continuation length when no exact token spelling is known.",
     )

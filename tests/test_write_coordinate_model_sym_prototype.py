@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from fractions import Fraction
 
-from ddc_number_codec import encode_ddc_number_fraction
+from ddc_number_codec import decode_ddc_number_fraction, encode_ddc_number_fraction
 from write_coordinate_model_sym_prototype import (
     PartPair,
     _compare_tokens,
@@ -98,6 +98,118 @@ class WriteCoordinateModelSymPrototypeTests(unittest.TestCase):
 
         self.assertEqual(token, encode_ddc_number_fraction(Fraction(1, 8), min_continuation_digits=4))
         self.assertEqual(source, "encoded_fraction_fallback:type-role:4")
+
+    def test_choose_token_can_append_line_repair_zero_for_targeted_fallback(self) -> None:
+        fraction = decode_ddc_number_fraction("3@8_AEj^hP")
+
+        token, source = choose_token_for_fraction(
+            target_part="P1",
+            dxf_row={"type": "LINE"},
+            slot=0,
+            fraction=fraction,
+            token_observations=[],
+            token_lookup={"same_type_role_fraction": {}, "same_role_fraction": {}, "same_fraction": {}},
+            fallback_continuation="line-repair-zero",
+        )
+
+        self.assertEqual(token, "3@8_AEj^hP0")
+        self.assertEqual(source, "encoded_fraction_fallback:line-repair-zero:0->line_repair_zero_append0")
+
+    def test_line_repair_zero_does_not_apply_to_non_line_entities(self) -> None:
+        fraction = decode_ddc_number_fraction("3@8_AEj^hP")
+
+        token, source = choose_token_for_fraction(
+            target_part="P1",
+            dxf_row={"type": "ARC"},
+            slot=1,
+            fraction=fraction,
+            token_observations=[],
+            token_lookup={"same_type_role_fraction": {}, "same_role_fraction": {}, "same_fraction": {}},
+            fallback_continuation="line-repair-zero",
+        )
+
+        self.assertEqual(token, "3@8_AEj^hP")
+        self.assertEqual(source, "encoded_fraction_fallback:line-repair-zero:0")
+
+    def test_line_repair_zero_can_round_low_digit_delta_x_to_double_zero(self) -> None:
+        fraction = decode_ddc_number_fraction("k?^3\\M3811")
+
+        token, source = choose_token_for_fraction(
+            target_part="P1",
+            dxf_row={"type": "LINE"},
+            slot=2,
+            fraction=fraction,
+            token_observations=[],
+            token_lookup={"same_type_role_fraction": {}, "same_role_fraction": {}, "same_fraction": {}},
+            fallback_continuation="line-repair-zero",
+        )
+
+        self.assertEqual(token, "k?^3\\M38100")
+        self.assertEqual(source, "encoded_fraction_fallback:line-repair-zero:0->line_repair_zero_low_digit_last00")
+
+    def test_line_repair_zero_can_append_zero_for_start_y(self) -> None:
+        fraction = decode_ddc_number_fraction("3@23FP>1U<")
+
+        token, source = choose_token_for_fraction(
+            target_part="P1",
+            dxf_row={"type": "LINE"},
+            slot=1,
+            fraction=fraction,
+            token_observations=[],
+            token_lookup={"same_type_role_fraction": {}, "same_role_fraction": {}, "same_fraction": {}},
+            fallback_continuation="line-repair-zero",
+        )
+
+        self.assertEqual(token, "3@23FP>1U<0")
+        self.assertEqual(source, "encoded_fraction_fallback:line-repair-zero:0->line_repair_zero_append0")
+
+    def test_line_repair_zero_can_round_delta_y_tail_down_to_multiple_of_eight(self) -> None:
+        fraction = decode_ddc_number_fraction("l??Yd`9`ll")
+
+        token, source = choose_token_for_fraction(
+            target_part="P1",
+            dxf_row={"type": "LINE"},
+            slot=3,
+            fraction=fraction,
+            token_observations=[],
+            token_lookup={"same_type_role_fraction": {}, "same_role_fraction": {}, "same_fraction": {}},
+            fallback_continuation="line-repair-zero",
+        )
+
+        self.assertEqual(token, "l??Yd`9`lh0")
+        self.assertEqual(source, "encoded_fraction_fallback:line-repair-zero:0->line_repair_zero_delta_y_round_down8")
+
+    def test_line_repair_zero_can_carry_delta_y_tail_to_double_zero(self) -> None:
+        fraction = decode_ddc_number_fraction("i?ZoZ?OKKU")
+
+        token, source = choose_token_for_fraction(
+            target_part="P1",
+            dxf_row={"type": "LINE"},
+            slot=3,
+            fraction=fraction,
+            token_observations=[],
+            token_lookup={"same_type_role_fraction": {}, "same_role_fraction": {}, "same_fraction": {}},
+            fallback_continuation="line-repair-zero",
+        )
+
+        self.assertEqual(token, "i?ZoZ?OKL00")
+        self.assertEqual(source, "encoded_fraction_fallback:line-repair-zero:0->line_repair_zero_delta_y_carry_last00")
+
+    def test_line_repair_zero_can_append_zero_for_arc_start_x(self) -> None:
+        fraction = decode_ddc_number_fraction("o?4M\\5M;@7")
+
+        token, source = choose_token_for_fraction(
+            target_part="P1",
+            dxf_row={"type": "ARC"},
+            slot=0,
+            fraction=fraction,
+            token_observations=[],
+            token_lookup={"same_type_role_fraction": {}, "same_role_fraction": {}, "same_fraction": {}},
+            fallback_continuation="line-repair-zero",
+        )
+
+        self.assertEqual(token, "o?4M\\5M;@70")
+        self.assertEqual(source, "encoded_fraction_fallback:line-repair-zero:0->line_repair_zero_arc_start_x_append0")
 
     def test_predict_geometry_tokens_uses_coordinate_lookup_for_line_delta(self) -> None:
         model = {
