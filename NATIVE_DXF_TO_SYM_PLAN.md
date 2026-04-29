@@ -1396,6 +1396,28 @@ Interpretation:
 - The next format-cracking target should compare raw-vs-saved-vs-known-good at the DRG/nest-output level, not only at the SYM token level, to identify which token/cache deltas are operationally irrelevant.
 - Report generation through `prj_output_report` / `stp_output_report` remained blocked in this headless Nest Project context with `Wrong mode for DevExpress reports`.
 
+Raw-vs-RADAN-saved nest artifact comparison:
+
+- analyzer: `compare_nest_artifacts.py`
+- report: `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\RAW_VS_RADAN_SAVED_NEST_ARTIFACTS.md`
+- RPD used-nest semantics matched exactly between raw pre-save synthetic and RADAN-saved synthetic outputs
+- DRG count matched: `28 / 28`
+- contained symbol summaries matched: `28 / 28`
+- full DRG hash matches: `0 / 28`
+- normalized DRG hash matches after path/job-label/timestamp normalization: `0 / 28`
+- DDC line comparison across paired DRGs:
+  - same lines: `3980`
+  - changed lines: `292`
+  - `F -> F`: `55`
+  - `I -> I`: `125`
+  - `N -> N`: `112`
+
+Interpretation:
+
+- RADAN's nesting plan and part counts are insensitive to the raw-vs-saved token spelling deltas for this `95 / 98` corpus.
+- The raw-vs-saved deltas still propagate into generated DRG DDC payloads, mainly as same-prefix `F`, `I`, and `N` token changes rather than row insertion/deletion or changed nest membership.
+- This supports treating exact token spelling as a display/report/canonicalization research target, while copied-project nesting is already accepting the raw writer's current token spelling.
+
 Known-good blocker fit check:
 
 | Part | DXF size | Biggest matching sheet | Fit result |
