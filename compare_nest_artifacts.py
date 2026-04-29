@@ -161,6 +161,92 @@ def used_nest_signature(project_path: Path) -> list[dict[str, Any]]:
     return signature
 
 
+def _sheet_signature(nest: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "material": nest.get("material", ""),
+        "thickness": nest.get("thickness", ""),
+        "sheet_x": nest.get("sheet_x", ""),
+        "sheet_y": nest.get("sheet_y", ""),
+    }
+
+
+def _part_signature_counts(parts: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for part in parts:
+        key = f"{part.get('part', '')}|{part.get('made', 0)}"
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+def _expand_part_signature(key: str, count: int) -> dict[str, Any]:
+    part, made = key.rsplit("|", 1)
+    try:
+        made_value: int | str = int(made)
+    except ValueError:
+        made_value = made
+    return {"part": part, "made": made_value, "count": count}
+
+
+def used_nest_differences(left: list[dict[str, Any]], right: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    left_by_id = {int(row["id"]): row for row in left}
+    right_by_id = {int(row["id"]): row for row in right}
+    differences: list[dict[str, Any]] = []
+    for nest_id in sorted(set(left_by_id) | set(right_by_id)):
+        left_row = left_by_id.get(nest_id)
+        right_row = right_by_id.get(nest_id)
+        if left_row is None or right_row is None:
+            differences.append(
+                {
+                    "id": nest_id,
+                    "left_exists": left_row is not None,
+                    "right_exists": right_row is not None,
+                    "sheet_match": False,
+                    "parts_match": False,
+                    "left_sheet": None if left_row is None else _sheet_signature(left_row),
+                    "right_sheet": None if right_row is None else _sheet_signature(right_row),
+                    "left_only_parts": [] if left_row is None else left_row.get("parts", []),
+                    "right_only_parts": [] if right_row is None else right_row.get("parts", []),
+                }
+            )
+            continue
+
+        left_sheet = _sheet_signature(left_row)
+        right_sheet = _sheet_signature(right_row)
+        left_parts = _part_signature_counts(left_row.get("parts", []))
+        right_parts = _part_signature_counts(right_row.get("parts", []))
+        left_only_keys = sorted(set(left_parts) - set(right_parts))
+        right_only_keys = sorted(set(right_parts) - set(left_parts))
+        count_delta_keys = sorted(
+            key for key in set(left_parts) & set(right_parts) if left_parts[key] != right_parts[key]
+        )
+        if left_sheet == right_sheet and not left_only_keys and not right_only_keys and not count_delta_keys:
+            continue
+
+        differences.append(
+            {
+                "id": nest_id,
+                "left_exists": True,
+                "right_exists": True,
+                "sheet_match": left_sheet == right_sheet,
+                "parts_match": not left_only_keys and not right_only_keys and not count_delta_keys,
+                "left_sheet": left_sheet,
+                "right_sheet": right_sheet,
+                "left_only_parts": [_expand_part_signature(key, left_parts[key]) for key in left_only_keys],
+                "right_only_parts": [_expand_part_signature(key, right_parts[key]) for key in right_only_keys],
+                "part_count_deltas": [
+                    {
+                        "part": key.rsplit("|", 1)[0],
+                        "made": int(key.rsplit("|", 1)[1]),
+                        "left_count": left_parts[key],
+                        "right_count": right_parts[key],
+                    }
+                    for key in count_delta_keys
+                ],
+            }
+        )
+    return differences
+
+
 def normalize_drg_text(text: str) -> str:
     text = TIMESTAMP_RE.sub("<TIMESTAMP>", text)
     text = LAB_JOB_RE.sub("F54410 PAINT PACK.<LABEL>", text)
@@ -396,6 +482,7 @@ def compare_gate_dirs(left_dir: Path, right_dir: Path, *, left_name: str = "left
         "left": left,
         "right": right,
         "rpd_used_nests_match": left["rpd_used_nests"] == right["rpd_used_nests"],
+        "rpd_used_nest_differences": used_nest_differences(left["rpd_used_nests"], right["rpd_used_nests"]),
         "drg_count_match": left["drg_count"] == right["drg_count"],
         "drg_comparison": drg_rows,
         "drg_full_hash_matches": sum(1 for row in drg_rows if row["full_hash_match"]),
@@ -454,6 +541,26 @@ def write_markdown_report(comparison: dict[str, Any], path: Path) -> None:
         lines.extend(["", "## DDC Changed By Class", ""])
         for key, count in comparison["ddc_changed_by_class"].items():
             lines.append(f"- `{key}`: `{count}`")
+    if comparison.get("rpd_used_nest_differences"):
+        lines.extend(["", "## RPD Used-Nest Differences", ""])
+        lines.append("| Nest | Sheet match | Parts match | Left-only parts | Right-only parts |")
+        lines.append("| ---: | --- | --- | --- | --- |")
+        for diff in comparison["rpd_used_nest_differences"]:
+            left_only = ", ".join(
+                f"{row['part']} x{row['made']}" for row in diff.get("left_only_parts", [])
+            ) or "-"
+            right_only = ", ".join(
+                f"{row['part']} x{row['made']}" for row in diff.get("right_only_parts", [])
+            ) or "-"
+            lines.append(
+                "| `{id}` | `{sheet}` | `{parts}` | {left_only} | {right_only} |".format(
+                    id=diff["id"],
+                    sheet=diff["sheet_match"],
+                    parts=diff["parts_match"],
+                    left_only=left_only,
+                    right_only=right_only,
+                )
+            )
     first_diff = comparison.get("first_normalized_diff")
     if first_diff:
         lines.extend(

@@ -167,6 +167,53 @@ class CompareNestArtifactsTests(unittest.TestCase):
 
         self.assertEqual(result["sym_refs"], ["B-10.sym"])
 
+    def test_used_nest_differences_reports_part_swaps(self) -> None:
+        left = [
+            {
+                "id": 27,
+                "material": "Aluminum 5052",
+                "thickness": "0.18",
+                "sheet_x": "120",
+                "sheet_y": "48",
+                "parts": [{"part": "B-3 R1", "made": 1}, {"part": "B-49", "made": 1}],
+            },
+            {
+                "id": 28,
+                "material": "Aluminum 5052",
+                "thickness": "0.18",
+                "sheet_x": "120",
+                "sheet_y": "60",
+                "parts": [{"part": "B-5 R1", "made": 1}],
+            },
+        ]
+        right = [
+            {
+                "id": 27,
+                "material": "Aluminum 5052",
+                "thickness": "0.18",
+                "sheet_x": "120",
+                "sheet_y": "48",
+                "parts": [{"part": "B-5 R1", "made": 1}, {"part": "B-49", "made": 1}],
+            },
+            {
+                "id": 28,
+                "material": "Aluminum 5052",
+                "thickness": "0.18",
+                "sheet_x": "120",
+                "sheet_y": "60",
+                "parts": [{"part": "B-3 R1", "made": 1}],
+            },
+        ]
+
+        result = compare.used_nest_differences(left, right)
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["id"], 27)
+        self.assertTrue(result[0]["sheet_match"])
+        self.assertFalse(result[0]["parts_match"])
+        self.assertEqual(result[0]["left_only_parts"], [{"part": "B-3 R1", "made": 1, "count": 1}])
+        self.assertEqual(result[0]["right_only_parts"], [{"part": "B-5 R1", "made": 1, "count": 1}])
+
 
 if __name__ == "__main__":
     unittest.main()

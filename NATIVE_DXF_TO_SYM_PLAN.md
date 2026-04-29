@@ -1541,3 +1541,58 @@ Known-good blocker fit check:
 | `F54410-B-17` | `65.754 x 60.813 in` | `120.0 x 60.0 in` | oversized |
 
 Those three should remain excluded from synthetic-SYM pass/fail classification unless a larger matching sheet setup is intentionally added to the copied project.
+
+### 2026-04-29 Overnight Token-Majority Canonicalization Probe
+
+Token-spelling experiment outputs:
+
+- context unanimous:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\writer_radan_save_context_unanimous`
+- token majority:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\writer_radan_save_token_majority`
+- shorter majority:
+  `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\writer_radan_save_shorter_majority`
+
+Accepted95 residual results versus L-side known-good symbols:
+
+| Candidate | Exact token slots | Exact token rate | Mismatches | Far mismatches |
+| --- | ---: | ---: | ---: | ---: |
+| raw pre-save baseline | `62761 / 69451` | `0.903673` | `6690` | `0` |
+| context unanimous | `63235 / 69451` | `0.910498` | `6216` | `0` |
+| token majority | `63560 / 69451` | `0.915178` | `5891` | `0` |
+| shorter majority | `62763 / 69451` | `0.903702` | `6688` | `0` |
+| RADAN-saved synthetic | `67931 / 69451` | `0.978114` | `1520` | `0` |
+
+Token-majority validation:
+
+- single `B-10` nester gate passed
+- single `F54410-B-49` nester gate passed
+- seven hard-canary nester gate passed
+- seven hard-canary thumbnail parity passed with `7 / 7` exact pixel matches at `900 x 700`
+- full95 copied-project nester gate passed:
+  - part rows: `95`
+  - sheet rows: `8`
+  - nest rows: `42`
+  - made/nonzero count: `431`
+  - `NextNestNum`: `43`
+  - DRG files: `28`
+  - `lay_run_nest(0)`: `0`
+  - elapsed: `56.454 s`
+  - final RADAN-family process list: empty
+- report generation stayed blocked with `Wrong mode for DevExpress reports`
+
+Operational regression:
+
+- token-majority full95 did not preserve raw/known-good used-nest membership
+- `compare_nest_artifacts.py` now reports exact RPD used-nest membership deltas, not just the boolean mismatch
+- the mismatch is localized to two nests with identical sheet signatures:
+  - nest `27`: token-majority has `B-3 R1 x1`; raw/known-good has `B-5 R1 x1`
+  - nest `28`: token-majority has `B-5 R1 x1`; raw/known-good has `B-3 R1 x1`
+- the directly swapped symbol files `B-3 R1.sym` and `B-5 R1.sym` were byte-identical between the raw and token-majority symbol folders, so the layout change is likely caused by other nearby token changes or nester tie-breaking sensitivity, not mutation of those two symbol files
+
+Interpretation:
+
+- token-majority is RADAN-acceptable: it displays correctly on hard canaries and nests the full accepted corpus
+- token-majority is not currently a better operational candidate than raw pre-save output because it perturbs the copied-project nest plan even while improving offline exact token rate
+- raw pre-save remains the best operational benchmark tonight because it matches L-side known-good used-nest semantics for the accepted `95 / 98` subset
+- future token-spelling rules should be gated by both exact token improvement and preservation of raw/known-good nester semantics
