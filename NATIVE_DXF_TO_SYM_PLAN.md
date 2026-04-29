@@ -1824,9 +1824,43 @@ Interpretation:
 - the all-three `B-194` context-token state is harmless by itself in the raw
   corpus, but it becomes layout-perturbing when paired with at least one of
   several other small decoded-close token spelling changes
-- the trigger is not unique to `B-14`; `B-185` and `B-186` independently produce
-  the same stable used-nest swap when paired with `B-194`
+- the trigger is not unique to `B-14`; `B-185` and `B-186` also produce the same
+  stable used-nest swap
 - exact-token improvement rules need a nester semantic guard, because small
   decoded-close token changes in unrelated symbols can alter aggregate layout
   ordering without changing parser, thumbnail, part-count, sheet-count, made, or
   DRG-count gates
+
+Single-symbol and one-token follow-up:
+
+| Variant | Context tokens beyond raw | Used-nest match vs raw | Difference |
+| --- | --- | --- | --- |
+| `B-14` only | four `LINE:delta_y` tokens | yes | none |
+| `B-185` only | nine arc tokens | no | nests `27`/`28` swap `B-3 R1` and `B-5 R1` |
+| `B-186` only | four arc tokens | no | same nests `27`/`28` swap |
+| `B-186` slot2 pair | row `22` and row `24` `ARC:delta_x` tokens only | no | same nests `27`/`28` swap |
+| `B-186` non-slot2 pair | row `24` `ARC:delta_y` and `center_delta_x` tokens only | yes | none |
+| `B-186` row22 slot2 | one row `22` `ARC:delta_x` token only | no | same nests `27`/`28` swap |
+| `B-186` row24 slot2 | one row `24` `ARC:delta_x` token only | no | same nests `27`/`28` swap |
+
+The one-token trigger is:
+
+- part: `B-186`
+- role: `ARC:delta_x`
+- raw token: `4@7Tollog\K`
+- context token: `4@7Tollog\L`
+- decoded delta: about `7.1e-15`
+
+Interpretation update:
+
+- `B-14` is neutral alone but becomes layout-perturbing when paired with
+  `B-194` all-three context tokens
+- `B-185` and `B-186` do not require `B-194`; each can perturb the full95 nest
+  assignment from decoded-close arc token spelling alone
+- in `B-186`, either of two individual `ARC:delta_x` final-character choices is
+  sufficient, while the neighboring decoded-close `ARC:delta_y` /
+  `center_delta_x` pair is neutral
+- this is strong evidence that RADAN-acceptable token spelling is not merely
+  about decoded geometry or per-symbol thumbnail parity; aggregate nester
+  behavior can be sensitive to exact compact-token spellings below practical
+  geometry tolerance
