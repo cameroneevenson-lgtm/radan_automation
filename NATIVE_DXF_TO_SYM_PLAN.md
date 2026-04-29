@@ -1470,6 +1470,24 @@ Interpretation:
 - Against the L-side known-good output, `168 / 307` DRG DDC deltas are volatile/report classes (`N` cache/timestamp plus report date/name text), leaving `139` same-prefix layout token payload deltas to keep mining.
 - This upgrades raw native generation from "decoded-close but visually risky" to "RADAN-open, thumbnail-identical on canaries, and nester-accepted against known-good operational state" for this copied-project corpus.
 
+Nest layout token delta analysis:
+
+- analyzer: `analyze_nest_layout_token_deltas.py`
+- raw vs RADAN-saved report: `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\RAW_VS_RADAN_SAVED_LAYOUT_TOKEN_DELTAS.md`
+- raw vs known-good report: `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\RAW_VS_KNOWN_GOOD_LAYOUT_TOKEN_DELTAS.md`
+
+| Comparison | Layout changed rows | Layout token mismatches | Decoded bucket | Same-prefix except last char |
+| --- | ---: | ---: | --- | ---: |
+| raw pre-save synthetic vs RADAN-saved synthetic | `124` | `489` | `489 close_1e-12` | `486` |
+| raw pre-save synthetic vs L-side known-good | `139` | `543` | `543 close_1e-12` | `537` |
+
+Interpretation:
+
+- The remaining crack-relevant DRG layout payload differences are not far decoded coordinate/layout differences.
+- For the L-side known-good comparison, every `F` layout entity token mismatch (`73 / 73`) and every `I` layout annotation token mismatch (`470 / 470`) decodes close within `1e-12`.
+- Most remaining mismatches are the familiar final-continuation-character spelling deltas, typically mantissa delta units of `+/-1` or `+/-2`.
+- This strongly supports the current raw writer's practical acceptance while narrowing exact-token cracking to deterministic final continuation/canonical spelling rules rather than geometry semantics.
+
 Accepted-subset token residual benchmark:
 
 - analyzer: `analyze_token_residuals.py`
