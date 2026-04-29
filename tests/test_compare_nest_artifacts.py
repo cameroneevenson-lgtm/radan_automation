@@ -59,7 +59,7 @@ class CompareNestArtifactsTests(unittest.TestCase):
         right = (
             "P15 F54410 PAINT PACK.saved\n"
             "2026-04-29T18:05:00-04:00\n"
-            "U,,$C:\\lab\\after\\B-10.sym\n"
+            "U,,$\\\\SVRDC\\Laser\\BATTLESHIELD\\F-LARGE FLEET\\F54410\\PAINT PACK\\B-10.sym\n"
         )
 
         self.assertEqual(compare.normalize_drg_text(left), compare.normalize_drg_text(right))

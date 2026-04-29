@@ -15,6 +15,7 @@ NEST_ID_RE = re.compile(r"\bP(?P<id>\d+)\b", re.IGNORECASE)
 TIMESTAMP_RE = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:[-+]\d{2}:\d{2})?")
 SYM_PATH_RE = re.compile(r"[A-Za-z]:[\\/][^,\r\n<>$]*[\\/](?P<name>[^\\/,\r\n<>$]+\.sym)", re.IGNORECASE)
 SLASH_PATH_RE = re.compile(r"[A-Za-z]:/[^\r\n<>$]*?/(?P<name>[^/\r\n<>$]+\.sym)", re.IGNORECASE)
+UNC_SYM_PATH_RE = re.compile(r"\\\\[^,\r\n<>$]*[\\/](?P<name>[^\\/,\r\n<>$]+\.sym)", re.IGNORECASE)
 LAB_JOB_RE = re.compile(r"F54410 PAINT PACK\.[A-Za-z0-9_.-]+")
 NEST_DIR_RE = re.compile(r"[A-Za-z]:[/\\][^,\r\n<>$]*[/\\]nests", re.IGNORECASE)
 DDC_RECORD_RE = re.compile(r"^(?P<prefix>[A-Z\]])(?:,|$)")
@@ -165,6 +166,7 @@ def normalize_drg_text(text: str) -> str:
     text = NEST_DIR_RE.sub("<NEST_DIR>", text)
     text = SYM_PATH_RE.sub(r"<SYM>/\g<name>", text)
     text = SLASH_PATH_RE.sub(r"<SYM>/\g<name>", text)
+    text = UNC_SYM_PATH_RE.sub(r"<SYM>/\g<name>", text)
     return text
 
 
