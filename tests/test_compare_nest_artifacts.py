@@ -112,6 +112,60 @@ class CompareNestArtifactsTests(unittest.TestCase):
         self.assertEqual(result["same_lines"], 1)
         self.assertEqual(result["changed_lines"], 2)
         self.assertEqual(result["changed_by_prefix"], {"H->H": 1, "I->N": 1})
+        self.assertEqual(
+            result["changed_by_class"],
+            {"H same-prefix token payload": 1, "prefix change I->N": 1},
+        )
+
+    def test_compare_ddc_lines_classifies_volatile_and_layout_deltas(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            left = root / "left.drg"
+            right = root / "right.drg"
+            left.write_text(
+                '<RadanCompoundDocument><RadanFile extension="ddc"><![CDATA[\n'
+                "I,,1,5,,5,1,1,,abc.$DATE              : Wed Apr 29 17:54:57 2026\n"
+                "N,,4,1,,2,$1777499697\n"
+                "F,:,1,6,,,,,,abc.$/layout/B-184\n"
+                "I,,1,C,,5,1,1,,abc.$\\|2\n"
+                "]]></RadanFile></RadanCompoundDocument>\n",
+                encoding="utf-8",
+            )
+            right.write_text(
+                '<RadanCompoundDocument><RadanFile extension="ddc"><![CDATA[\n'
+                "I,,1,5,,5,1,1,,abc.$DATE              : Wed Apr 29 18:08:30 2026\n"
+                "N,,4,1,,2,$1777500510\n"
+                "F,:,1,6,,,,,,def.$/layout/B-184\n"
+                "I,,1,C,,5,1,1,,def.$\\|2\n"
+                "]]></RadanFile></RadanCompoundDocument>\n",
+                encoding="utf-8",
+            )
+
+            result = compare.compare_ddc_lines(left, right)
+
+        self.assertEqual(
+            result["changed_by_class"],
+            {
+                "F layout entity token payload": 1,
+                "I layout annotation token payload": 1,
+                "I report date text": 1,
+                "N numeric cache/timestamp": 1,
+            },
+        )
+
+    def test_summarize_drg_collects_unc_symbol_refs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "P15 test.drg"
+            path.write_text(
+                '<RadanCompoundDocument><RadanFile extension="ddc"><![CDATA[\n'
+                "U,,$\\\\SVRDC\\Laser\\BATTLESHIELD\\F-LARGE FLEET\\F54410\\PAINT PACK\\B-10.sym\n"
+                "]]></RadanFile></RadanCompoundDocument>\n",
+                encoding="utf-8",
+            )
+
+            result = compare.summarize_drg(path)
+
+        self.assertEqual(result["sym_refs"], ["B-10.sym"])
 
 
 if __name__ == "__main__":
