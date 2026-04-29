@@ -1418,6 +1418,44 @@ Interpretation:
 - The raw-vs-saved deltas still propagate into generated DRG DDC payloads, mainly as same-prefix `F`, `I`, and `N` token changes rather than row insertion/deletion or changed nest membership.
 - This supports treating exact token spelling as a display/report/canonicalization research target, while copied-project nesting is already accepting the raw writer's current token spelling.
 
+Known-good L-side full95 nester oracle:
+
+- gate folder: `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_full95_known_good`
+- symbol folder: `L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK`
+- subset: `95 / 98`, excluding oversized `F54410-B-09`, `F54410-B-11`, `F54410-B-17`
+- `lay_run_nest(0)` returned `0` in `60.933 s`
+- project rows after nest:
+  - parts: `95`
+  - sheets: `8`
+  - nests: `42`
+  - made/nonzero count: `431`
+  - `NextNestNum`: `43`
+  - DRG files: `28`
+- RADAN process cleanup proof: final RADAN-family process list was empty
+- report attempt stayed blocked with `Wrong mode for DevExpress reports`
+
+Raw-vs-known-good nest artifact comparison:
+
+- analyzer: `compare_nest_artifacts.py`
+- report: `_sym_lab\overnight_crack_and_nest_validate_20260429_174834\RAW_VS_KNOWN_GOOD_NEST_ARTIFACTS.md`
+- RPD used-nest semantics matched exactly between raw pre-save synthetic and L-side known-good outputs
+- DRG count matched: `28 / 28`
+- contained symbol summaries matched: `28 / 28`
+- full DRG hash matches: `0 / 28`
+- normalized DRG hash matches after path/job-label/timestamp normalization: `0 / 28`
+- DDC line comparison across paired DRGs:
+  - same lines: `3965`
+  - changed lines: `307`
+  - `F -> F`: `61`
+  - `I -> I`: `134`
+  - `N -> N`: `112`
+
+Interpretation:
+
+- Raw pre-save synthetic symbols now reproduce the same copied-project nesting membership, part counts, sheet counts, nest counts, made counts, and contained-symbol layout semantics as the L-side known-good symbols for the accepted `95 / 98` corpus.
+- The remaining DRG differences are same-prefix compact-token/cache/report-text payload differences, not evidence of missing parts, changed DRG counts, changed used-nest semantics, or nester rejection.
+- This upgrades raw native generation from "decoded-close but visually risky" to "RADAN-open, thumbnail-identical on canaries, and nester-accepted against known-good operational state" for this copied-project corpus.
+
 Accepted-subset token residual benchmark:
 
 - analyzer: `analyze_token_residuals.py`
