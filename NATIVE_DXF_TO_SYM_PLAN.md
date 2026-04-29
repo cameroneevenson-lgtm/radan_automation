@@ -843,3 +843,79 @@ Conclusion:
 - use RADAN save canonicalization as a reverse-engineering oracle only
 - do not promote it or synthetic SYM generation into production
 - next research target is to compare before/after-save token deltas for the improved symbols (`B-14`, `B-17`, `F54410-B-49`) against the symbols that RADAN repaired destructively (`B-27`, `F54410-B-12`)
+
+## 2026-04-29 L-Side Save Canonicalization Analysis
+
+Added:
+
+- `analyze_radan_save_canonicalization.py`
+- tests: `tests/test_analyze_radan_save_canonicalization.py`
+
+Purpose:
+
+- compare the RADAN-saved synthetic symbols against the real L-side F54410 known-good symbols, not only the fresh LAB oracle
+- classify whether RADAN save acted as harmless token canonicalization or as destructive geometry repair
+- separate pen/material noise from actual DDC geometry changes
+
+Artifacts:
+
+- report:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_canonicalization_20260429_1400\l_side_good_analysis\RADAN_SAVE_CANONICALIZATION_ANALYSIS.md`
+- JSON:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_canonicalization_20260429_1400\l_side_good_analysis\radan_save_canonicalization_analysis.json`
+- CSV:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_canonicalization_20260429_1400\l_side_good_analysis\radan_save_canonicalization_analysis.csv`
+- token residuals before save:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_canonicalization_20260429_1400\l_side_good_analysis\before_save_token_residuals.json`
+- token residuals after save, excluding row-count-changed parts:
+  `C:\Tools\radan_automation\_sym_lab\radan_save_canonicalization_20260429_1400\l_side_good_analysis\after_save_token_residuals_count_matched.json`
+
+Classification result against L-side known-good symbols:
+
+| Classification | Count |
+| --- | ---: |
+| `exact_after_save` | `46` |
+| `canonicalized_closer` | `29` |
+| `decoded_close_no_token_change` | `2` |
+| `decoded_close_but_token_worse` | `1` |
+| `destructive_radan_repair_row_count_changed` | `20` |
+
+Aggregate:
+
+| Metric | Before RADAN save | After RADAN save |
+| --- | ---: | ---: |
+| exact token ratio | `0.901644` | `0.906559` |
+| exact geometry-data ratio | `0.257094` | `0.470051` |
+| exact token slots | `65417 / 72553` | `64130 / 70740` |
+
+Token residuals:
+
+- before save, all `98` parts were decoded-close, with `7136` token mismatches and `0` far decoded mismatches
+- after save, among the `78` count-matched parts:
+  - exact token rate: `0.981687`
+  - mismatches: `599`
+  - far decoded mismatches: `0`
+  - top remaining mismatch roles: `LINE:start_x`, `LINE:delta_x`, `ARC:start_x`, `LINE:start_y`
+
+Good canaries:
+
+- `B-14`: token ratio `0.830882 -> 0.977941`, exact records `0 -> 12`
+- `B-17`: `0.894737 -> 0.986842`, exact records `1 -> 7`
+- `F54410-B-49`: `0.838235 -> 0.952941`, exact records `0 -> 9`
+
+Destructive row-count-changing canaries:
+
+- `B-27`: records `181 -> 170`, token ratio `0.834857 -> 0.781271`
+- `F54410-B-12`: records `194 -> 184`, token ratio `0.833631 -> 0.788798`
+- `F54410-B-27`: records `61 -> 56`, token ratio `0.968559 -> 0.806066`
+
+Aggregate destructive row churn:
+
+- missing from known-good after save: `751` G records and `79` H records
+- extra after save: `659` G records and `58` H records
+
+Conclusion:
+
+- RADAN save is a very strong token-canonicalization oracle for the `78` count-matched parts
+- RADAN save is still disqualified as a production repair step because `20` symbols are rebuilt into different row counts
+- next useful cracking work is to mine the `599` remaining after-save token residuals and infer the final RADAN token spelling rule for the non-destructive group
