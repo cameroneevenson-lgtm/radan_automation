@@ -26,8 +26,8 @@ This file is intended to bridge:
 
 Current automated validation:
 
-- `2026-04-24`: `C:\Tools\.venv\Scripts\python.exe -m unittest discover -v`
-- result: `Ran 32 tests` / `OK`
+- `2026-04-29`: `C:\Tools\.venv\Scripts\python.exe -m unittest discover -v`
+- result: `Ran 104 tests` / `OK`
 
 ## Direct API / COM Paths
 
@@ -65,6 +65,11 @@ These are not RADAN COM commands. They are useful when the file format is known 
 | `.sym` DDC arc pen remap (`H` record field 8, `7 -> 9`) | live scan parity, direct XML inspection, unit tests | file | live `scan(...)` + `find_xy_identifier(...)` + `rfmac('e\\?P,9?')` | `direct file` | `tested-file` | Proven for the paint-pack symbols. Direct edits do not refresh RADAN-derived workflow status, thumbnails, or internal metadata. |
 | `.sym` filesystem timestamp touch | file metadata experiment | file | RADAN open/save refresh | `not sufficient alone` | `tested-file` | Touching `LastWriteTime` on changed symbols did not update internal `Modified`, `Workflow status`, `File size`, or thumbnails. |
 | `.sym` `Workflow status` XML edit | direct XML inspection | file | RADAN validation/open-save | `do not spoof` | `not-tested` | Intentionally not used. `Workflow status` is RADAN's validation result; direct edits could hide real geometry problems. |
+| `.sym` safe oracle/template indexing (`build_sym_oracle_index.py`) | direct XML/DDC inspection, unit tests, F54410 offline run | file | RADAN manual known-good selection | `direct file, read-only` | `tested-file` | Indexed 831 symbols in `_sym_lab\token_metadata_20260429_101235`; classified 120 safe oracles. Excludes donor and synthetic folders from normal oracle/template selection. |
+| `.sym` section/token diff (`sym_section_diff.py`) | direct XML/DDC inspection, unit tests, F54410 offline run | file | RADAN visual compare/open-save | `direct file, read-only` | `tested-file` | Diffed known-good vs synthetic canaries and separated DDC geometry, non-geometry DDC, wrapper metadata, history, and volatile fields. Useful for finding token-choice/cache sensitivity without opening RADAN. |
+| `.sym` token/metadata offline research (`run_sym_token_metadata_offline.py`) | direct XML/DDC inspection, unit tests, F54410 offline run | file | controlled RADAN oracle later if needed | `direct file, read-only` | `tested-file` | Produced `SYM_TOKEN_METADATA_OFFLINE_REPORT.md` without touching RADAN. B-10 is the exact-DDC control; B-17 is the sharp token-choice canary; B-27 mixes token differences with pen/derived metadata differences. |
+| `.sym` lab-only hybrid matrix generation (`sym_hybrid_matrix.py`) | direct XML/DDC inspection, unit tests, F54410 offline run | file | RADAN visual compare later | `lab-only direct file` | `tested-file` | Generated hybrid SYM candidates under `_sym_lab` for later controlled RADAN validation. Do not write these into production folders or promote them without visual/oracle proof. |
+| cleaned-DXF-first SYM research harness (`run_cleaned_f54410_sym_research.py`) | cleaned F54410 CSV/DXF manifest, unit tests | file | RADAN import of raw DXF | `direct file, lab-only` | `tested-file` | Builds an L-side cleaned/preprocessed DXF corpus, rewrites the lab CSV first column to cleaned DXFs, writes manifests, and skips missing templates rather than falling back to donor mode. |
 | `.rpd` project membership inspection | user-provided path + direct XML inspection | file/live nest context | `Mac.prj_get_file_path()` first, then visible Nest parts list if needed | `read-only file inspection` | `tested-file` | The operator-confirmed seven-part test project was `L:\BATTLESHIELD\F-LARGE FLEET\PLAYGROUND\PLAYGROUND\PLAYGROUND.rpd`. Do not infer the active project path from nearby symbol folders. It stores symbol paths and nest membership, but no embedded per-symbol thumbnails were found. |
 
 ## Live Session State / UI Control Paths
@@ -149,6 +154,8 @@ If we want to start proving these safely, the best sequence is:
 - Prefer `API` for anything lifecycle, export, scan, ELF, or feature-editor related.
 - Validate process ownership before API cleanup calls such as `Quit()`.
 - Prefer `direct file` only for narrow, format-proven transformations where RADAN-derived caches can be refreshed later by RADAN itself.
+- Keep synthetic/native SYM production integration disabled. The offline path is now useful for research and lab candidates, but visual/RADAN proof is still required before promotion.
+- Use the safe oracle index and section/token diff tools before asking for RADAN access. RADAN should only be used for controlled micro-oracle or visual checks when direct file evidence stops answering the question.
 - Prefer `mac2` for most interactive drafting/edit/pattern workflows.
 - Reserve `rfmac` for the documented safe commands only.
 - Treat the keystroke rows above as a testing backlog until we add live execution proof for each one.
