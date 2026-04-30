@@ -2246,3 +2246,9 @@ exact tokens (`0.9041803922649649`, far `0`), and passes hard-canary thumbnails
 The current boundary check confirms both sides are still needed: the F12(20)
 subset without F15 and the F15-only variant each nest with `28` DRGs but fail
 raw used-nest semantics with the same `26/28` contained-symbol match pattern.
+
+Leave-one reduction from the F12(20) bottom found seven additional individually
+optional rows: `73`, `77`, `126`, `129`, `131`, `133`, and `140`. Rows `43`,
+`59`, `76`, `79`, `83`, `109`, `110`, `122`, `123`, `124`, `130`, `132`, and
+`156` remain load-bearing in this context. This opens a new F12(19) reduction
+layer on top of the current F15+F12(20) candidate.
