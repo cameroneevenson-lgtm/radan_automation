@@ -1004,6 +1004,39 @@ symbols, the fully regenerated donor-only row-count trio now passes:
 | `NextNestNum` | `17` |
 | RADAN process cleanup | preflight empty, final empty |
 
+Promotion of the same generated rule to the 95-part subset is not solved yet.
+A 95-symbol donor-only candidate was generated with the same boundary
+normalization, line/H continuation repair, and lab feature-pen remap. The copied
+project gate loaded 95 part rows and 8 sheet rows, but `lay_run_nest(0)`
+returned `11063` with 0 DRGs:
+
+| Metric | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_boundary_line_h_delta_zero_proven95\symbols` |
+| RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_95_donor_lhzero_pen\F54410 PAINT PACK.donor95_lhzero_pen.rpd` |
+| excluded known setup blockers | `F54410-B-09`, `F54410-B-11`, `F54410-B-17` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `11063` |
+| DRG count | `0` |
+| made/nonzero count | `0` |
+| RADAN process cleanup | preflight empty, final empty |
+
+Replacing only the old hard-three diagnostic symbols (`B-14`, `B-17`, and
+cleaned `F54410-B-49`) with their prior minimal-token pass variants still left
+the 95-part gate failing at `11063`. Group and singleton isolation of that
+diagnostic 95 set found 24 remaining singleton blockers:
+
+| Return code | Parts |
+| --- | --- |
+| `11036` | `B-37`, `B-38`, `B-50`, `F54410-B-01`, `F54410-B-10`, `F54410-B-29`, `F54410-B-31` |
+| `11063` | `B-15`, `B-184`, `B-193`, `B-194`, `B-195`, `B-25 R2`, `B-27`, `B-28`, `B-30`, `B-52-R2`, `B-52`, `F54410-B-02`, `F54410-B-03`, `F54410-B-07`, `F54410-B-12`, `F54410-B-32`, `F54410-B-47` |
+
+This keeps the new H continuation rule as a real crack for the row-count trio,
+but the broad 95-part generated path still needs compact-token/D-record/cache
+work on the remaining singleton classes. The old hard-three minimal-token
+patches remain diagnostic and use same-part oracle-derived token text.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
