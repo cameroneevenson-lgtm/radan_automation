@@ -280,6 +280,50 @@ Its copied-project nester proof passed:
 | `NextNestNum` | `18` |
 | RADAN process cleanup | preflight empty, final empty |
 
+## First-10 Slot-Family Isolation 2026-04-30
+
+The first-10 rung initially failed with the arc/circle required-family folder:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_first10_arcstress_reqfam\F54410 PAINT PACK.first10_arcstress_reqfam.rpd` |
+| part rows | `10` |
+| sheet rows after refresh | `5` |
+| `lay_run_nest(0)` | `11063` |
+| DRG count | `0` |
+
+Single-part isolation found only two blockers in the first ten CSV rows:
+
+| Part | Single-part donor-family result |
+| --- | --- |
+| B-15 | fail, `11063` |
+| B-16 | fail, `11063` |
+
+Full oracle-row replacement for `B-15` and `B-16` made the first-10 rung pass, then slot-family isolation produced donor-side sufficient candidates:
+
+| Part | Sufficient oracle-token families | Single-part result |
+| --- | --- | --- |
+| B-15 | `G2/G3/H2/H3/H4/H5` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-16 | `G0/G1/G2/G3` | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+The combined first-10 required-family folder is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_first10_required_families`
+
+Its copied-project nester proof passed:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_first10_required_families\F54410 PAINT PACK.first10_reqfam.rpd` |
+| part rows | `10` |
+| sheet rows after refresh | `5` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `3.166s` |
+| DRG count | `4` |
+| nest rows | `18` |
+| made/nonzero count | `43` |
+| `NextNestNum` | `19` |
+| RADAN process cleanup | preflight empty, final empty |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
