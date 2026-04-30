@@ -389,6 +389,70 @@ Its copied-project nester proof passed:
 | `NextNestNum` | `24` |
 | RADAN process cleanup | preflight empty, final empty |
 
+## First-49 Slot-Family And D-Record Isolation 2026-04-30
+
+The first-49 rung initially failed with the first-25 required-family folder:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_first49_first25_reqfam\F54410 PAINT PACK.first49_first25_reqfam.rpd` |
+| part rows | `49` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `11063` |
+| DRG count | `0` |
+
+Single-part isolation over rows 26-49 found six new donor blockers:
+
+| Part | First failing code |
+| --- | --- |
+| B-31 | `11063` |
+| B-37 | `11036` |
+| B-38 | `11036` |
+| B-50 | `11036` |
+| B-52-R2 | `11063` |
+| B-52 | `11063` |
+
+Known-good RADAN-saved source symbols for `B-37`, `B-38`, and `B-50`
+passed singly, proving those were donor-generation failures rather than sheet
+or nester setup failures. Donor wrapper plus exact oracle G/H rows still failed
+for those three parts with `11036`, but copying only the RADAN-saved D record
+into the donor-generated symbol made all three pass singly:
+
+| Part | Minimal passing non-geometry repair | Single-part result |
+| --- | --- | --- |
+| B-37 | D record only | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-38 | D record only | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-50 | D record only | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+This is the first clear donor-only evidence that a non-geometry DDC/cache row
+can be nester-visible independent of the exact G/H geometry rows.
+
+Forward slot-family candidates then passed for the other three blockers:
+
+| Part | Sufficient oracle-token families | Single-part result |
+| --- | --- | --- |
+| B-31 | `G2` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-52-R2 | `G2/G3/H2/H3/H4` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-52 | `G2/G3/H2/H3/H4/H5` | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+The combined first-49 required-family folder is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_first49_required_families`
+
+Its copied-project nester proof passed:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_first49_required_families\F54410 PAINT PACK.first49_reqfam.rpd` |
+| part rows | `49` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `34.184s` |
+| DRG count | `13` |
+| nest rows | `27` |
+| made/nonzero count | `232` |
+| `NextNestNum` | `28` |
+| RADAN process cleanup | preflight empty, final empty |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
