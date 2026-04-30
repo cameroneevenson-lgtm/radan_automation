@@ -2102,3 +2102,14 @@ semantics, `28` DRGs, `431` made/nonzero, no final RADAN processes, and hard
 canary thumbnails `7/7` exact. Token exact rate versus known-good is
 `0.9099830468760768` (`66022/72553`, far mismatches `0`). The top9 side remains
 unminimized.
+
+Top9 minimization found a smaller sufficient subset. With the `F54410-B-15` +
+`F54410-B-32` + `F54410-B-18` support set, topA failed and topB passed. TopB
+halves failed individually. Leave-one-out on topB showed `F54410-B-13` is
+optional, while `F54410-B-16`, `F54410-B-02`, and `F54410-B-12` are
+load-bearing. Replacing `F54410-B-18` with `F54410-B-19` after this reduction
+failed, so the current smallest passing candidate is raw + `B-194` circle-pair
++ `F54410-B-21` pair + `F54410-B-15` + `F54410-B-32` + `F54410-B-18` +
+`F54410-B-16` + `F54410-B-02` + `F54410-B-12`. It preserves raw full95
+used-nest semantics, passes hard-canary thumbnails `7/7`, and has known-good
+token exact rate `0.9055173459402093` (`65698/72553`, far mismatches `0`).
