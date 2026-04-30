@@ -38,6 +38,9 @@ DEFAULT_WRITER_OPTIONS: dict[str, Any] = {
     "topology_snap_endpoints": True,
     "order_connected_line_profiles": True,
     "rotate_connected_line_profile_start": False,
+    "normalize_collinear_line_chains": False,
+    "collinear_endpoint_tolerance": 1e-6,
+    "collinear_deviation_tolerance": 1e-8,
 }
 
 LADDER_RUNGS: dict[str, dict[str, Any]] = {
@@ -257,6 +260,9 @@ def _generation_row_ok(row: dict[str, Any]) -> bool:
     geometry_passed = bool(row.get("validation_passed")) or bool(
         (row.get("unordered_line_geometry") or {}).get("passed")
     )
+    normalization = row.get("collinear_normalization") or {}
+    if normalization.get("enabled"):
+        geometry_passed = "validation_tiers" in row
     return (
         bool(row.get("write_ok"))
         and geometry_passed
@@ -314,6 +320,9 @@ def generate_donor_symbol(
             canonicalize_endpoints=bool(options["canonicalize_endpoints"]),
             order_connected_line_profiles=bool(options["order_connected_line_profiles"]),
             rotate_connected_line_profile_start=bool(options["rotate_connected_line_profile_start"]),
+            normalize_collinear_line_chains_enabled=bool(options["normalize_collinear_line_chains"]),
+            collinear_endpoint_tolerance=float(options["collinear_endpoint_tolerance"]),
+            collinear_deviation_tolerance=float(options["collinear_deviation_tolerance"]),
         )
         bom_metadata = refresh_generated_symbol_bom_metadata(out_path, part)
         validation = validate_native_sym(dxf_path=part.dxf_path, sym_path=out_path)
@@ -324,8 +333,10 @@ def generate_donor_symbol(
                 "write_ok": True,
                 "bom_metadata": bom_metadata,
                 "line_profile_ordering": payload["line_profile_ordering"],
+                "source_entity_count": payload["source_entity_count"],
                 "entity_count": payload["entity_count"],
                 "replaced_records": payload["replaced_records"],
+                "collinear_normalization": payload["collinear_normalization"],
                 "validation_passed": bool(validation["passed"]),
                 "unordered_line_geometry": unordered_geometry,
                 "validation_tiers": validation["tiers"],
@@ -429,6 +440,28 @@ def generate_symbols_from_universal_donor(
         "rows": rows,
         "ok": not failures,
     }
+    collinear_rows = [
+        {
+            "part": row.get("part"),
+            "dxf_path": row.get("dxf_path"),
+            "output_sym": row.get("output_sym"),
+            "normalization": row.get("collinear_normalization"),
+        }
+        for row in rows
+        if (row.get("collinear_normalization") or {}).get("enabled")
+    ]
+    if collinear_rows:
+        _write_json(
+            out_dir / "collinear_normalization_manifest.json",
+            {
+                "schema_version": 1,
+                "label": sanitize_label(label),
+                "csv_path": str(csv_path),
+                "symbol_dir": str(symbol_dir),
+                "writer_options": options,
+                "parts": collinear_rows,
+            },
+        )
     _write_json(out_dir / "manifest.json", payload)
     _write_csv(out_dir / "manifest.csv", rows)
     return payload
@@ -458,21 +491,24 @@ def write_summary(out_dir: Path, payload: dict[str, Any]) -> None:
         "",
         "## Candidate Table",
         "",
-        "| Part | OK | Entities | G/H records | Attr 110 | Validation | Notes |",
-        "| --- | ---: | ---: | ---: | --- | ---: | --- |",
+        "| Part | OK | Source entities | Output rows | G/H records | Attr 110 | Validation | Merges | Notes |",
+        "| --- | ---: | ---: | ---: | ---: | --- | ---: | ---: | --- |",
     ]
     for row in generation["rows"]:
         notes = row.get("error", "")
         if row.get("retained_donor_attr_110"):
             notes = (notes + " retained donor Attr 110").strip()
+        normalization = row.get("collinear_normalization") or {}
         lines.append(
-            "| {part} | {ok} | {entities} | {records} | {attr110} | {validation} | {notes} |".format(
+            "| {part} | {ok} | {source_entities} | {entities} | {records} | {attr110} | {validation} | {merges} | {notes} |".format(
                 part=row.get("part", ""),
                 ok=str(bool(row.get("ok"))),
+                source_entities=row.get("source_entity_count", row.get("entity_count", "")),
                 entities=row.get("entity_count", ""),
                 records=row.get("generated_geometry_records", ""),
                 attr110=row.get("output_attr_110", ""),
                 validation=str(bool(row.get("validation_passed"))),
+                merges=normalization.get("accepted_merge_count", ""),
                 notes=str(notes).replace("|", "\\|"),
             )
         )
@@ -628,6 +664,23 @@ def main() -> int:
         action="store_true",
         help="Rotate a closed connected line profile to the lowest-Y/rightmost start point.",
     )
+    parser.add_argument(
+        "--normalize-collinear-line-chains",
+        action="store_true",
+        help="Lab-only: merge adjacent same-layer/same-pen collinear LINE fragments before DDC generation.",
+    )
+    parser.add_argument(
+        "--collinear-endpoint-tolerance",
+        type=float,
+        default=1e-6,
+        help="Endpoint tolerance for --normalize-collinear-line-chains.",
+    )
+    parser.add_argument(
+        "--collinear-deviation-tolerance",
+        type=float,
+        default=1e-8,
+        help="Perpendicular deviation tolerance for --normalize-collinear-line-chains.",
+    )
     args = parser.parse_args()
 
     excludes = list(args.exclude)
@@ -651,6 +704,9 @@ def main() -> int:
         "canonicalize_endpoints": not bool(args.no_canonicalize_endpoints),
         "order_connected_line_profiles": not bool(args.no_order_connected_line_profiles),
         "rotate_connected_line_profile_start": bool(args.rotate_connected_line_profile_start),
+        "normalize_collinear_line_chains": bool(args.normalize_collinear_line_chains),
+        "collinear_endpoint_tolerance": float(args.collinear_endpoint_tolerance),
+        "collinear_deviation_tolerance": float(args.collinear_deviation_tolerance),
     }
     payload = run_research(
         csv_path=args.csv,

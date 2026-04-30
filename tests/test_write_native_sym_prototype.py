@@ -16,6 +16,7 @@ from write_native_sym_prototype import (
     _symbol_view_extents,
     _symbol_view_record_field,
     encode_geometry_data,
+    normalize_collinear_line_chains,
     write_native_prototype,
 )
 
@@ -155,6 +156,137 @@ class WriteNativeSymPrototypeTests(unittest.TestCase):
                 ([0.0, 0.0], [0.0, 1.0]),
             ],
         )
+
+    def test_collinear_normalization_merges_contiguous_same_pen_lines(self) -> None:
+        rows = [
+            {
+                "type": "LINE",
+                "layer": "IV_INTERIOR_PROFILES",
+                "normalized_start": [0.0, 0.0],
+                "normalized_end": [1.0, 0.0],
+            },
+            {
+                "type": "LINE",
+                "layer": "IV_INTERIOR_PROFILES",
+                "normalized_start": [1.0, 0.0],
+                "normalized_end": [3.0, 0.0],
+            },
+            {
+                "type": "LINE",
+                "layer": "IV_MARK_SURFACE",
+                "normalized_start": [3.0, 0.0],
+                "normalized_end": [4.0, 0.0],
+            },
+        ]
+
+        normalized, stats = normalize_collinear_line_chains(rows, part_name="Part A")
+
+        self.assertEqual(len(normalized), 2)
+        self.assertEqual(normalized[0]["normalized_start"], [0.0, 0.0])
+        self.assertEqual(normalized[0]["normalized_end"], [3.0, 0.0])
+        self.assertEqual(stats["accepted_merge_count"], 1)
+        self.assertEqual(stats["accepted_merges"][0]["part"], "Part A")
+        self.assertEqual(stats["accepted_merges"][0]["original_entity_indexes"], [1, 2])
+        self.assertEqual(stats["accepted_merges"][0]["new_endpoint"], [3.0, 0.0])
+        self.assertEqual(stats["accepted_merges"][0]["layer"], "IV_INTERIOR_PROFILES")
+        self.assertEqual(stats["accepted_merges"][0]["pen"], "1")
+        self.assertEqual(stats["accepted_merges"][0]["reason"], "contiguous_same_pen_collinear_line_chain")
+        self.assertAlmostEqual(stats["accepted_merges"][0]["total_length"], 3.0)
+        self.assertAlmostEqual(stats["accepted_merges"][0]["max_deviation"], 0.0)
+
+    def test_collinear_normalization_rejects_boundaries_and_bad_fragments(self) -> None:
+        base = {
+            "type": "LINE",
+            "layer": "IV_INTERIOR_PROFILES",
+            "normalized_start": [0.0, 0.0],
+            "normalized_end": [1.0, 0.0],
+        }
+        cases = [
+            (
+                "layer_boundary",
+                [
+                    base,
+                    {
+                        "type": "LINE",
+                        "layer": "IV_MARK_SURFACE",
+                        "normalized_start": [1.0, 0.0],
+                        "normalized_end": [2.0, 0.0],
+                    },
+                ],
+            ),
+            (
+                "gap",
+                [
+                    base,
+                    {
+                        "type": "LINE",
+                        "layer": "IV_INTERIOR_PROFILES",
+                        "normalized_start": [1.01, 0.0],
+                        "normalized_end": [2.0, 0.0],
+                    },
+                ],
+            ),
+            (
+                "non_collinear",
+                [
+                    base,
+                    {
+                        "type": "LINE",
+                        "layer": "IV_INTERIOR_PROFILES",
+                        "normalized_start": [1.0, 0.0],
+                        "normalized_end": [2.0, 0.1],
+                    },
+                ],
+            ),
+            (
+                "backtracking_or_reversed",
+                [
+                    base,
+                    {
+                        "type": "LINE",
+                        "layer": "IV_INTERIOR_PROFILES",
+                        "normalized_start": [1.0, 0.0],
+                        "normalized_end": [0.0, 0.0],
+                    },
+                ],
+            ),
+            (
+                "zero_length",
+                [
+                    base,
+                    {
+                        "type": "LINE",
+                        "layer": "IV_INTERIOR_PROFILES",
+                        "normalized_start": [1.0, 0.0],
+                        "normalized_end": [1.0, 0.0],
+                    },
+                ],
+            ),
+            (
+                "entity_type_boundary",
+                [
+                    base,
+                    {
+                        "type": "ARC",
+                        "layer": "IV_INTERIOR_PROFILES",
+                        "normalized_start_point": [1.0, 0.0],
+                        "normalized_end_point": [2.0, 0.0],
+                    },
+                ],
+            ),
+        ]
+
+        for expected_reason, rows in cases:
+            with self.subTest(expected_reason=expected_reason):
+                normalized, stats = normalize_collinear_line_chains(rows)
+
+                self.assertEqual(len(normalized), len(rows))
+                self.assertEqual(stats["accepted_merge_count"], 0)
+                if expected_reason == "entity_type_boundary":
+                    self.assertEqual(stats["rejected_near_miss_count"], 0)
+                elif expected_reason != "gap":
+                    self.assertGreaterEqual(stats["rejected_near_miss_count"], 1)
+                    self.assertEqual(stats["rejected_near_misses"][0]["reason"], expected_reason)
 
     def test_low_y_rightmost_rotation_moves_closed_profile_start(self) -> None:
         rows = [

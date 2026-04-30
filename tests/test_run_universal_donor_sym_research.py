@@ -25,6 +25,14 @@ def _write_line_dxf(path: Path) -> None:
     doc.saveas(path)
 
 
+def _write_two_fragment_line_dxf(path: Path) -> None:
+    doc = ezdxf.new("R2010")
+    msp = doc.modelspace()
+    msp.add_line((0, 0, 0), (1, 0, 0), dxfattribs={"layer": "IV_INTERIOR_PROFILES"})
+    msp.add_line((1, 0, 0), (2, 0, 0), dxfattribs={"layer": "IV_INTERIOR_PROFILES"})
+    doc.saveas(path)
+
+
 def _write_blank_donor(path: Path) -> None:
     path.write_text(
         """<?xml version="1.0" encoding="UTF-8"?>
@@ -193,6 +201,38 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
         self.assertFalse(payload["writer_options"]["rotate_connected_line_profile_start"])
         self.assertFalse(payload["rows"][0]["line_profile_ordering"]["eligible"])
         self.assertTrue(payload["rows"][0]["unordered_line_geometry"]["passed"])
+
+    def test_collinear_normalization_manifest_is_recorded_and_allows_row_count_change(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            lab_root = root / "_sym_lab"
+            out_dir = lab_root / "run"
+            donor = root / "donor.sym"
+            dxf = root / "Part A.dxf"
+            csv_path = root / "parts_Radan.csv"
+            _write_blank_donor(donor)
+            _write_two_fragment_line_dxf(dxf)
+            csv_path.write_text(f"{dxf},1,Aluminum 5052,0.18,in,AIR\n", encoding="utf-8")
+
+            with mock.patch.object(research, "DEFAULT_LAB_ROOT", lab_root):
+                payload = research.generate_symbols_from_universal_donor(
+                    csv_path=csv_path,
+                    donor_sym=donor,
+                    out_dir=out_dir,
+                    include_parts=["Part A"],
+                    label="unit_test",
+                    writer_options={"normalize_collinear_line_chains": True},
+                )
+
+            combined = json.loads((out_dir / "collinear_normalization_manifest.json").read_text(encoding="utf-8"))
+
+        self.assertTrue(payload["ok"])
+        self.assertEqual(payload["rows"][0]["source_entity_count"], 2)
+        self.assertEqual(payload["rows"][0]["entity_count"], 1)
+        self.assertEqual(payload["rows"][0]["generated_geometry_records"], 1)
+        self.assertFalse(payload["rows"][0]["validation_passed"])
+        self.assertEqual(payload["rows"][0]["collinear_normalization"]["accepted_merge_count"], 1)
+        self.assertEqual(combined["parts"][0]["normalization"]["accepted_merge_count"], 1)
 
     def test_ladder_rung_resolves_proven95_excludes(self) -> None:
         resolved = research.apply_ladder_rung(
