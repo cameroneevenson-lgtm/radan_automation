@@ -85,6 +85,40 @@ class CompareNestArtifactsTests(unittest.TestCase):
         self.assertEqual(result["drg_contained_symbols_matches"], 1)
         self.assertEqual(result["ddc_changed_lines"], 0)
 
+    def test_tie_aware_baselines_accept_alternate_raw_state(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            left = root / "left"
+            primary = root / "primary"
+            alternate = root / "alternate"
+            left.mkdir()
+            primary.mkdir()
+            alternate.mkdir()
+            _write_rpd(left / "left.rpd", "candidate", "candidate")
+            _write_drg(left / "P15 F54410 PAINT PACK.candidate.drg", "candidate", "candidate")
+            _write_rpd(primary / "primary.rpd", "raw_original", "raw_original")
+            _write_drg(primary / "P15 F54410 PAINT PACK.raw_original.drg", "raw_original", "raw_original")
+            _write_rpd(alternate / "alternate.rpd", "raw_repeat", "raw_repeat")
+            _write_drg(alternate / "P15 F54410 PAINT PACK.raw_repeat.drg", "raw_repeat", "raw_repeat")
+
+            for path in primary.iterdir():
+                text = path.read_text(encoding="utf-8")
+                path.write_text(text.replace("B-184", "B-185"), encoding="utf-8")
+
+            result = compare.compare_gate_dirs(left, primary, left_name="candidate", right_name="raw_original")
+            result = compare.add_tie_aware_baselines(
+                result,
+                left_dir=left,
+                alternate_right_dirs=[alternate],
+                alternate_right_names=["raw_repeat"],
+            )
+
+        self.assertFalse(result["rpd_used_nests_match"])
+        self.assertEqual(result["drg_contained_symbols_matches"], 0)
+        self.assertTrue(result["tie_aware"]["acceptance_match"])
+        self.assertEqual(result["tie_aware"]["matched_baseline"], "raw_repeat")
+        self.assertEqual(len(result["tie_aware"]["baseline_results"]), 2)
+
     def test_compare_ddc_lines_counts_prefix_changes(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)

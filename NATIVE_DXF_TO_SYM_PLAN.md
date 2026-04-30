@@ -2346,3 +2346,14 @@ tie state. Therefore the B-194/F21 pair is RADAN-acceptable under a tie-aware
 copied-project nester oracle, while the F12 six-row set is best understood as a
 token-exactness/spelling improvement and tie-state selector, not as a strict
 acceptance stabilizer.
+
+`compare_nest_artifacts.py` now has a tie-aware comparison mode via
+`--alternate-right-dir` / `--alternate-right-name`. It keeps the original
+primary comparison intact but adds a `tie_aware` result that accepts a candidate
+when it matches either the original baseline or an explicitly supplied alternate
+raw baseline by used-nest signature, DRG count, and contained-symbol summaries.
+Using the original raw run plus `nester_raw_repeat1` as the alternate baseline
+reclassifies the six-token F12 candidate, raw+B-194/F54410-B-21 pair candidate,
+and raw-plus-six-F12 candidate as tie-aware accepted, all matching
+`raw_repeat`. The comparator update added focused unit coverage and the full
+baseline passed afterward: `197` tests, `OK`.

@@ -497,10 +497,62 @@ def compare_gate_dirs(left_dir: Path, right_dir: Path, *, left_name: str = "left
     return comparison
 
 
+def _baseline_match_summary(comparison: dict[str, Any]) -> dict[str, Any]:
+    rows = comparison.get("drg_comparison", [])
+    contained_matches = int(comparison.get("drg_contained_symbols_matches", 0))
+    return {
+        "name": comparison["right"]["name"],
+        "gate_dir": comparison["right"]["gate_dir"],
+        "rpd_used_nests_match": bool(comparison.get("rpd_used_nests_match")),
+        "drg_count_match": bool(comparison.get("drg_count_match")),
+        "drg_contained_symbols_matches": contained_matches,
+        "drg_pair_count": len(rows),
+        "contained_symbols_all_match": contained_matches == len(rows),
+        "ddc_changed_lines": int(comparison.get("ddc_changed_lines", 0)),
+    }
+
+
+def _baseline_summary_matches(summary: dict[str, Any]) -> bool:
+    return bool(
+        summary["rpd_used_nests_match"]
+        and summary["drg_count_match"]
+        and summary["contained_symbols_all_match"]
+    )
+
+
+def add_tie_aware_baselines(
+    comparison: dict[str, Any],
+    *,
+    left_dir: Path,
+    alternate_right_dirs: list[Path],
+    alternate_right_names: list[str],
+) -> dict[str, Any]:
+    baseline_summaries = [_baseline_match_summary(comparison)]
+    for index, alternate_dir in enumerate(alternate_right_dirs):
+        alternate_name = alternate_right_names[index] if index < len(alternate_right_names) else f"alternate_{index + 1}"
+        alternate_comparison = compare_gate_dirs(
+            left_dir,
+            alternate_dir,
+            left_name=comparison["left"]["name"],
+            right_name=alternate_name,
+        )
+        baseline_summaries.append(_baseline_match_summary(alternate_comparison))
+
+    matched = next((row for row in baseline_summaries if _baseline_summary_matches(row)), None)
+    comparison["tie_aware"] = {
+        "acceptance_match": matched is not None,
+        "matched_baseline": None if matched is None else matched["name"],
+        "baseline_count": len(baseline_summaries),
+        "baseline_results": baseline_summaries,
+    }
+    return comparison
+
+
 def write_markdown_report(comparison: dict[str, Any], path: Path) -> None:
     left = comparison["left"]
     right = comparison["right"]
     rows = comparison["drg_comparison"]
+    tie_aware = comparison.get("tie_aware")
     lines = [
         "# Nest Artifact Comparison",
         "",
@@ -515,12 +567,23 @@ def write_markdown_report(comparison: dict[str, Any], path: Path) -> None:
         f"- Contained-symbol summaries match: `{comparison['drg_contained_symbols_matches']} / {len(rows)}`",
         f"- DDC changed lines: `{comparison['ddc_changed_lines']}`",
         f"- DDC same lines: `{comparison['ddc_same_lines']}`",
-        "",
-        "## DRG Rows",
-        "",
-        "| Nest | Full hash | Normalized hash | Contained symbols | DDC changed | Sizes |",
-        "| ---: | --- | --- | --- | ---: | --- |",
     ]
+    if tie_aware:
+        lines.extend(
+            [
+                f"- Tie-aware acceptance match: `{tie_aware['acceptance_match']}`",
+                f"- Tie-aware matched baseline: `{tie_aware['matched_baseline']}`",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## DRG Rows",
+            "",
+            "| Nest | Full hash | Normalized hash | Contained symbols | DDC changed | Sizes |",
+            "| ---: | --- | --- | --- | ---: | --- |",
+        ]
+    )
     for row in rows:
         lines.append(
             "| `{nest_id}` | `{full}` | `{norm}` | `{symbols}` | `{changed}` | `{left_size}` / `{right_size}` |".format(
@@ -541,6 +604,21 @@ def write_markdown_report(comparison: dict[str, Any], path: Path) -> None:
         lines.extend(["", "## DDC Changed By Class", ""])
         for key, count in comparison["ddc_changed_by_class"].items():
             lines.append(f"- `{key}`: `{count}`")
+    if tie_aware:
+        lines.extend(["", "## Tie-Aware Baselines", ""])
+        lines.append("| Baseline | RPD used nests | DRG count | Contained symbols | DDC changed |")
+        lines.append("| --- | --- | --- | ---: | ---: |")
+        for row in tie_aware["baseline_results"]:
+            lines.append(
+                "| `{name}` | `{rpd}` | `{drg}` | `{contained} / {total}` | `{changed}` |".format(
+                    name=row["name"],
+                    rpd=row["rpd_used_nests_match"],
+                    drg=row["drg_count_match"],
+                    contained=row["drg_contained_symbols_matches"],
+                    total=row["drg_pair_count"],
+                    changed=row["ddc_changed_lines"],
+                )
+            )
     if comparison.get("rpd_used_nest_differences"):
         lines.extend(["", "## RPD Used-Nest Differences", ""])
         lines.append("| Nest | Sheet match | Parts match | Left-only parts | Right-only parts |")
@@ -584,16 +662,26 @@ def main() -> int:
     parser.add_argument("--right-dir", type=Path, required=True)
     parser.add_argument("--left-name", default="left")
     parser.add_argument("--right-name", default="right")
+    parser.add_argument("--alternate-right-dir", type=Path, action="append", default=[])
+    parser.add_argument("--alternate-right-name", action="append", default=[])
     parser.add_argument("--out-json", type=Path)
     parser.add_argument("--out-md", type=Path)
     args = parser.parse_args()
 
+    left_dir = args.left_dir.expanduser().resolve()
     comparison = compare_gate_dirs(
-        args.left_dir.expanduser().resolve(),
+        left_dir,
         args.right_dir.expanduser().resolve(),
         left_name=args.left_name,
         right_name=args.right_name,
     )
+    if args.alternate_right_dir:
+        comparison = add_tie_aware_baselines(
+            comparison,
+            left_dir=left_dir,
+            alternate_right_dirs=[path.expanduser().resolve() for path in args.alternate_right_dir],
+            alternate_right_names=args.alternate_right_name,
+        )
     if args.out_json:
         args.out_json.parent.mkdir(parents=True, exist_ok=True)
         args.out_json.write_text(json.dumps(comparison, indent=2, sort_keys=True), encoding="utf-8")
