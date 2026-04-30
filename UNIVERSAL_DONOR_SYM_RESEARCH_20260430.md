@@ -873,6 +873,81 @@ Expected interpretation:
 - If new parts regress, keep the normalization lab-only and use the manifest to
   tighten merge eligibility rather than broadening it.
 
+## 2026-04-30 Toxic Delta Append-Zero Breakthrough
+
+The remaining `F54410-B-37` / `F54410-B-38` toxic field-10 rows no longer
+require same-part source token text. A lab variant mutating generated compact
+tokens by rule found that appending a single trailing `0` to the generated
+length-10 `LINE` delta tokens is sufficient for copied-project nesting.
+
+Key artifact:
+
+| Artifact | Path |
+| --- | --- |
+| run folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850` |
+| combined symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\token_variants_95\f54410_rowcount_toxic_append_zero_deltas` |
+| 95-part copied-project gate | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\nester_95_append_zero_deltas` |
+| 95-part RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\nester_95_append_zero_deltas\F54410 PAINT PACK.q95_append_zero_deltas.rpd` |
+
+Singleton findings:
+
+| Part | Variant | Result | Interpretation |
+| --- | --- | --- | --- |
+| `F54410-B-37` | append `0` to the two toxic generated delta tokens only | pass, `lay_run_nest(0)=0`, 1 DRG | start-coordinate residual text was not required |
+| `F54410-B-37` | start-Y one-unit shift only | fail, `11063` | coordinate shift alone is not the trigger |
+| `F54410-B-38` | append `0` to the nine toxic generated delta tokens only | pass, `lay_run_nest(0)=0`, 1 DRG | B-38 shares the same continuation-length trigger |
+
+The row-count trio (`F54410-B-37`, `F54410-B-38`, `F54410-B-39`) passed as a
+combined candidate:
+
+| Metric | Value |
+| --- | --- |
+| part rows | `3` |
+| sheet rows after refresh | `3` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `0.521s` |
+| DRG count | `2` |
+| nest rows | `16` |
+| made/nonzero count | `12` |
+| `NextNestNum` | `17` |
+| RADAN process cleanup | preflight empty, final empty |
+
+The 95-part subset excluding `F54410-B-09`, `F54410-B-11`, and
+`F54410-B-17` also passed:
+
+| Metric | Value |
+| --- | --- |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `56.179s` |
+| DRG count | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+| RADAN process cleanup | preflight empty, final empty |
+
+This is a stronger generated candidate than
+`symbols_95_plus_rowcount_source_order_generated_f10_except_toxic`: it still
+uses source G/H row order and row fields for the row-count trio, but it no
+longer copies same-part toxic field-10 token text. The generated delta values
+are unchanged; only decoded-close trailing-zero continuation spelling is added.
+
+Native writer support was added as a lab-only flag:
+
+```powershell
+--line-delta-repair-zero
+```
+
+The flag appends a decoded-close trailing `0` to length-10 `LINE:delta_x` and
+`LINE:delta_y` tokens. It is not production behavior.
+
+Follow-up donor-only validation kept the row-order problem separate:
+
+| Candidate | Result | Conclusion |
+| --- | --- | --- |
+| donor-only `F54410-B-37/B-38/B-39` with boundary-chain normalization and `--line-delta-repair-zero` | fail `11063`, 0 DRGs | toxic continuation spelling is cracked, but donor-only row order/row-shape is still not RADAN-acceptable |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`

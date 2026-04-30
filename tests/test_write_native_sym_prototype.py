@@ -32,6 +32,21 @@ class WriteNativeSymPrototypeTests(unittest.TestCase):
 
         self.assertEqual(encode_geometry_data(row, token_count=6), "o?0.0@0.m?0.n?P..")
 
+    def test_line_delta_repair_zero_appends_decoded_close_zero_to_length10_deltas(self) -> None:
+        start_y = float(decode_ddc_number_fraction("4@1j5RcmS`a"))
+        row = {
+            "type": "LINE",
+            "normalized_start": [35.0625, start_y],
+            "normalized_end": [35.0625, 36.25],
+        }
+
+        original = encode_geometry_data(row, token_count=17).split(".")
+        repaired = encode_geometry_data(row, token_count=17, line_delta_repair_zero=True).split(".")
+
+        self.assertEqual(original[3], "m?;djH4hNN")
+        self.assertEqual(repaired[3], "m?;djH4hNN0")
+        self.assertEqual(float(decode_ddc_number_fraction(original[3])), float(decode_ddc_number_fraction(repaired[3])))
+
     def test_encodes_circle_as_arc_style_start_and_center_delta(self) -> None:
         row = {
             "type": "CIRCLE",
