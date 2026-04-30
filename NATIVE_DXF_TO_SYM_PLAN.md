@@ -1952,3 +1952,16 @@ source float provenance, local geometry ordering, original RADAN conversion
 state, or downstream nester/cache behavior. Do not teach the writer to emit
 `k?P000000P0` for all `-1/16` circle center-delta-X slots from this evidence
 alone.
+
+Follow-up one-token nester isolation:
+
+| Variant | Token change beyond raw | Used-nest match vs raw | Difference |
+| --- | --- | --- | --- |
+| `B-185` row1 `CIRCLE:center_delta_x` | `k?P` -> `k?P000000P0` | no | nests `27`/`28` swap `B-3 R1` and `B-5 R1` |
+
+The same token that cancels the `B-186` known-good perturbation also perturbs
+raw on its own. The full95 gate still passed the count envelope (`95` parts,
+`8` sheets, `42` nest rows, `431` made/nonzero, `28` DRGs), but the semantic
+comparison failed exactly like the other one-token triggers. This reinforces
+that exact-token deltas can interact and cancel; a token spelling that is
+locally closer to known-good is not automatically a better corpus state.
