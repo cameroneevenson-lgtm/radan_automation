@@ -37,6 +37,7 @@ DEFAULT_WRITER_OPTIONS: dict[str, Any] = {
     "canonicalize_endpoints": True,
     "topology_snap_endpoints": True,
     "order_connected_line_profiles": True,
+    "rotate_connected_line_profile_start": False,
 }
 
 LADDER_RUNGS: dict[str, dict[str, Any]] = {
@@ -312,6 +313,7 @@ def generate_donor_symbol(
             topology_snap_endpoints=bool(options["topology_snap_endpoints"]),
             canonicalize_endpoints=bool(options["canonicalize_endpoints"]),
             order_connected_line_profiles=bool(options["order_connected_line_profiles"]),
+            rotate_connected_line_profile_start=bool(options["rotate_connected_line_profile_start"]),
         )
         bom_metadata = refresh_generated_symbol_bom_metadata(out_path, part)
         validation = validate_native_sym(dxf_path=part.dxf_path, sym_path=out_path)
@@ -621,6 +623,11 @@ def main() -> int:
         action="store_true",
         help="Disable connected line-profile ordering in the donor writer.",
     )
+    parser.add_argument(
+        "--rotate-connected-line-profile-start",
+        action="store_true",
+        help="Rotate a closed connected line profile to the lowest-Y/rightmost start point.",
+    )
     args = parser.parse_args()
 
     excludes = list(args.exclude)
@@ -643,6 +650,7 @@ def main() -> int:
         "topology_snap_endpoints": not bool(args.no_topology_snap_endpoints),
         "canonicalize_endpoints": not bool(args.no_canonicalize_endpoints),
         "order_connected_line_profiles": not bool(args.no_order_connected_line_profiles),
+        "rotate_connected_line_profile_start": bool(args.rotate_connected_line_profile_start),
     }
     payload = run_research(
         csv_path=args.csv,

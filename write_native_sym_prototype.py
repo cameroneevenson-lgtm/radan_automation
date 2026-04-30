@@ -537,6 +537,45 @@ def _rows_with_connected_line_profiles(dxf_rows: list[dict[str, Any]]) -> tuple[
     }
 
 
+def _rows_with_low_y_rightmost_line_profile_start(
+    dxf_rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    if any(str(row.get("type")) != "LINE" for row in dxf_rows):
+        return list(dxf_rows), {
+            "rotation_eligible": False,
+            "rotation_changed": False,
+            "rotation_reason": "non_line_dxf_rows",
+            "rotation_start": None,
+        }
+    if not dxf_rows:
+        return [], {
+            "rotation_eligible": False,
+            "rotation_changed": False,
+            "rotation_reason": "empty_rows",
+            "rotation_start": None,
+        }
+    if _line_row_end(dxf_rows[-1]) != _line_row_start(dxf_rows[0]):
+        return list(dxf_rows), {
+            "rotation_eligible": False,
+            "rotation_changed": False,
+            "rotation_reason": "open_profile",
+            "rotation_start": None,
+        }
+
+    original_signature = _line_profile_signature(dxf_rows)
+    start_index, start_point = min(
+        enumerate(_line_row_start(row) for row in dxf_rows),
+        key=lambda item: (item[1][1], -item[1][0], item[0]),
+    )
+    rotated = list(dxf_rows[start_index:]) + list(dxf_rows[:start_index])
+    return rotated, {
+        "rotation_eligible": True,
+        "rotation_changed": _line_profile_signature(rotated) != original_signature,
+        "rotation_reason": "",
+        "rotation_start": list(start_point),
+    }
+
+
 def _replace_ddc_geometry_block(
     template_text: str,
     dxf_rows: list[dict[str, Any]],
@@ -699,6 +738,7 @@ def write_native_prototype(
     canonicalize_endpoints: bool = False,
     topology_snap_endpoints: bool = False,
     order_connected_line_profiles: bool = False,
+    rotate_connected_line_profile_start: bool = False,
 ) -> dict[str, Any]:
     _ensure_lab_output(out_path, allow_outside_lab=allow_outside_lab)
     dxf_rows, bounds = read_dxf_entities(dxf_path)
@@ -720,6 +760,11 @@ def write_native_prototype(
     line_profile_ordering = {"eligible": False, "changed": False, "chain_count": 0}
     if order_connected_line_profiles:
         dxf_rows, line_profile_ordering = _rows_with_connected_line_profiles(dxf_rows)
+        if rotate_connected_line_profile_start:
+            dxf_rows, rotation_stats = _rows_with_low_y_rightmost_line_profile_start(dxf_rows)
+            line_profile_ordering.update(rotation_stats)
+    elif rotate_connected_line_profile_start:
+        raise RuntimeError("--rotate-connected-line-profile-start requires --order-connected-line-profiles.")
     template_text = template_sym.read_text(encoding="utf-8", errors="replace")
     if DDC_RE.search(template_text) is None:
         raise RuntimeError(f"No DDC block found in template symbol: {template_sym}")
@@ -752,6 +797,7 @@ def write_native_prototype(
         "canonicalize_endpoints": canonicalize_endpoints,
         "topology_snap_endpoints": topology_snap_endpoints,
         "order_connected_line_profiles": order_connected_line_profiles,
+        "rotate_connected_line_profile_start": rotate_connected_line_profile_start,
         "line_profile_ordering": line_profile_ordering,
         "validation": {
             "dxf_count": validation["dxf_count"],
@@ -816,6 +862,11 @@ def main() -> int:
         action="store_true",
         help="Lab option: order line-only DXF entities into connected profile chains before encoding.",
     )
+    parser.add_argument(
+        "--rotate-connected-line-profile-start",
+        action="store_true",
+        help="Lab option: rotate a closed connected line profile to the lowest-Y/rightmost start point.",
+    )
     args = parser.parse_args()
 
     payload = write_native_prototype(
@@ -831,6 +882,7 @@ def main() -> int:
         canonicalize_endpoints=args.canonicalize_endpoints,
         topology_snap_endpoints=args.topology_snap_endpoints,
         order_connected_line_profiles=args.order_connected_line_profiles,
+        rotate_connected_line_profile_start=args.rotate_connected_line_profile_start,
     )
     if args.report:
         write_json(args.report, payload)

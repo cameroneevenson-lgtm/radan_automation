@@ -10,6 +10,7 @@ from ddc_number_codec import decode_ddc_number_fraction
 from write_native_sym_prototype import (
     _refresh_symbol_metadata_attrs,
     _rows_with_connected_line_profiles,
+    _rows_with_low_y_rightmost_line_profile_start,
     _rows_with_rounded_source_coordinates,
     _rows_with_topology_snapped_endpoints,
     _symbol_view_extents,
@@ -152,6 +153,29 @@ class WriteNativeSymPrototypeTests(unittest.TestCase):
                 ([1.0, 1.0], [1.0, 0.0]),
                 ([1.0, 0.0], [0.0, 0.0]),
                 ([0.0, 0.0], [0.0, 1.0]),
+            ],
+        )
+
+    def test_low_y_rightmost_rotation_moves_closed_profile_start(self) -> None:
+        rows = [
+            {"type": "LINE", "normalized_start": [0.0, 1.0], "normalized_end": [1.0, 1.0]},
+            {"type": "LINE", "normalized_start": [1.0, 1.0], "normalized_end": [1.0, 0.0]},
+            {"type": "LINE", "normalized_start": [1.0, 0.0], "normalized_end": [0.0, 0.0]},
+            {"type": "LINE", "normalized_start": [0.0, 0.0], "normalized_end": [0.0, 1.0]},
+        ]
+
+        rotated, stats = _rows_with_low_y_rightmost_line_profile_start(rows)
+
+        self.assertTrue(stats["rotation_eligible"])
+        self.assertTrue(stats["rotation_changed"])
+        self.assertEqual(stats["rotation_start"], [1.0, 0.0])
+        self.assertEqual(
+            [(row["normalized_start"], row["normalized_end"]) for row in rotated],
+            [
+                ([1.0, 0.0], [0.0, 0.0]),
+                ([0.0, 0.0], [0.0, 1.0]),
+                ([0.0, 1.0], [1.0, 1.0]),
+                ([1.0, 1.0], [1.0, 0.0]),
             ],
         )
 

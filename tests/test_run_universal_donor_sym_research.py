@@ -137,6 +137,7 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
         self.assertTrue(payload["writer_options"]["topology_snap_endpoints"])
         self.assertTrue(payload["writer_options"]["canonicalize_endpoints"])
         self.assertTrue(payload["writer_options"]["order_connected_line_profiles"])
+        self.assertFalse(payload["writer_options"]["rotate_connected_line_profile_start"])
         self.assertTrue(payload["rows"][0]["bom_metadata"]["all_present"])
         self.assertEqual(payload["rows"][0]["bom_metadata"]["requested"]["119"], "Aluminum 5052")
         self.assertEqual(payload["rows"][0]["bom_metadata"]["requested"]["120"], "0.18")
@@ -180,6 +181,7 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
                         "topology_snap_endpoints": False,
                         "canonicalize_endpoints": False,
                         "order_connected_line_profiles": False,
+                        "rotate_connected_line_profile_start": False,
                     },
                 )
 
@@ -188,6 +190,7 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
         self.assertFalse(payload["writer_options"]["topology_snap_endpoints"])
         self.assertFalse(payload["writer_options"]["canonicalize_endpoints"])
         self.assertFalse(payload["writer_options"]["order_connected_line_profiles"])
+        self.assertFalse(payload["writer_options"]["rotate_connected_line_profile_start"])
         self.assertFalse(payload["rows"][0]["line_profile_ordering"]["eligible"])
         self.assertTrue(payload["rows"][0]["unordered_line_geometry"]["passed"])
 
