@@ -177,6 +177,50 @@ Its copied-project nester proof passed:
 | made/nonzero count | `28` |
 | `NextNestNum` | `17` |
 
+## Hard7 Slot-Family Isolation 2026-04-30
+
+Lab root:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\hard7_slot_family_isolation`
+
+The hard7 follow-up moved beyond full-row replacement by reverting oracle rows one compact-token family at a time. The test starts from passing donor-wrapper/oracle-row diagnostics and asks which slot families can be reverted to donor spelling before `lay_run_nest(0)` fails.
+
+Mismatch profile before isolation:
+
+| Part | Rows | Field diffs | Token mismatch groups |
+| --- | ---: | --- | --- |
+| B-27 | `181` | `8: 12`, `10: 149` | `G0 109`, `G1 123`, `G2 145`, `G3 144`, `H0 4` |
+| B-30 | `80` | `10: 80` | `G0 65`, `G1 67`, `G2 51`, `G3 50`, `H0 8`, `H1 9`, `H2 6`, `H3 4`, `H4 3`, `H5 3` |
+| F54410-B-12 | `194` | `8: 154`, `10: 190` | `G0 141`, `G1 150`, `G2 113`, `G3 131`, `H0 2`, `H1 13`, `H2 2`, `H3 2`, `H4 2`, `H5 2` |
+
+Required exact-token families found by copied-project nester gates:
+
+| Part | Required oracle-token families | Field 8 pen exactness | Single-part result |
+| --- | --- | --- | --- |
+| B-27 | `G0/G2/G3` | not required | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-30 | `G1/G2/G3/H2/H4/H5` | not applicable | pass, `lay_run_nest(0)=0`, 1 DRG |
+| F54410-B-12 | `G0/G1/G2/G3/H2/H4/H5` | not required | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+The combined hard7 required-family folder is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_hard7_required_families`
+
+Its copied-project nester proof passed:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_hard7_required_families\F54410 PAINT PACK.hard7_reqfam.rpd` |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_hard7_required_families` |
+| part rows | `7` |
+| sheet rows after refresh | `5` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `3.118s` |
+| DRG count | `2` |
+| nest rows | `16` |
+| made/nonzero count | `28` |
+| `NextNestNum` | `17` |
+| RADAN process cleanup | preflight empty, final empty |
+
+Interpretation: the universal donor wrapper and generated row structure are still acceptable, but larger canaries need broad exact compact-number spelling by slot family. These variants are diagnostic because the accepted token text is still copied from same-part RADAN oracle rows. The next crack target is a numeric continuation/spelling rule for these families, not a per-part token lookup.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
