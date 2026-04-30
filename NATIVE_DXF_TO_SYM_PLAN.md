@@ -1904,6 +1904,16 @@ B-186 residual split with `B-185` known-good:
 | context + only row 24 `center_delta_y` residual | no | center token is not sufficient alone |
 | full known-good residual set with DDC raw text preserved | yes | B-186 byte-identical to known-good; raw used-nest semantics restored |
 
+B-185 residual split with `B-186` known-good:
+
+| B-185 state | Used-nest match vs raw | Notes |
+| --- | --- | --- |
+| context-only | no | same nests `27`/`28` swap |
+| context + row 1 circle pair | yes | row 1 pair restores raw membership |
+| context + rows 5/6 `start_x` | no | rows 5/6 are not sufficient |
+| context + row 1 `start_x` | no | long start token is not sufficient |
+| context + row 1 `center_delta_x` | yes | single token `k?P` -> `k?P000000P0` restores raw membership |
+
 Tooling note:
 
 - `build_sym_token_patch_variant.py` now builds lab-only token-patched corpus
