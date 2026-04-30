@@ -2232,3 +2232,13 @@ of rows `43`, `73`, `76`, `77`, `79`, `83`, `109`, `110`, `122`, `123`, `124`,
 B-3/B-5 swap while still producing the broad 28-DRG count envelope. This makes
 the F15-only F12 stabilizer smaller and differently shaped than the prior
 F15+F16 context.
+
+Pair/triple testing among those five optional rows found three passing pair
+omissions (`58+80`, `59+80`, and `80+129`) and two passing triple omissions
+(`58+59+119` and `58+80+119`). No four-row omission among the optional set
+preserved raw used-nest semantics. The best current reduced-context candidate is
+raw+B194/F21 + the single F15 `delta_x` token + F12 rows excluding `58`, `80`,
+and `119`: `22` total token patches. It preserves raw full95 used-nest
+semantics, has `0` crack-relevant DRG layout-token deltas, has `65601/72553`
+exact tokens (`0.9041803922649649`, far `0`), and passes hard-canary thumbnails
+`7/7` at `900x700`.
