@@ -618,6 +618,65 @@ Its copied-project nester proof passed:
 | `NextNestNum` | `42` |
 | RADAN process cleanup | preflight empty, final empty |
 
+## Row-Count Geometry-Only Reduction 2026-04-30
+
+The remaining full-DDC bucket for `F54410-B-37`, `F54410-B-38`, and
+`F54410-B-39` was reduced. Each part's raw universal-donor symbol has exactly
+8 more G/H rows than RADAN's saved source symbol:
+
+| Part | raw donor G/H rows | RADAN source G/H rows | delta |
+| --- | ---: | ---: | ---: |
+| F54410-B-37 | 80 | 72 | 8 |
+| F54410-B-38 | 280 | 272 | 8 |
+| F54410-B-39 | 26 | 18 | 8 |
+
+The unmatched-row inspection shows RADAN collapses straight collinear boundary
+fragments into one longer `G` row per side:
+
+| Part | RADAN merged rows observed |
+| --- | --- |
+| F54410-B-37 | vertical boundary fragments at `x=0` and `x=42` collapse into long side rows |
+| F54410-B-38 | horizontal boundary fragments on the bottom/top edges collapse into long edge rows |
+| F54410-B-39 | vertical boundary fragments at `x=0` and `x=70.8125` collapse into long side rows |
+
+Two lab variants were generated from the current 95-part reduced upper bound:
+
+| Variant | Row-count case treatment |
+| --- | --- |
+| `symbols_95_plus_rowcount_source_geometry_Ecount` | replace only the three parts' G/H rows with RADAN source G/H rows, and regenerate the donor `E` count |
+| `symbols_95_plus_rowcount_source_geometry_only_keep_raw_E` | replace only the three parts' G/H rows with RADAN source G/H rows, leaving the raw donor `E` record untouched |
+
+All six singleton checks passed through the copied-project nester oracle:
+
+| Variant | Parts | Result |
+| --- | --- | --- |
+| regenerated `E` count | `F54410-B-37`, `F54410-B-38`, `F54410-B-39` | all pass, `lay_run_nest(0)=0`, 1 DRG each |
+| raw donor `E` count | `F54410-B-37`, `F54410-B-38`, `F54410-B-39` | all pass, `lay_run_nest(0)=0`, 1 DRG each |
+
+The sharper raw-`E` geometry-only variant also passed the full 95-part copied
+project gate:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_rowcount_geometry_only_keep_raw_E\F54410 PAINT PACK.q95_rowcount_geom_only.rpd` |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_rowcount_source_geometry_only_keep_raw_E` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `56.253s` |
+| DRG count | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+| RADAN process cleanup | preflight empty, final empty |
+
+This removes the need for a full DDC-block transplant for those three
+row-count parts. The blocker is now specifically the geometry row merge/spelling
+for those straight boundary fragments; surrounding donor D/E/U records were not
+the practical nester blocker in this test. This remains an oracle-reduced upper
+bound, because the merged G/H row text was copied from same-part RADAN source
+symbols instead of generated directly from DXF.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
