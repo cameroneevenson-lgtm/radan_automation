@@ -2019,3 +2019,11 @@ Treat field `3` as part of the native crack target. It may be a feature/row ID,
 topology ordering key, cache correlation key, or tie-break input. It is not safe
 to regenerate or reorder it casually, and future hybrid/token experiments must
 preserve it unless the hypothesis explicitly targets field `3`.
+
+Follow-up corpus analyzer result: `analyze_ddc_identifier_fields.py` confirms
+that the current known-good, raw synthetic, RADAN-saved synthetic, and
+context-unanimous corpora all have `4053/4053` sequential identifiers and `0`
+field-3/record mismatches versus known-good. The normal identifier sequence is
+the geometry row index plus `2` (`row13` -> `?`, `row14` -> `@`). Therefore the
+field-3 nester failures above are deliberate perturbation evidence, not an
+accidental field-3 drift in the current writer candidates.
