@@ -2047,3 +2047,24 @@ numeric values, local ARC group-code text, visible geometry, token text, or
 local LINE/ARC/LINE shape. The remaining likely causes are global row/topology
 context, row identity/cache participation, interaction with other token
 spellings, or downstream nester ordering sensitivity.
+
+`analyze_symbol_token_context.py` now records broader topology context including
+entity count, row-from-end, same-type ordinal, prefix LINE/ARC/CIRCLE counts,
+two-row neighbor signatures, full type signatures, and bounds. In the
+`4@7Tollog\K` -> `4@7Tollog\L` cohort, `B-185` row `13` and
+`F54410-B-21` row `14` share the same local ARC text and row-from-end (`7`),
+but differ in prefix circle count (`9` vs `10`) and type signature
+(`CCCCCCCCCLALALLLLLL` vs `CCCCCCCCCCLALALLLLLL`).
+
+Follow-up pair interactions:
+
+| Variant | Single-row priors | Used-nest match vs raw | Difference |
+| --- | --- | --- | --- |
+| `B-185` rows `11`+`13` slot `2` | row `11` triggers, row `13` neutral | no | nests `27`/`28` swap |
+| `B-186` rows `22`+`24` slot `2` | both rows trigger | no | nests `27`/`28` swap |
+| `F54410-B-21` rows `12`+`14` slot `2` | both rows trigger | yes | no crack-relevant DRG layout deltas |
+
+The `F54410-B-21` pair is especially useful: each constituent token triggers
+alone, but together they cancel back to raw used-nest semantics. This disproves
+a simple additive one-token trigger model and reinforces that token spelling
+choices participate in part/global ordering state.

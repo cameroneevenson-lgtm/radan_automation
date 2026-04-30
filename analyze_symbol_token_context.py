@@ -185,6 +185,28 @@ def _geometry_context(dxf_row: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _topology_context(dxf_rows: list[dict[str, Any]], row_index: int) -> dict[str, Any]:
+    zero_index = int(row_index) - 1
+    entity_type = str(dxf_rows[zero_index].get("type", ""))
+    type_sequence = [str(row.get("type", "")) for row in dxf_rows]
+    prefix = type_sequence[:zero_index]
+    suffix = type_sequence[zero_index + 1 :]
+    same_type_before = sum(1 for value in prefix if value == entity_type)
+    return {
+        "entity_count": len(dxf_rows),
+        "row_position_from_end": len(dxf_rows) - zero_index,
+        "same_type_ordinal": same_type_before + 1,
+        "same_type_remaining": sum(1 for value in suffix if value == entity_type),
+        "prefix_line_count": sum(1 for value in prefix if value == "LINE"),
+        "prefix_arc_count": sum(1 for value in prefix if value == "ARC"),
+        "prefix_circle_count": sum(1 for value in prefix if value == "CIRCLE"),
+        "previous_two_dxf_types": "/".join(type_sequence[max(0, zero_index - 2) : zero_index]),
+        "next_two_dxf_types": "/".join(type_sequence[zero_index + 1 : zero_index + 3]),
+        "type_sequence_signature": "".join(value[:1] for value in type_sequence),
+        "prefix_type_signature": "".join(value[:1] for value in prefix),
+    }
+
+
 def _context_row(
     *,
     part: str,
@@ -194,6 +216,7 @@ def _context_row(
     oracle_row: dict[str, Any],
     slot: int,
     value_digits: int,
+    bounds: Any | None = None,
 ) -> dict[str, Any]:
     dxf_row = dxf_rows[row_index - 1]
     entity_type = str(dxf_row.get("type", ""))
@@ -238,6 +261,18 @@ def _context_row(
         "token_length_delta": len(oracle_token) - len(generated_token),
     }
     row.update(_geometry_context(dxf_row))
+    row.update(_topology_context(dxf_rows, row_index))
+    if bounds is not None:
+        row.update(
+            {
+                "bounds_min_x": float(bounds.min_x),
+                "bounds_min_y": float(bounds.min_y),
+                "bounds_max_x": float(bounds.max_x),
+                "bounds_max_y": float(bounds.max_y),
+                "bounds_width": float(bounds.width),
+                "bounds_height": float(bounds.height),
+            }
+        )
     return row
 
 
@@ -268,7 +303,7 @@ def analyze_symbol_token_context(
         if dxf_path is None or generated_path is None or oracle_path is None:
             skipped.append({"part": key, "reason": "missing_dxf_or_sym"})
             continue
-        dxf_rows, _bounds = read_dxf_entities(dxf_path)
+        dxf_rows, bounds = read_dxf_entities(dxf_path)
         generated_rows = read_ddc_records(generated_path)
         oracle_rows = read_ddc_records(oracle_path)
         if len(dxf_rows) != len(generated_rows) or len(dxf_rows) != len(oracle_rows):
@@ -295,6 +330,7 @@ def analyze_symbol_token_context(
                         oracle_row=oracle_row,
                         slot=slot,
                         value_digits=value_digits,
+                        bounds=bounds,
                     )
                 )
 
@@ -344,6 +380,19 @@ def _example(row: dict[str, Any]) -> dict[str, Any]:
         "dxf_center_delta_y",
         "arc_start_angle",
         "arc_end_angle",
+        "entity_count",
+        "row_position_from_end",
+        "same_type_ordinal",
+        "same_type_remaining",
+        "prefix_line_count",
+        "prefix_arc_count",
+        "prefix_circle_count",
+        "previous_two_dxf_types",
+        "next_two_dxf_types",
+        "type_sequence_signature",
+        "prefix_type_signature",
+        "bounds_width",
+        "bounds_height",
     ]
     return {key: row.get(key) for key in keys}
 
@@ -495,6 +544,23 @@ CSV_FIELDNAMES = [
     "arc_end_angle",
     "circle_start_x",
     "circle_start_y",
+    "entity_count",
+    "row_position_from_end",
+    "same_type_ordinal",
+    "same_type_remaining",
+    "prefix_line_count",
+    "prefix_arc_count",
+    "prefix_circle_count",
+    "previous_two_dxf_types",
+    "next_two_dxf_types",
+    "type_sequence_signature",
+    "prefix_type_signature",
+    "bounds_min_x",
+    "bounds_min_y",
+    "bounds_max_x",
+    "bounds_max_y",
+    "bounds_width",
+    "bounds_height",
 ]
 
 

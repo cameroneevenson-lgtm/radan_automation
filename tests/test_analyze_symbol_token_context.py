@@ -48,6 +48,27 @@ class AnalyzeSymbolTokenContextTests(unittest.TestCase):
         self.assertEqual(context["arc_start_angle"], 10.0)
         self.assertEqual(context["arc_end_angle"], 90.0)
 
+    def test_topology_context_records_prefix_counts_and_ordinals(self) -> None:
+        rows = [
+            {"type": "CIRCLE"},
+            {"type": "LINE"},
+            {"type": "ARC"},
+            {"type": "LINE"},
+            {"type": "ARC"},
+        ]
+
+        context = analyzer._topology_context(rows, 5)
+
+        self.assertEqual(context["entity_count"], 5)
+        self.assertEqual(context["row_position_from_end"], 1)
+        self.assertEqual(context["same_type_ordinal"], 2)
+        self.assertEqual(context["same_type_remaining"], 0)
+        self.assertEqual(context["prefix_circle_count"], 1)
+        self.assertEqual(context["prefix_line_count"], 2)
+        self.assertEqual(context["prefix_arc_count"], 1)
+        self.assertEqual(context["previous_two_dxf_types"], "ARC/LINE")
+        self.assertEqual(context["type_sequence_signature"], "CLALA")
+
     def test_focus_summary_groups_same_visible_value_and_role(self) -> None:
         rows = [
             {
