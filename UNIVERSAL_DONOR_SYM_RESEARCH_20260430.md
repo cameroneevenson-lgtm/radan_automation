@@ -670,6 +670,21 @@ project gate:
 | `NextNestNum` | `43` |
 | RADAN process cleanup | preflight empty, final empty |
 
+The same symbol folder was rerun with report generation enabled:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_rowcount_geometry_only_reports\F54410 PAINT PACK.q95_rowcount_geom_reports.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `56.797s` |
+| DRG count | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `pfl_finish_nesting(True, False, 0.0)` | `false` |
+| project report | failed, `Wrong mode for DevExpress reports`, no PDF |
+| setup sheet | failed, `Wrong mode for DevExpress reports`, no PDF |
+| RADAN process cleanup | preflight empty, final empty |
+
 This removes the need for a full DDC-block transplant for those three
 row-count parts. The blocker is now specifically the geometry row merge/spelling
 for those straight boundary fragments; surrounding donor D/E/U records were not
