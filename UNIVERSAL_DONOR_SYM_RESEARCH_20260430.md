@@ -1220,6 +1220,50 @@ Conclusion:
   28 line rows, RADAN-exported DXF has 20, and the passing singleton still
   requires coordinate-model field 10 on the cleaned 20-row shape.
 
+### W-Source Rounding Removes B-17/B-27 Exported Dependency
+
+After adding target-side source-coordinate preprocessing to
+`write_coordinate_model_sym_prototype.py`, the coordinate-model field-10 writer
+was rerun for `B-17` and `B-27` from the original W-source DXFs with:
+
+- `source_coordinate_digits=6`
+- `topology_snap_endpoints=false`
+- coordinate resolver `context`
+- fallback continuation `line-repair-zero`
+- `prefer_literal_geometry=true`
+- same-part coordinate fallback disabled
+- same-part token spelling disabled
+
+Singleton copied-project gates:
+
+| Part | DXF source | Result | DRGs | Nest rows | Made/nonzero | `NextNestNum` |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| `B-17` | W source, 6-decimal rounded | `0` | 1 | 15 | 4 | 16 |
+| `B-27` | W source, 6-decimal rounded | `0` | 1 | 15 | 4 | 16 |
+
+The promoted 95-part copied-project gate also passed:
+
+| Field | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_wround6_b17_b27_exported_b49\symbols` |
+| generated from W-source rounded DXF | `B-17`, `B-27` |
+| generated from exported DXF | `F54410-B-49` only |
+| same-part oracle text used | no |
+| RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_95_live_coord_wround6_b17_b27_exported_b49\F54410 PAINT PACK.livecf10_wround6_b17_b27_f49exp.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.961s` |
+| part rows | `95` |
+| sheet rows | `8` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+
+Conclusion: `B-17` and `B-27` no longer require exported target DXF files.
+Their previous failure was a target coordinate normalization/token context
+problem. `F54410-B-49` remains the only current 95-part candidate member still
+requiring RADAN-exported/cleaned 20-row geometry context.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
