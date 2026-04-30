@@ -730,9 +730,178 @@ def normalize_collinear_line_chains(
 
     return normalized_rows, {
         "enabled": True,
+        "mode": "adjacent",
         "part": part_name,
         "endpoint_tolerance": endpoint_tolerance,
         "deviation_tolerance": deviation_tolerance,
+        "original_row_count": len(dxf_rows),
+        "normalized_row_count": len(normalized_rows),
+        "row_delta": len(normalized_rows) - len(dxf_rows),
+        "accepted_merge_count": len(accepted_merges),
+        "accepted_merged_source_row_count": sum(len(item["original_entity_indexes"]) for item in accepted_merges),
+        "rejected_near_miss_count": len(rejected_near_misses),
+        "accepted_merges": accepted_merges,
+        "rejected_near_misses": rejected_near_misses,
+    }
+
+
+def _axis_aligned_line_interval(
+    row: dict[str, Any],
+    *,
+    endpoint_tolerance: float,
+    deviation_tolerance: float,
+) -> dict[str, Any] | None:
+    if str(row.get("type")) != "LINE":
+        return None
+    start = _line_row_start_point(row)
+    end = _line_row_end_point(row)
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    if abs(dx) <= deviation_tolerance and abs(dy) > endpoint_tolerance:
+        return {
+            "orientation": "V",
+            "constant": (start[0] + end[0]) / 2.0,
+            "low": min(start[1], end[1]),
+            "high": max(start[1], end[1]),
+        }
+    if abs(dy) <= deviation_tolerance and abs(dx) > endpoint_tolerance:
+        return {
+            "orientation": "H",
+            "constant": (start[1] + end[1]) / 2.0,
+            "low": min(start[0], end[0]),
+            "high": max(start[0], end[0]),
+        }
+    return None
+
+
+def normalize_collinear_boundary_chains(
+    dxf_rows: list[dict[str, Any]],
+    *,
+    endpoint_tolerance: float = 1e-6,
+    deviation_tolerance: float = 1e-8,
+    min_source_count: int = 5,
+    part_name: str | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Merge same-axis, same-pen boundary-style LINE fragments as a lab-only diagnostic."""
+
+    groups: dict[tuple[str, str, str, float], list[dict[str, Any]]] = {}
+    rejected_near_misses: list[dict[str, Any]] = []
+    for index, row in enumerate(dxf_rows):
+        interval = _axis_aligned_line_interval(
+            row,
+            endpoint_tolerance=endpoint_tolerance,
+            deviation_tolerance=deviation_tolerance,
+        )
+        if interval is None:
+            continue
+        key = (
+            str(row.get("layer", "")),
+            _line_pen(row),
+            str(interval["orientation"]),
+            round(float(interval["constant"]), 6),
+        )
+        groups.setdefault(key, []).append({"index": index, "row": row, "interval": interval})
+
+    accepted_merges: list[dict[str, Any]] = []
+    replacements: dict[int, dict[str, Any]] = {}
+    remove_indexes: set[int] = set()
+    used_indexes: set[int] = set()
+    for (layer, pen, orientation, constant), entries in sorted(groups.items(), key=lambda item: item[0]):
+        if len(entries) < min_source_count:
+            continue
+        entries = sorted(entries, key=lambda entry: (entry["interval"]["low"], entry["interval"]["high"]))
+        contiguous = True
+        cursor = float(entries[0]["interval"]["high"])
+        max_gap = 0.0
+        for entry in entries[1:]:
+            low = float(entry["interval"]["low"])
+            gap = low - cursor
+            max_gap = max(max_gap, gap)
+            if gap > endpoint_tolerance:
+                contiguous = False
+                break
+            cursor = max(cursor, float(entry["interval"]["high"]))
+        source_indexes = sorted(int(entry["index"]) + 1 for entry in entries)
+        if not contiguous:
+            rejected_near_misses.append(
+                {
+                    "part": part_name,
+                    "source_line_indices": source_indexes,
+                    "layer": layer,
+                    "pen": pen,
+                    "orientation": orientation,
+                    "constant": constant,
+                    "reason": "non_contiguous_boundary_group",
+                    "max_gap": max_gap,
+                }
+            )
+            continue
+        if any(int(entry["index"]) in used_indexes for entry in entries):
+            rejected_near_misses.append(
+                {
+                    "part": part_name,
+                    "source_line_indices": source_indexes,
+                    "layer": layer,
+                    "pen": pen,
+                    "orientation": orientation,
+                    "constant": constant,
+                    "reason": "overlapping_boundary_group",
+                }
+            )
+            continue
+
+        replacement_index = min(int(entry["index"]) for entry in entries)
+        low = min(float(entry["interval"]["low"]) for entry in entries)
+        high = max(float(entry["interval"]["high"]) for entry in entries)
+        merged = dict(dxf_rows[replacement_index])
+        if orientation == "V":
+            merged["normalized_start"] = [constant, low]
+            merged["normalized_end"] = [constant, high]
+        else:
+            merged["normalized_start"] = [low, constant]
+            merged["normalized_end"] = [high, constant]
+        merged["_collinear_source_indexes"] = source_indexes
+        replacements[replacement_index] = merged
+        used_indexes.update(int(entry["index"]) for entry in entries)
+        remove_indexes.update(int(entry["index"]) for entry in entries if int(entry["index"]) != replacement_index)
+        total_length = sum(
+            float(entry["interval"]["high"]) - float(entry["interval"]["low"])
+            for entry in entries
+        )
+        accepted_merges.append(
+            {
+                "part": part_name,
+                "original_entity_indexes": source_indexes,
+                "source_line_indices": source_indexes,
+                "replacement_line_index": replacement_index + 1,
+                "old_endpoints": [_line_endpoints(dxf_rows[int(entry["index"])]) for entry in entries],
+                "new_start": list(merged["normalized_start"]),
+                "new_end": list(merged["normalized_end"]),
+                "new_endpoint": list(merged["normalized_end"]),
+                "total_length": total_length,
+                "merged_length": high - low,
+                "layer": layer,
+                "pen": pen,
+                "orientation": orientation,
+                "constant": constant,
+                "max_deviation": 0.0,
+                "reason": "same_axis_boundary_collinear_line_chain",
+            }
+        )
+
+    normalized_rows: list[dict[str, Any]] = []
+    for index, row in enumerate(dxf_rows):
+        if index in remove_indexes:
+            continue
+        normalized_rows.append(replacements.get(index, dict(row)))
+
+    return normalized_rows, {
+        "enabled": True,
+        "mode": "boundary",
+        "part": part_name,
+        "endpoint_tolerance": endpoint_tolerance,
+        "deviation_tolerance": deviation_tolerance,
+        "min_source_count": min_source_count,
         "original_row_count": len(dxf_rows),
         "normalized_row_count": len(normalized_rows),
         "row_delta": len(normalized_rows) - len(dxf_rows),
@@ -990,6 +1159,7 @@ def write_native_prototype(
     order_connected_line_profiles: bool = False,
     rotate_connected_line_profile_start: bool = False,
     normalize_collinear_line_chains_enabled: bool = False,
+    normalize_collinear_boundary_chains_enabled: bool = False,
     collinear_endpoint_tolerance: float = 1e-6,
     collinear_deviation_tolerance: float = 1e-8,
 ) -> dict[str, Any]:
@@ -1040,6 +1210,17 @@ def write_native_prototype(
             deviation_tolerance=collinear_deviation_tolerance,
             part_name=out_path.stem,
         )
+    if normalize_collinear_boundary_chains_enabled:
+        if normalize_collinear_line_chains_enabled and collinear_normalization.get("accepted_merge_count"):
+            raise RuntimeError(
+                "--normalize-collinear-boundary-chains cannot run after accepted adjacent collinear merges."
+            )
+        dxf_rows, collinear_normalization = normalize_collinear_boundary_chains(
+            dxf_rows,
+            endpoint_tolerance=collinear_endpoint_tolerance,
+            deviation_tolerance=collinear_deviation_tolerance,
+            part_name=out_path.stem,
+        )
     template_text = template_sym.read_text(encoding="utf-8", errors="replace")
     if DDC_RE.search(template_text) is None:
         raise RuntimeError(f"No DDC block found in template symbol: {template_sym}")
@@ -1076,6 +1257,7 @@ def write_native_prototype(
         "rotate_connected_line_profile_start": rotate_connected_line_profile_start,
         "line_profile_ordering": line_profile_ordering,
         "normalize_collinear_line_chains": normalize_collinear_line_chains_enabled,
+        "normalize_collinear_boundary_chains": normalize_collinear_boundary_chains_enabled,
         "collinear_endpoint_tolerance": collinear_endpoint_tolerance,
         "collinear_deviation_tolerance": collinear_deviation_tolerance,
         "collinear_normalization": collinear_normalization,
@@ -1153,6 +1335,11 @@ def main() -> int:
         help="Lab option: merge adjacent same-layer/same-pen collinear LINE fragments before DDC generation.",
     )
     parser.add_argument(
+        "--normalize-collinear-boundary-chains",
+        action="store_true",
+        help="Lab option: merge same-axis boundary-style LINE fragments before DDC generation.",
+    )
+    parser.add_argument(
         "--collinear-endpoint-tolerance",
         type=float,
         default=1e-6,
@@ -1181,6 +1368,7 @@ def main() -> int:
         order_connected_line_profiles=args.order_connected_line_profiles,
         rotate_connected_line_profile_start=args.rotate_connected_line_profile_start,
         normalize_collinear_line_chains_enabled=bool(args.normalize_collinear_line_chains),
+        normalize_collinear_boundary_chains_enabled=bool(args.normalize_collinear_boundary_chains),
         collinear_endpoint_tolerance=float(args.collinear_endpoint_tolerance),
         collinear_deviation_tolerance=float(args.collinear_deviation_tolerance),
     )

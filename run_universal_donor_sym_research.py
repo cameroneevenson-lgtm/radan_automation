@@ -39,6 +39,7 @@ DEFAULT_WRITER_OPTIONS: dict[str, Any] = {
     "order_connected_line_profiles": True,
     "rotate_connected_line_profile_start": False,
     "normalize_collinear_line_chains": False,
+    "normalize_collinear_boundary_chains": False,
     "collinear_endpoint_tolerance": 1e-6,
     "collinear_deviation_tolerance": 1e-8,
 }
@@ -321,6 +322,7 @@ def generate_donor_symbol(
             order_connected_line_profiles=bool(options["order_connected_line_profiles"]),
             rotate_connected_line_profile_start=bool(options["rotate_connected_line_profile_start"]),
             normalize_collinear_line_chains_enabled=bool(options["normalize_collinear_line_chains"]),
+            normalize_collinear_boundary_chains_enabled=bool(options["normalize_collinear_boundary_chains"]),
             collinear_endpoint_tolerance=float(options["collinear_endpoint_tolerance"]),
             collinear_deviation_tolerance=float(options["collinear_deviation_tolerance"]),
         )
@@ -670,6 +672,11 @@ def main() -> int:
         help="Lab-only: merge adjacent same-layer/same-pen collinear LINE fragments before DDC generation.",
     )
     parser.add_argument(
+        "--normalize-collinear-boundary-chains",
+        action="store_true",
+        help="Lab-only: merge same-axis boundary-style LINE fragments before DDC generation.",
+    )
+    parser.add_argument(
         "--collinear-endpoint-tolerance",
         type=float,
         default=1e-6,
@@ -705,6 +712,7 @@ def main() -> int:
         "order_connected_line_profiles": not bool(args.no_order_connected_line_profiles),
         "rotate_connected_line_profile_start": bool(args.rotate_connected_line_profile_start),
         "normalize_collinear_line_chains": bool(args.normalize_collinear_line_chains),
+        "normalize_collinear_boundary_chains": bool(args.normalize_collinear_boundary_chains),
         "collinear_endpoint_tolerance": float(args.collinear_endpoint_tolerance),
         "collinear_deviation_tolerance": float(args.collinear_deviation_tolerance),
     }

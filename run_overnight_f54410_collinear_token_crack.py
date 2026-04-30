@@ -255,6 +255,11 @@ def main() -> int:
     parser.add_argument("--skip-baseline", action="store_true")
     parser.add_argument("--skip-nester", action="store_true")
     parser.add_argument("--promote-95-on-trio-pass", action="store_true")
+    parser.add_argument(
+        "--boundary-chain-mode",
+        action="store_true",
+        help="Use the lab-only same-axis boundary-chain merger instead of adjacent-chain merger.",
+    )
     args = parser.parse_args()
 
     out_dir = args.out_dir or DEFAULT_LAB_ROOT / f"overnight_f54410_collinear_token_crack_{timestamp()}"
@@ -280,7 +285,11 @@ def main() -> int:
             candidate_matrix=candidate_matrix,
         )
 
-    generation_dir = out_dir / "normalized_rowcount_trio"
+    normalization_flag = (
+        "--normalize-collinear-boundary-chains" if args.boundary_chain_mode else "--normalize-collinear-line-chains"
+    )
+    normalization_label = "boundary_collinear_trio" if args.boundary_chain_mode else "normalized_collinear_trio"
+    generation_dir = out_dir / normalization_label
     generation_command: list[str | Path] = [
         args.python,
         REPO_ROOT / "run_universal_donor_sym_research.py",
@@ -291,8 +300,8 @@ def main() -> int:
         "--out-dir",
         generation_dir,
         "--label",
-        "normalized_collinear_trio",
-        "--normalize-collinear-line-chains",
+        normalization_label,
+        normalization_flag,
     ]
     for part in ROWCOUNT_TRIO:
         generation_command.extend(["--part", part])
@@ -407,7 +416,7 @@ def main() -> int:
             "--label",
             "normalized_collinear_95",
             "--include-default-oversized-excludes",
-            "--normalize-collinear-line-chains",
+            normalization_flag,
         ]
         run_command(
             out_dir=out_dir,

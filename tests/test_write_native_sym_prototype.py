@@ -16,6 +16,7 @@ from write_native_sym_prototype import (
     _symbol_view_extents,
     _symbol_view_record_field,
     encode_geometry_data,
+    normalize_collinear_boundary_chains,
     normalize_collinear_line_chains,
     write_native_prototype,
 )
@@ -287,6 +288,45 @@ class WriteNativeSymPrototypeTests(unittest.TestCase):
                 elif expected_reason != "gap":
                     self.assertGreaterEqual(stats["rejected_near_miss_count"], 1)
                     self.assertEqual(stats["rejected_near_misses"][0]["reason"], expected_reason)
+
+    def test_boundary_chain_normalization_merges_nonadjacent_axis_groups(self) -> None:
+        rows = [
+            {
+                "type": "LINE",
+                "layer": "IV_INTERIOR_PROFILES",
+                "normalized_start": [0.0, 2.0],
+                "normalized_end": [0.0, 3.0],
+            },
+            {
+                "type": "LINE",
+                "layer": "IV_MARK_SURFACE",
+                "normalized_start": [1.0, 0.0],
+                "normalized_end": [2.0, 0.0],
+            },
+            {
+                "type": "LINE",
+                "layer": "IV_INTERIOR_PROFILES",
+                "normalized_start": [0.0, 0.0],
+                "normalized_end": [0.0, 1.0],
+            },
+            {
+                "type": "LINE",
+                "layer": "IV_INTERIOR_PROFILES",
+                "normalized_start": [0.0, 1.0],
+                "normalized_end": [0.0, 2.0],
+            },
+        ]
+
+        normalized, stats = normalize_collinear_boundary_chains(rows, min_source_count=3, part_name="Part A")
+
+        self.assertEqual(len(normalized), 2)
+        self.assertEqual(normalized[0]["normalized_start"], [0.0, 0.0])
+        self.assertEqual(normalized[0]["normalized_end"], [0.0, 3.0])
+        self.assertEqual(stats["accepted_merge_count"], 1)
+        self.assertEqual(stats["accepted_merges"][0]["source_line_indices"], [1, 3, 4])
+        self.assertEqual(stats["accepted_merges"][0]["replacement_line_index"], 1)
+        self.assertEqual(stats["accepted_merges"][0]["orientation"], "V")
+        self.assertEqual(stats["accepted_merges"][0]["reason"], "same_axis_boundary_collinear_line_chain")
 
     def test_low_y_rightmost_rotation_moves_closed_profile_start(self) -> None:
         rows = [
