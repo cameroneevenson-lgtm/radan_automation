@@ -2311,3 +2311,14 @@ tokens (`0.904042561989`, far `0`), and hard-canary thumbnail parity `7/7`.
 Trying to remove any one of the seven remaining rows from this branch failed;
 six removals produced the standard `26/28` swap and removing row `132` produced
 the older `27`-DRG/`428`-made failure shape.
+
+An alternate tied `8`-token branch continued one step further. Dropping
+`76+77+79+83+109+122+123+124` gives another `7`-token pass; from that branch,
+also dropping row `59` produces the current best pure-F12 stabilizer. It keeps
+only six F54410-B-12 `delta_y` token patches, at rows `43`, `110`, `129`,
+`130`, `132`, and `156`. This `6`-token candidate preserves raw full95
+used-nest semantics with `28/28` contained-symbol matches, `0` layout-token
+deltas, `65590/72553` exact tokens (`0.904028778962`, far `0`), and hard-canary
+thumbnail parity `7/7`. Removing any one of those six retained rows hard-fails
+with `lay_run_nest(0)=11088`, `0` DRGs, and `0` made parts, so this branch has a
+strong local floor at six F12 row-3 tokens.
