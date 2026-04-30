@@ -39,6 +39,40 @@ def _write_project(path: Path) -> None:
     )
 
 
+def _write_compare_rpd(path: Path, label: str, sym_folder: str, *, second_part: str = "B-184") -> None:
+    path.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<RadanProject xmlns="http://www.radan.com/ns/project">\n'
+        '  <Nests>\n'
+        f'    <Nest><FileName>P15 F54410 PAINT PACK.{label}.drg</FileName><ID>15</ID>\n'
+        '      <SheetUsed><Used>1</Used><Material>Aluminum 5052</Material><Thickness>0.25</Thickness>'
+        '<SheetX>120</SheetX><SheetY>60</SheetY></SheetUsed>\n'
+        '      <PartsMade>\n'
+        f'        <PartMade><File>C:\\lab\\{sym_folder}\\B-10.sym</File><Made>2</Made></PartMade>\n'
+        f'        <PartMade><File>C:\\lab\\{sym_folder}\\{second_part}.sym</File><Made>4</Made></PartMade>\n'
+        '      </PartsMade>\n'
+        '    </Nest>\n'
+        '  </Nests>\n'
+        '</RadanProject>\n',
+        encoding="utf-8",
+    )
+
+
+def _write_compare_drg(path: Path, label: str, sym_folder: str, *, second_part: str = "B-184") -> None:
+    path.write_text(
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<RadanCompoundDocument>\n'
+        f'  <Attr name="Drawing" value="P15 F54410 PAINT PACK.{label}"/>\n'
+        '  <RadanFile extension="ddc"><![CDATA[\n'
+        f'U,,$C:\\lab\\{sym_folder}\\B-10.sym\n'
+        f'U,,$C:\\lab\\{sym_folder}\\{second_part}.sym\n'
+        '  ]]></RadanFile>\n'
+        f'  <Info num="4" name="Contained Symbols"><Symbol name="B-10" count="2"/><Symbol name="{second_part}" count="4"/></Info>\n'
+        '</RadanCompoundDocument>\n',
+        encoding="utf-8",
+    )
+
+
 class CopiedProjectNesterGateTests(unittest.TestCase):
     def test_assert_lab_output_path_rejects_paths_outside_lab_root(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -133,6 +167,43 @@ class CopiedProjectNesterGateTests(unittest.TestCase):
                         label="missing",
                         include_parts=["Nope"],
                     )
+
+    def test_write_gate_comparison_accepts_tie_aware_alternate_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            lab_root = root / "_sym_lab"
+            left = lab_root / "left"
+            primary = lab_root / "primary"
+            alternate = lab_root / "alternate"
+            for folder in (left, primary, alternate):
+                folder.mkdir(parents=True)
+            _write_compare_rpd(left / "left.rpd", "candidate", "candidate")
+            _write_compare_drg(left / "P15 F54410 PAINT PACK.candidate.drg", "candidate", "candidate")
+            _write_compare_rpd(primary / "primary.rpd", "raw_original", "raw_original", second_part="B-185")
+            _write_compare_drg(
+                primary / "P15 F54410 PAINT PACK.raw_original.drg",
+                "raw_original",
+                "raw_original",
+                second_part="B-185",
+            )
+            _write_compare_rpd(alternate / "alternate.rpd", "raw_repeat", "raw_repeat")
+            _write_compare_drg(alternate / "P15 F54410 PAINT PACK.raw_repeat.drg", "raw_repeat", "raw_repeat")
+
+            with mock.patch.object(gate, "DEFAULT_LAB_ROOT", lab_root):
+                summary = gate.write_gate_comparison(
+                    left_dir=left,
+                    left_name="candidate",
+                    right_dir=primary,
+                    right_name="raw_original",
+                    alternate_right_dirs=[alternate],
+                    alternate_right_names=["raw_repeat"],
+                )
+                self.assertTrue(Path(summary["out_json"]).exists())
+                self.assertTrue(Path(summary["out_md"]).exists())
+
+        self.assertFalse(summary["rpd_used_nests_match"])
+        self.assertTrue(summary["tie_aware"]["acceptance_match"])
+        self.assertEqual(summary["tie_aware"]["matched_baseline"], "raw_repeat")
 
 
 if __name__ == "__main__":

@@ -2364,3 +2364,13 @@ are: raw+B-194/F54410-B-21 pair at `65585/72553` exact tokens
 `65586/72553` (`0.903973646851`, far `0`), and the combined B-194/F21 pair plus
 six F12 tokens at `65590/72553` (`0.904028778962`, far `0`). All remain
 decoded-close for `72553/72553` token slots.
+
+The copied-project nester gate now has the same tie-aware comparison available
+directly. Passing `--compare-right-dir` writes `tie_aware_comparison.json` and
+`tie_aware_comparison.md` beside the gate `result.json`; optional
+`--alternate-right-dir` / `--alternate-right-name` inputs let a fresh gate run
+record whether it matched the original raw baseline or an accepted raw-repeat
+tie state. The gate keeps the primary baseline mismatch visible in
+`result.json["gate_comparison"]` instead of hiding it. Focused nester-gate and
+nest-artifact tests passed, and the full baseline after this harness update was
+`198` tests, `OK`.

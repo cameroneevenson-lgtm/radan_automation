@@ -13,6 +13,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any, Iterable
 
+from compare_nest_artifacts import add_tie_aware_baselines, compare_gate_dirs, write_markdown_report
 from import_parts_csv_headless import (
     DEFAULT_ORIENTATION,
     PROJECT_SHEETS_REFRESH_MAC_LINE,
@@ -325,6 +326,55 @@ def _attempt_reports(app: Any, report_dir: Path, logger: _Logger) -> list[dict[s
     return results
 
 
+def _comparison_summary(comparison: dict[str, Any], *, out_json: Path, out_md: Path) -> dict[str, Any]:
+    return {
+        "out_json": str(out_json),
+        "out_md": str(out_md),
+        "rpd_used_nests_match": comparison["rpd_used_nests_match"],
+        "drg_count_match": comparison["drg_count_match"],
+        "drg_contained_symbols_matches": comparison["drg_contained_symbols_matches"],
+        "drg_pair_count": len(comparison["drg_comparison"]),
+        "ddc_changed_lines": comparison["ddc_changed_lines"],
+        "tie_aware": comparison.get("tie_aware"),
+    }
+
+
+def write_gate_comparison(
+    *,
+    left_dir: Path,
+    left_name: str,
+    right_dir: Path,
+    right_name: str,
+    alternate_right_dirs: Iterable[Path] = (),
+    alternate_right_names: Iterable[str] = (),
+    out_json: Path | None = None,
+    out_md: Path | None = None,
+) -> dict[str, Any]:
+    left_dir = left_dir.expanduser().resolve()
+    right_dir = right_dir.expanduser().resolve()
+    out_json = (out_json or left_dir / "tie_aware_comparison.json").expanduser().resolve()
+    out_md = (out_md or left_dir / "tie_aware_comparison.md").expanduser().resolve()
+    assert_lab_output_path(out_json, operation="write nester comparison JSON")
+    assert_lab_output_path(out_md, operation="write nester comparison Markdown")
+
+    comparison = compare_gate_dirs(left_dir, right_dir, left_name=left_name, right_name=right_name)
+    alternate_dirs = [path.expanduser().resolve() for path in alternate_right_dirs]
+    alternate_names = list(alternate_right_names)
+    if alternate_dirs:
+        comparison = add_tie_aware_baselines(
+            comparison,
+            left_dir=left_dir,
+            alternate_right_dirs=alternate_dirs,
+            alternate_right_names=alternate_names,
+        )
+
+    out_json.parent.mkdir(parents=True, exist_ok=True)
+    out_md.parent.mkdir(parents=True, exist_ok=True)
+    out_json.write_text(json.dumps(comparison, indent=2, sort_keys=True), encoding="utf-8")
+    write_markdown_report(comparison, out_md)
+    return _comparison_summary(comparison, out_json=out_json, out_md=out_md)
+
+
 def run_gate(
     *,
     source_rpd: Path,
@@ -491,6 +541,12 @@ def main() -> int:
     parser.add_argument("--backend", default="win32com")
     parser.add_argument("--kill-existing-radan", action="store_true")
     parser.add_argument("--attempt-reports", action="store_true")
+    parser.add_argument("--compare-right-dir", type=Path)
+    parser.add_argument("--compare-right-name", default="primary_baseline")
+    parser.add_argument("--alternate-right-dir", type=Path, action="append", default=[])
+    parser.add_argument("--alternate-right-name", action="append", default=[])
+    parser.add_argument("--comparison-out-json", type=Path)
+    parser.add_argument("--comparison-out-md", type=Path)
     args = parser.parse_args()
 
     excludes = list(args.exclude)
@@ -509,6 +565,21 @@ def main() -> int:
         kill_existing_radan=bool(args.kill_existing_radan),
         attempt_reports=bool(args.attempt_reports),
     )
+    if args.compare_right_dir and payload.get("ok"):
+        payload["gate_comparison"] = write_gate_comparison(
+            left_dir=args.out_dir.expanduser().resolve(),
+            left_name=sanitize_label(args.label),
+            right_dir=args.compare_right_dir.expanduser().resolve(),
+            right_name=args.compare_right_name,
+            alternate_right_dirs=[path.expanduser().resolve() for path in args.alternate_right_dir],
+            alternate_right_names=args.alternate_right_name,
+            out_json=None if args.comparison_out_json is None else args.comparison_out_json.expanduser().resolve(),
+            out_md=None if args.comparison_out_md is None else args.comparison_out_md.expanduser().resolve(),
+        )
+        (args.out_dir.expanduser().resolve() / "result.json").write_text(
+            json.dumps(payload, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
     print(json.dumps(payload, indent=2, sort_keys=True))
     return 0 if "error" not in payload else 1
 
