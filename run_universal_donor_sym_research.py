@@ -30,6 +30,14 @@ DEFAULT_SOURCE_RPD = Path(
     r"L:\BATTLESHIELD\F-LARGE FLEET\F54410\PAINT PACK\F54410 PAINT PACK\F54410 PAINT PACK.rpd"
 )
 TEMPLATE_SOURCE = "universal_donor"
+DEFAULT_WRITER_OPTIONS: dict[str, Any] = {
+    "coordinate_digits": None,
+    "source_coordinate_digits": 6,
+    "source_coordinate_entity_types": None,
+    "canonicalize_endpoints": True,
+    "topology_snap_endpoints": True,
+    "order_connected_line_profiles": True,
+}
 
 LADDER_RUNGS: dict[str, dict[str, Any]] = {
     "b10": {"include_parts": ("B-10",), "label_suffix": "b10"},
@@ -256,16 +264,41 @@ def _generation_row_ok(row: dict[str, Any]) -> bool:
     )
 
 
-def generate_donor_symbol(*, part: Any, donor_sym: Path, symbol_dir: Path) -> dict[str, Any]:
+def _normal_writer_options(writer_options: dict[str, Any] | None = None) -> dict[str, Any]:
+    options = dict(DEFAULT_WRITER_OPTIONS)
+    if writer_options:
+        options.update(writer_options)
+    entity_types = options.get("source_coordinate_entity_types")
+    if entity_types is not None:
+        options["source_coordinate_entity_types"] = sorted(str(value) for value in entity_types)
+    return options
+
+
+def _writer_entity_types(options: dict[str, Any]) -> set[str] | None:
+    entity_types = options.get("source_coordinate_entity_types")
+    if entity_types is None:
+        return None
+    return {str(value) for value in entity_types}
+
+
+def generate_donor_symbol(
+    *,
+    part: Any,
+    donor_sym: Path,
+    symbol_dir: Path,
+    writer_options: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     _resolve_lab_path(symbol_dir)
     out_path = part.symbol_path(symbol_dir)
     _resolve_lab_path(out_path)
+    options = _normal_writer_options(writer_options)
     row: dict[str, Any] = {
         "part": part.part_name,
         "dxf_path": str(part.dxf_path),
         "output_sym": str(out_path),
         "template_source": TEMPLATE_SOURCE,
         "template_sym": str(donor_sym),
+        "writer_options": options,
     }
     try:
         payload = write_native_prototype(
@@ -273,10 +306,12 @@ def generate_donor_symbol(*, part: Any, donor_sym: Path, symbol_dir: Path) -> di
             template_sym=donor_sym,
             out_path=out_path,
             allow_outside_lab=True,
-            source_coordinate_digits=6,
-            topology_snap_endpoints=True,
-            canonicalize_endpoints=True,
-            order_connected_line_profiles=True,
+            coordinate_digits=options["coordinate_digits"],
+            source_coordinate_digits=options["source_coordinate_digits"],
+            source_coordinate_entity_types=_writer_entity_types(options),
+            topology_snap_endpoints=bool(options["topology_snap_endpoints"]),
+            canonicalize_endpoints=bool(options["canonicalize_endpoints"]),
+            order_connected_line_profiles=bool(options["order_connected_line_profiles"]),
         )
         bom_metadata = refresh_generated_symbol_bom_metadata(out_path, part)
         validation = validate_native_sym(dxf_path=part.dxf_path, sym_path=out_path)
@@ -346,6 +381,7 @@ def generate_symbols_from_universal_donor(
     exclude_parts: Iterable[str] = (),
     max_parts: int | None = None,
     label: str = "universal_donor",
+    writer_options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     out_dir = _resolve_lab_path(out_dir)
     symbol_dir = _resolve_lab_path(out_dir / "symbols")
@@ -364,7 +400,11 @@ def generate_symbols_from_universal_donor(
     if not selected_parts:
         raise RuntimeError("No parts selected for universal donor generation.")
 
-    rows = [generate_donor_symbol(part=part, donor_sym=donor_sym, symbol_dir=symbol_dir) for part in selected_parts]
+    options = _normal_writer_options(writer_options)
+    rows = [
+        generate_donor_symbol(part=part, donor_sym=donor_sym, symbol_dir=symbol_dir, writer_options=options)
+        for part in selected_parts
+    ]
     failures = [row for row in rows if not row.get("ok")]
     payload: dict[str, Any] = {
         "schema_version": 1,
@@ -374,6 +414,7 @@ def generate_symbols_from_universal_donor(
         "symbol_dir": str(symbol_dir),
         "donor": donor,
         "template_source": TEMPLATE_SOURCE,
+        "writer_options": options,
         "include_parts": list(include_parts),
         "exclude_parts": list(exclude_parts),
         "max_parts": max_parts,
@@ -407,6 +448,7 @@ def write_summary(out_dir: Path, payload: dict[str, Any]) -> None:
         f"- Donor: `{donor['path']}`",
         f"- Symbol folder: `{generation['symbol_dir']}`",
         f"- Template source: `{generation['template_source']}`",
+        f"- Writer options: `{generation.get('writer_options')}`",
         f"- Selected parts: `{generation['selected_part_count']}`",
         f"- Generated/pass/fail: `{generation['generated_count']}` / `{generation['passed_count']}` / `{generation['failed_count']}`",
         f"- Donor Attr 110: `{donor.get('attr_110')}`",
@@ -472,6 +514,7 @@ def run_research(
     kill_existing_radan: bool = False,
     attempt_reports: bool = False,
     finish_nesting_before_reports: bool = False,
+    writer_options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     out_dir = _resolve_lab_path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -485,6 +528,7 @@ def run_research(
         exclude_parts=exclude_parts,
         max_parts=max_parts,
         label=safe_label,
+        writer_options=writer_options,
     )
     _write_json(out_dir / "radan_processes_after_generation.json", _process_log_payload("after_generation"))
     payload: dict[str, Any] = {
@@ -540,6 +584,43 @@ def main() -> int:
     parser.add_argument("--kill-existing-radan", action="store_true")
     parser.add_argument("--attempt-reports", action="store_true")
     parser.add_argument("--finish-nesting-before-reports", action="store_true")
+    parser.add_argument(
+        "--coordinate-digits",
+        type=int,
+        help="Lab option passed to the donor writer: round normalized DXF coordinates before encoding.",
+    )
+    parser.add_argument(
+        "--source-coordinate-digits",
+        type=int,
+        default=6,
+        help="Lab option passed to the donor writer. Defaults to the current donor harness behavior.",
+    )
+    parser.add_argument(
+        "--no-source-coordinate-digits",
+        action="store_true",
+        help="Disable source-coordinate rounding before normalization.",
+    )
+    parser.add_argument(
+        "--source-coordinate-entity-type",
+        action="append",
+        choices=["LINE", "ARC", "CIRCLE"],
+        help="Limit source-coordinate rounding to one or more DXF entity types.",
+    )
+    parser.add_argument(
+        "--no-topology-snap-endpoints",
+        action="store_true",
+        help="Disable endpoint topology snapping in the donor writer.",
+    )
+    parser.add_argument(
+        "--no-canonicalize-endpoints",
+        action="store_true",
+        help="Disable endpoint-fraction canonicalization in the donor writer.",
+    )
+    parser.add_argument(
+        "--no-order-connected-line-profiles",
+        action="store_true",
+        help="Disable connected line-profile ordering in the donor writer.",
+    )
     args = parser.parse_args()
 
     excludes = list(args.exclude)
@@ -555,6 +636,14 @@ def main() -> int:
     out_dir = args.out_dir
     if out_dir is None:
         out_dir = DEFAULT_LAB_ROOT / f"universal_donor_sym_research_{timestamp()}_{sanitize_label(resolved['label'])}"
+    writer_options = {
+        "coordinate_digits": args.coordinate_digits,
+        "source_coordinate_digits": None if args.no_source_coordinate_digits else args.source_coordinate_digits,
+        "source_coordinate_entity_types": args.source_coordinate_entity_type,
+        "topology_snap_endpoints": not bool(args.no_topology_snap_endpoints),
+        "canonicalize_endpoints": not bool(args.no_canonicalize_endpoints),
+        "order_connected_line_profiles": not bool(args.no_order_connected_line_profiles),
+    }
     payload = run_research(
         csv_path=args.csv,
         out_dir=out_dir,
@@ -569,6 +658,7 @@ def main() -> int:
         kill_existing_radan=bool(args.kill_existing_radan),
         attempt_reports=bool(args.attempt_reports),
         finish_nesting_before_reports=bool(args.finish_nesting_before_reports),
+        writer_options=writer_options,
     )
     print(json.dumps(payload, indent=2, ensure_ascii=True, sort_keys=True))
     return 0 if payload["ok"] else 1

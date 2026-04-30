@@ -133,6 +133,10 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
         self.assertEqual(payload["generated_count"], 1)
         self.assertEqual(payload["rows"][0]["template_source"], research.TEMPLATE_SOURCE)
         self.assertEqual(manifest["rows"][0]["template_source"], research.TEMPLATE_SOURCE)
+        self.assertEqual(payload["writer_options"]["source_coordinate_digits"], 6)
+        self.assertTrue(payload["writer_options"]["topology_snap_endpoints"])
+        self.assertTrue(payload["writer_options"]["canonicalize_endpoints"])
+        self.assertTrue(payload["writer_options"]["order_connected_line_profiles"])
         self.assertTrue(payload["rows"][0]["bom_metadata"]["all_present"])
         self.assertEqual(payload["rows"][0]["bom_metadata"]["requested"]["119"], "Aluminum 5052")
         self.assertEqual(payload["rows"][0]["bom_metadata"]["requested"]["120"], "0.18")
@@ -151,6 +155,41 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
         self.assertIn('num="121" name="Thickness units" type="s" value="in"', generated_text)
         self.assertIn('num="146" name="Strategy" type="s" value="AIR"', generated_text)
         self.assertNotIn('value="donor"', generated_text)
+
+    def test_writer_options_are_recorded_and_disable_line_ordering(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            lab_root = root / "_sym_lab"
+            out_dir = lab_root / "run"
+            donor = root / "donor.sym"
+            dxf = root / "Part A.dxf"
+            csv_path = root / "parts_Radan.csv"
+            _write_blank_donor(donor)
+            _write_line_dxf(dxf)
+            csv_path.write_text(f"{dxf},1,Aluminum 5052,0.18,in,AIR\n", encoding="utf-8")
+
+            with mock.patch.object(research, "DEFAULT_LAB_ROOT", lab_root):
+                payload = research.generate_symbols_from_universal_donor(
+                    csv_path=csv_path,
+                    donor_sym=donor,
+                    out_dir=out_dir,
+                    include_parts=["Part A"],
+                    label="unit_test",
+                    writer_options={
+                        "source_coordinate_digits": None,
+                        "topology_snap_endpoints": False,
+                        "canonicalize_endpoints": False,
+                        "order_connected_line_profiles": False,
+                    },
+                )
+
+        self.assertTrue(payload["ok"])
+        self.assertIsNone(payload["writer_options"]["source_coordinate_digits"])
+        self.assertFalse(payload["writer_options"]["topology_snap_endpoints"])
+        self.assertFalse(payload["writer_options"]["canonicalize_endpoints"])
+        self.assertFalse(payload["writer_options"]["order_connected_line_profiles"])
+        self.assertFalse(payload["rows"][0]["line_profile_ordering"]["eligible"])
+        self.assertTrue(payload["rows"][0]["unordered_line_geometry"]["passed"])
 
     def test_ladder_rung_resolves_proven95_excludes(self) -> None:
         resolved = research.apply_ladder_rung(
