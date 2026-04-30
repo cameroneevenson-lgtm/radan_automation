@@ -2199,3 +2199,15 @@ used-nest semantics and `0` crack-relevant DRG layout-token deltas. Rows `109`,
 `140` still fail with the standard B-3/B-5 swap. Among the passing no-`84`
 variants, rows `118`, `127`, and `138` tie at `65641/72553` exact tokens; rows
 `130` and `139` pass with `65640/72553`.
+
+Pair/triple/quad reduction of that no-`84` branch found additional non-additive
+stabilizers. Passing two-middle omissions were `127+130`, `127+139`, and
+`138+139`, all with `65640/72553` exact tokens and `0` layout-token deltas.
+Passing three-middle omissions were `118+127+139` and `127+138+139`. Passing
+four-middle omissions were `118+127+138+139` and `118+130+138+139`; the better
+current reduced F12 candidate omits early row `84`, middle rows `118`, `127`,
+`138`, and `139`, keeps row `156`, and omits row `165`. This is a `23`-patch
+F54410-B-12 `delta_y` subset that preserves raw full95 used-nest semantics,
+has `0` crack-relevant DRG layout-token deltas, and has `65640/72553` exact
+tokens. Omitting all five optional middle rows (`118`, `127`, `130`, `138`,
+`139`) failed hard with `lay_run_nest(0)=11088` and `0` DRGs.
