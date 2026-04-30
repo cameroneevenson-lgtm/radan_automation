@@ -1329,6 +1329,69 @@ DXF files. It is still lab-only because `F54410-B-49` uses an intentional
 0.002-tolerance geometry cleanup, and the coordinate-model writer still uses a
 training corpus derived from RADAN-exported DXFs plus known-good SYMs.
 
+### Source Rounding Scope: Two Toxic Exceptions
+
+Uniform `source_coordinate_digits=6` was tested across all 20 coordinate-model
+blocker parts. This failed the 95-part gate at `11063` when all 20 were rounded.
+
+Diff artifact:
+`C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\uniform_round_all20_vs_passing_diff.json`
+
+Changed parts under uniform rounding:
+
+- `B-14`
+- `B-15`
+- `B-184`
+- `B-193`
+- `B-194`
+- `B-195`
+- `B-25 R2`
+- `B-28`
+- `B-30`
+- `B-52-R2`
+- `F54410-B-02`
+- `F54410-B-03`
+- `F54410-B-07`
+- `F54410-B-12`
+- `F54410-B-32`
+- `F54410-B-47`
+
+Singleton isolation artifact:
+`C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\uniform_round_all20_singleton_summary.json`
+
+Only two changed parts failed singly:
+
+| Part | Uniform-rounded singleton result |
+| --- | ---: |
+| `B-25 R2` | `11063` |
+| `B-30` | `11063` |
+
+The 14 other changed parts all passed singly. A complementary 95-part candidate
+using uniform rounding for those 14 changed-safe parts while preserving the
+previous passing coordinate context for `B-25 R2` and `B-30` passed in a
+short-path copied-project gate:
+
+| Field | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_wround6_all20_except_b25_b30_cleaned_b49\symbols` |
+| short-path RPD | `C:\Tools\radan_automation\_sym_lab\urx95\F54410 PAINT PACK.urx95.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.656s` |
+| part rows | `95` |
+| sheet rows | `8` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+
+The first complementary run used a long lab path and returned `11088`; the
+short-path rerun passed, so that `11088` is treated as path-length-confounded.
+
+Conclusion: target source-coordinate rounding can be the default
+coordinate-model preprocessing rule for this blocker family except `B-25 R2`
+and `B-30`. Those two need raw/source-fraction coordinate context and remain
+the next compact-token/hidden-coordinate exceptions to crack.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
