@@ -2322,3 +2322,14 @@ deltas, `65590/72553` exact tokens (`0.904028778962`, far `0`), and hard-canary
 thumbnail parity `7/7`. Removing any one of those six retained rows hard-fails
 with `lay_run_nest(0)=11088`, `0` DRGs, and `0` made parts, so this branch has a
 strong local floor at six F12 row-3 tokens.
+
+The six-token stabilizer also showed why exact-token spelling cannot be chased
+blindly. Five retained rows (`43`, `110`, `130`, `132`, `156`) match the
+known-good token exactly, but retained row `129` deliberately uses the
+RADAN-save-derived/source spelling `g?WE\TjL@00` rather than the known-good
+token `g?WE\TjLD00`. Replacing all six retained F12 tokens from the known-good
+folder, or changing only row `129` to the known-good token, still lets RADAN
+nest the copied project but reintroduces the B-3/B-5 used-nest swap
+(`26/28` contained-symbol matches). Removing row `129` entirely hard-fails with
+`lay_run_nest(0)=11088`. In this context row `129` is both required and
+required with the non-oracle exact spelling.
