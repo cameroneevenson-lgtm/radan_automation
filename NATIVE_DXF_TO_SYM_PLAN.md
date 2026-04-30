@@ -2211,3 +2211,7 @@ F54410-B-12 `delta_y` subset that preserves raw full95 used-nest semantics,
 has `0` crack-relevant DRG layout-token deltas, and has `65640/72553` exact
 tokens. Omitting all five optional middle rows (`118`, `127`, `130`, `138`,
 `139`) failed hard with `lay_run_nest(0)=11088` and `0` DRGs.
+
+The `23`-patch F12 candidate also passed the hard-canary RADAN thumbnail gate:
+`7/7` candidate/known-good pairs were exact pixel matches at `900x700`,
+including `F54410-B-12`, and RADAN-family process cleanup was empty afterward.
