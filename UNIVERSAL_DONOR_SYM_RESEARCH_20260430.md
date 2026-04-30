@@ -1064,6 +1064,31 @@ The native writer now emits non-default D view/cache tokens with
 `encode_ddc_number(round(view_extent, 6))`. Baseline after the change passed
 `222` tests.
 
+Fresh generated 95-part promotion with boundary normalization, LINE/H
+continuation repair, float6 D records, and lab feature-pen remap still failed
+the copied-project 95 gate at `11063`:
+
+| Metric | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_boundary_line_h_delta_zero_drec95\symbols` |
+| RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_95_donor_lhzero_drec_pen\F54410 PAINT PACK.donor95_lhzero_drec_pen.rpd` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `11063` |
+| DRGs | `0` |
+| RADAN process cleanup | preflight empty, final empty |
+
+Short-path singleton isolation over the current hard canaries and prior blocker
+map confirmed the D repair eliminated the whole `11036` class:
+
+| Result | Parts |
+| --- | --- |
+| pass | `B-37`, `B-38`, `B-50`, `F54410-B-01`, `F54410-B-10`, `F54410-B-29`, `F54410-B-31` |
+| `11063` | `B-14`, `B-15`, `B-17`, `B-184`, `B-193`, `B-194`, `B-195`, `B-25 R2`, `B-27`, `B-28`, `B-30`, `B-52`, `B-52-R2`, `F54410-B-02`, `F54410-B-03`, `F54410-B-07`, `F54410-B-12`, `F54410-B-32`, `F54410-B-47`, `F54410-B-49` |
+
+The remaining generated-symbol blocker is therefore the `11063` compact
+geometry-token/row-shape family, not D view/cache generation for these parts.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
