@@ -1432,6 +1432,62 @@ source-rounded and target-rounded context both fail. That points to a per-row
 or per-slot compact-token/hidden-coordinate rule rather than a broad
 6-decimal-normalization rule.
 
+## B-30 Arc Center-Delta-Y Crack
+
+The B-30 source-rounding blocker was reduced to one generated slot rule.
+
+Artifacts:
+
+- token diff: `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\b30_context_variant_token_diff.json`
+- ddmin summary: `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\b30_arc_center_delta_y_ddmin_summary.json`
+- writer singleton: `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_b30_source_round_preserve_raw_arc_y_writer\result.json`
+
+Key isolation:
+
+| Variant | `lay_run_nest(0)` |
+| --- | ---: |
+| source-rounded B-30 baseline | `11063` |
+| row 10 replaced from exported target | `0` |
+| row 10 slots 1+5 from exported target | `0` |
+| row 10 slot 1 only from exported target | `11063` |
+| row 10 slot 5 only from exported target | `0` |
+| row 10 slot 5 only from raw W-source prediction | `0` |
+
+Row 10 is an `H` / `ARC` record. Slot 5 is `center_delta_y`.
+The failing source-rounded token decodes to exactly `0.025115`; passing raw
+and exported variants preserve a slightly lower hidden coordinate:
+
+| Source | Token | Decoded value |
+| --- | --- | ---: |
+| source-rounded fail | `i?9]klNSV2` | `0.025115` |
+| raw W-source pass | `i?9]jec@ib=` | `0.025114736709749997` |
+| exported-target pass | `i?9]jfm2jaF` | `0.025114741004398` |
+
+`write_coordinate_model_sym_prototype.py` now has a lab-only option:
+`--preserve-raw-noncardinal-arc-center-delta-y`. With `source_coordinate_digits=6`,
+that option regenerates the same passing B-30 slot from the raw W-source DXF
+without same-part oracle token text.
+
+Promoted 95-part candidate:
+
+| Field | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_rule_refined_b25_targetround_b30_source_round_raw_arcy_b49clean\symbols` |
+| short-path RPD | `C:\Tools\radan_automation\_sym_lab\rawarc95b\F54410 PAINT PACK.rawarc95b.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.947s` |
+| part rows | `95` |
+| sheet rows | `8` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+
+Conclusion: `B-30` no longer needs whole-part raw coordinate context. The
+remaining rule is narrower: preserve raw hidden `center_delta_y` for at least
+this non-cardinal arc case after source-coordinate rounding. This remains
+lab-only until broader non-cardinal arc coverage is tested.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`

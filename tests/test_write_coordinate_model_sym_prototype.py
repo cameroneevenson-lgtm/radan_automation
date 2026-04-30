@@ -12,6 +12,7 @@ from write_coordinate_model_sym_prototype import (
     _coordinate_point_observations_for_pair,
     _build_context_coordinate_lookup,
     _build_same_part_coordinate_lookup,
+    _raw_noncardinal_arc_center_delta_y_preserve_slot,
     _replace_template_geometry,
     choose_token_for_fraction,
     predict_geometry_tokens,
@@ -68,6 +69,20 @@ class WriteCoordinateModelSymPrototypeTests(unittest.TestCase):
                 Bounds(0.0, 0.0, 0.0, 0.0),
                 topology_snap_endpoints=True,
             )
+
+    def test_raw_noncardinal_arc_preserve_rule_targets_center_delta_y_only(self) -> None:
+        self.assertEqual(
+            _raw_noncardinal_arc_center_delta_y_preserve_slot(
+                {"type": "ARC", "start_angle": 10.0, "end_angle": 80.0}
+            ),
+            5,
+        )
+        self.assertIsNone(
+            _raw_noncardinal_arc_center_delta_y_preserve_slot(
+                {"type": "ARC", "start_angle": 0.0, "end_angle": 90.0}
+            )
+        )
+        self.assertIsNone(_raw_noncardinal_arc_center_delta_y_preserve_slot({"type": "LINE"}))
 
     def test_choose_token_excludes_same_part_by_default(self) -> None:
         token_a = encode_ddc_number_fraction(Fraction(1, 4), min_continuation_digits=2)

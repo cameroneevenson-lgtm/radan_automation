@@ -214,6 +214,14 @@ def _rows_with_rounded_normalized_coordinates(
     return rounded_rows
 
 
+def _raw_noncardinal_arc_center_delta_y_preserve_slot(dxf_row: dict[str, Any]) -> int | None:
+    if str(dxf_row.get("type", "")) != "ARC":
+        return None
+    if _arc_has_cardinal_endpoints(dxf_row):
+        return None
+    return 5
+
+
 def _token_observations(pairs: list[PartPair]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for pair in pairs:
@@ -1278,12 +1286,13 @@ def write_coordinate_model_prototype(
     source_coordinate_digits: int | None = None,
     source_coordinate_entity_types: set[str] | None = None,
     topology_snap_endpoints: bool = False,
+    preserve_raw_noncardinal_arc_center_delta_y: bool = False,
     allow_outside_lab: bool = False,
 ) -> dict[str, Any]:
     _ensure_lab_output(out_path, allow_outside_lab=allow_outside_lab)
-    dxf_rows, bounds = read_dxf_entities(dxf_path)
+    raw_dxf_rows, bounds = read_dxf_entities(dxf_path)
     dxf_rows = _preprocess_coordinate_model_dxf_rows(
-        dxf_rows,
+        raw_dxf_rows,
         bounds,
         target_coordinate_digits=target_coordinate_digits,
         source_coordinate_digits=source_coordinate_digits,
@@ -1321,6 +1330,40 @@ def write_coordinate_model_prototype(
             radan_save_token_model=radan_save_token_model,
             radan_save_token_model_mode=radan_save_token_model_mode,
         )
+        raw_preserved_slot = None
+        if preserve_raw_noncardinal_arc_center_delta_y:
+            raw_preserved_slot = _raw_noncardinal_arc_center_delta_y_preserve_slot(raw_dxf_rows[row_index - 1])
+        if raw_preserved_slot is not None and raw_preserved_slot < len(tokens):
+            raw_tokens, raw_slot_reports = predict_geometry_tokens(
+                target_part=part,
+                dxf_row=raw_dxf_rows[row_index - 1],
+                dxf_rows=raw_dxf_rows,
+                row_index=row_index - 1,
+                template_ddc_row=ddc_row,
+                model=model,
+                coordinate_resolver=coordinate_resolver,
+                fallback_continuation=fallback_continuation,
+                allow_same_part_coordinate_fallback=bool(allow_same_part_coordinate_fallback),
+                allow_same_part_token_spelling=bool(allow_same_part_token_spelling),
+                prefer_literal_geometry=bool(prefer_literal_geometry),
+                use_slot_value_fractions=bool(use_slot_value_fractions),
+                radan_save_token_model=radan_save_token_model,
+                radan_save_token_model_mode=radan_save_token_model_mode,
+            )
+            if raw_preserved_slot < len(raw_tokens):
+                previous_token = tokens[raw_preserved_slot]
+                tokens[raw_preserved_slot] = raw_tokens[raw_preserved_slot]
+                if raw_preserved_slot < len(slot_reports):
+                    slot_reports[raw_preserved_slot]["token"] = raw_tokens[raw_preserved_slot]
+                    slot_reports[raw_preserved_slot]["raw_preserve_previous_token"] = previous_token
+                    slot_reports[raw_preserved_slot]["raw_preserve_source_token"] = raw_tokens[raw_preserved_slot]
+                    slot_reports[raw_preserved_slot][
+                        "raw_preserve_rule"
+                    ] = "raw_noncardinal_arc_center_delta_y"
+                    if raw_preserved_slot < len(raw_slot_reports):
+                        slot_reports[raw_preserved_slot]["raw_preserve_slot_report"] = raw_slot_reports[
+                            raw_preserved_slot
+                        ]
         generated_geometry_data.append(".".join(tokens))
         comparison = _compare_tokens(tokens, list(ddc_row.get("tokens") or []))
         exact_records += int(tokens == list(ddc_row.get("tokens") or []))
@@ -1371,6 +1414,7 @@ def write_coordinate_model_prototype(
             None if source_coordinate_entity_types is None else sorted(source_coordinate_entity_types)
         ),
         "topology_snap_endpoints": topology_snap_endpoints,
+        "preserve_raw_noncardinal_arc_center_delta_y": preserve_raw_noncardinal_arc_center_delta_y,
         "radan_save_token_model_mode": radan_save_token_model_mode,
         "radan_save_token_canonicalized_slots": sum(
             1
@@ -1470,6 +1514,14 @@ def main() -> int:
         help="Lab option: cluster shared line/arc endpoints before coordinate-model prediction. Requires --source-coordinate-digits.",
     )
     parser.add_argument(
+        "--preserve-raw-noncardinal-arc-center-delta-y",
+        action="store_true",
+        help=(
+            "Lab option: after coordinate preprocessing, keep raw DXF token prediction for non-cardinal ARC "
+            "center_delta_y slots. This probes B-30-style hidden arc coordinate context."
+        ),
+    )
+    parser.add_argument(
         "--radan-save-token-model-mode",
         choices=(
             "off",
@@ -1551,6 +1603,9 @@ def main() -> int:
                     None if args.source_coordinate_entity_type is None else set(args.source_coordinate_entity_type)
                 ),
                 topology_snap_endpoints=bool(args.topology_snap_endpoints),
+                preserve_raw_noncardinal_arc_center_delta_y=bool(
+                    args.preserve_raw_noncardinal_arc_center_delta_y
+                ),
                 allow_outside_lab=bool(args.allow_outside_lab),
             )
         except Exception as exc:
@@ -1578,6 +1633,7 @@ def main() -> int:
         "source_coordinate_digits": args.source_coordinate_digits,
         "source_coordinate_entity_types": args.source_coordinate_entity_type,
         "topology_snap_endpoints": bool(args.topology_snap_endpoints),
+        "preserve_raw_noncardinal_arc_center_delta_y": bool(args.preserve_raw_noncardinal_arc_center_delta_y),
         "radan_save_token_model_mode": str(args.radan_save_token_model_mode),
         "radan_save_token_model_summary": None
         if radan_save_model is None
