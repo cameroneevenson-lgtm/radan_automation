@@ -2323,13 +2323,15 @@ thumbnail parity `7/7`. Removing any one of those six retained rows hard-fails
 with `lay_run_nest(0)=11088`, `0` DRGs, and `0` made parts, so this branch has a
 strong local floor at six F12 row-3 tokens.
 
-The six-token stabilizer also showed why exact-token spelling cannot be chased
-blindly. Five retained rows (`43`, `110`, `130`, `132`, `156`) match the
-known-good token exactly, but retained row `129` deliberately uses the
-RADAN-save-derived/source spelling `g?WE\TjL@00` rather than the known-good
-token `g?WE\TjLD00`. Replacing all six retained F12 tokens from the known-good
-folder, or changing only row `129` to the known-good token, still lets RADAN
-nest the copied project but reintroduces the B-3/B-5 used-nest swap
-(`26/28` contained-symbol matches). Removing row `129` entirely hard-fails with
-`lay_run_nest(0)=11088`. In this context row `129` is both required and
-required with the non-oracle exact spelling.
+Repeat runs showed the B-3/B-5 used-nest swap is not a simple candidate
+regression: the raw synthetic baseline itself repeated into the same alternate
+`26/28` tie state under a fresh copied-project label. The six-token candidate's
+short-label and long-label repeats matched that raw-repeat tie state exactly
+(`28/28` against the repeat baseline), while the original six-token run matched
+the original raw baseline. The same reclassification applies to exact-token
+row `129`: replacing all six retained F12 tokens from the known-good folder, or
+changing only row `129` from the source spelling `g?WE\TjL@00` to the known-good
+token `g?WE\TjLD00`, matches the raw-repeat tie state. Removing row `129`
+entirely still hard-fails with `lay_run_nest(0)=11088`, so row `129` is
+required, but its source-vs-known-good spelling appears to select between valid
+raw nester tie states rather than an accept/reject boundary.
