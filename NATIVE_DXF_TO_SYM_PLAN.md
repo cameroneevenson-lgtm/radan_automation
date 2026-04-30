@@ -2298,3 +2298,16 @@ contained-symbol matches, `0` layout-token deltas, `65595/72553` exact tokens,
 or `132` also preserves the nester oracle but lands one exact token lower at
 `65594/72553`. Pair drops among `76`, `109`, and `132` all fail with the
 standard `26/28` contained-symbol swap shape.
+
+Continuing from the pure-F12 branch revealed a much smaller stabilizer. The
+best branch reduced through passing drop sets `109+122`, `79+109+122`,
+`79+83+109+122`, `77+79+83+109+122`,
+`77+79+83+109+122+124`, and finally
+`43+59+77+79+83+109+122+124`. This leaves only seven F54410-B-12 `delta_y`
+token patches, at rows `76`, `110`, `123`, `129`, `130`, `132`, and `156`.
+That `7`-token pure-F12 candidate preserves raw full95 used-nest semantics with
+`28/28` contained-symbol matches, `0` layout-token deltas, `65591/72553` exact
+tokens (`0.904042561989`, far `0`), and hard-canary thumbnail parity `7/7`.
+Trying to remove any one of the seven remaining rows from this branch failed;
+six removals produced the standard `26/28` swap and removing row `132` produced
+the older `27`-DRG/`428`-made failure shape.
