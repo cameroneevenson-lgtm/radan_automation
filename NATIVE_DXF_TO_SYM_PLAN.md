@@ -2068,3 +2068,17 @@ The `F54410-B-21` pair is especially useful: each constituent token triggers
 alone, but together they cancel back to raw used-nest semantics. This disproves
 a simple additive one-token trigger model and reinforces that token spelling
 choices participate in part/global ordering state.
+
+Combination follow-up: raw plus the individually neutral `B-194` circle-pair
+tokens and the individually neutral `F54410-B-21` row `12`+`14` pair did not
+compose. The combined candidate still passed the full95 count envelope, but
+reproduced the nests `27`/`28` swap. Exact token rate versus known-good improved
+only slightly over raw (`0.9039598638236875`, far mismatches `0`) and is not an
+operational improvement.
+
+Adding the nine highest-count broader context parts to that combined candidate
+still swapped. Adding the lower-count complement parts still swapped. The
+previous broader `B194_circle_pair_context_only` candidate, which includes the
+full context set, still matches raw used-nest semantics. Therefore cancellation
+requires cross-group token interactions; neither high-count nor low-count
+context groups are sufficient alone.
