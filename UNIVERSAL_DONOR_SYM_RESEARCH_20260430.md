@@ -1120,6 +1120,33 @@ does not finish the donor-native crack, because 20 parts still need the
 coordinate-model hidden-coordinate/token rules rather than the simpler donor
 writer, but it gives a clean target for the next reduction.
 
+A narrower hybrid then kept the donor wrapper, D records, row order, row fields,
+and trailing row spelling for 19 of the 20 replacements. Only field 10 was
+copied from the raw coordinate-model generated symbols for those parts. The one
+exception was `F54410-B-49`, where the coordinate-model/source-shaped symbol has
+20 geometry rows and the donor writer still emits 28 rows.
+
+| Metric | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\hybrid_donor_coord_field10_19_f49_full\symbols` |
+| manifest | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\hybrid_donor_coord_field10_19_f49_full\hybrid_manifest.json` |
+| same-part oracle text used | no |
+| RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_95_hybrid_coord_field10_19_f49_full\F54410 PAINT PACK.coordf10_19_f49.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.812s` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+
+This proves the donor wrapper/row fields are sufficient for the 19
+row-count-matching blockers once field 10 comes from the generated
+coordinate-model rules. The remaining donor-native gap is now specifically:
+
+- generate the coordinate-model field-10 choices inside the donor/native path
+- generate the `F54410-B-49` 20-row collapse/cleanup shape without same-part
+  oracle row text
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
