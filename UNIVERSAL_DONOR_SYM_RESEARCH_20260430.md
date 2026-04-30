@@ -1488,6 +1488,67 @@ remaining rule is narrower: preserve raw hidden `center_delta_y` for at least
 this non-cardinal arc case after source-coordinate rounding. This remains
 lab-only until broader non-cardinal arc coverage is tested.
 
+## B-25 R2 Arc Start-Y Crack
+
+`B-25 R2` was reduced from whole-part target-normalized coordinate context to
+a narrow non-cardinal arc start-coordinate spelling rule.
+
+Artifacts:
+
+- token diff: `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\b25_context_variant_token_diff.json`
+- ddmin summary: `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\b25_arc_start_y_ddmin_summary.json`
+- writer singleton: `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_b25_source_round_target_arc_start_y_writer\result.json`
+
+Key isolation:
+
+| Variant | `lay_run_nest(0)` |
+| --- | ---: |
+| source-rounded B-25 R2 baseline | `11063` |
+| all 16 target-rounded spelling deltas | `0` |
+| H-row spelling deltas only | `0` |
+| G-row spelling deltas only | `11063` |
+| H rows 6+7 only | `0` |
+| H row 6 only | `11063` |
+| H row 7 only | `11063` |
+| H rows 6+7 slot 1 only | `0` |
+
+Rows 6 and 7 are `H` / `ARC` records. Slot 1 is `start_y`.
+The relevant source-rounded token and target-normalized token decode within
+about `5e-16`, so this is a compact-token spelling/continuation issue rather
+than a visible geometry issue:
+
+| Source | Token | Decoded value |
+| --- | --- | ---: |
+| source-rounded fail | `l?0C1II1mT` | `0.1273219999999995` |
+| target-normalized pass | `l?0C1II1mTB` | `0.127322` |
+
+`write_coordinate_model_sym_prototype.py` now also has a lab-only option:
+`--prefer-target-rounded-noncardinal-arc-start-y`. With
+`source_coordinate_digits=6`, that option preserves target-normalized token
+prediction for non-cardinal `ARC` `start_y` slots. It changes row 1, row 6,
+and row 7 start-y spellings for `B-25 R2`; row 6 and row 7 are sufficient for
+the pass.
+
+Promoted 95-part candidate with both arc-context rules:
+
+| Field | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_rule_arc_context_b25_b30_b49clean\symbols` |
+| short-path RPD | `C:\Tools\radan_automation\_sym_lab\arcctx95\F54410 PAINT PACK.arcctx95.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.766s` |
+| part rows | `95` |
+| sheet rows | `8` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+
+Conclusion: the current best 95-part generated/cleaned candidate uses source
+rounding for both `B-25 R2` and `B-30`, plus two narrow non-cardinal arc
+context rules. `B-25 R2` no longer needs whole-part target-rounded context, and
+`B-30` no longer needs whole-part raw context.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`

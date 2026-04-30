@@ -13,6 +13,7 @@ from write_coordinate_model_sym_prototype import (
     _build_context_coordinate_lookup,
     _build_same_part_coordinate_lookup,
     _raw_noncardinal_arc_center_delta_y_preserve_slot,
+    _target_rounded_noncardinal_arc_start_y_preserve_slot,
     _replace_template_geometry,
     choose_token_for_fraction,
     predict_geometry_tokens,
@@ -83,6 +84,20 @@ class WriteCoordinateModelSymPrototypeTests(unittest.TestCase):
             )
         )
         self.assertIsNone(_raw_noncardinal_arc_center_delta_y_preserve_slot({"type": "LINE"}))
+
+    def test_target_rounded_noncardinal_arc_preserve_rule_targets_start_y_only(self) -> None:
+        self.assertEqual(
+            _target_rounded_noncardinal_arc_start_y_preserve_slot(
+                {"type": "ARC", "start_angle": 12.5, "end_angle": 88.0}
+            ),
+            1,
+        )
+        self.assertIsNone(
+            _target_rounded_noncardinal_arc_start_y_preserve_slot(
+                {"type": "ARC", "start_angle": 0.0, "end_angle": 180.0}
+            )
+        )
+        self.assertIsNone(_target_rounded_noncardinal_arc_start_y_preserve_slot({"type": "CIRCLE"}))
 
     def test_choose_token_excludes_same_part_by_default(self) -> None:
         token_a = encode_ddc_number_fraction(Fraction(1, 4), min_continuation_digits=2)
