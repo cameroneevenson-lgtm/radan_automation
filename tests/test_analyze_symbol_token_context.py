@@ -27,6 +27,27 @@ class AnalyzeSymbolTokenContextTests(unittest.TestCase):
         self.assertAlmostEqual(analyzer.slot_visible_value(row, 4), -0.062500000000001)
         self.assertEqual(analyzer.slot_visible_value(row, 5), 0.0)
 
+    def test_geometry_context_records_arc_deltas_and_center_deltas(self) -> None:
+        row = {
+            "type": "ARC",
+            "normalized_start_point": [1.0, 2.0],
+            "normalized_end_point": [4.5, 6.0],
+            "normalized_center": [3.0, 3.5],
+            "radius": 2.5,
+            "start_angle": 10.0,
+            "end_angle": 90.0,
+        }
+
+        context = analyzer._geometry_context(row)
+
+        self.assertEqual(context["radius"], 2.5)
+        self.assertEqual(context["dxf_delta_x"], 3.5)
+        self.assertEqual(context["dxf_delta_y"], 4.0)
+        self.assertEqual(context["dxf_center_delta_x"], 2.0)
+        self.assertEqual(context["dxf_center_delta_y"], 1.5)
+        self.assertEqual(context["arc_start_angle"], 10.0)
+        self.assertEqual(context["arc_end_angle"], 90.0)
+
     def test_focus_summary_groups_same_visible_value_and_role(self) -> None:
         rows = [
             {

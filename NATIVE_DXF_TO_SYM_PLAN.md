@@ -1965,3 +1965,30 @@ raw on its own. The full95 gate still passed the count envelope (`95` parts,
 comparison failed exactly like the other one-token triggers. This reinforces
 that exact-token deltas can interact and cancel; a token spelling that is
 locally closer to known-good is not automatically a better corpus state.
+
+### 2026-04-29 ARC Delta-X Trigger Cohort
+
+The context analyzer was extended to include line/arc/circle geometry context:
+normalized start/end/center, visible deltas, center deltas, radius, and arc
+angles. Raw-vs-context-unanimous mining for `ARC:delta_x` found six identical
+`4@7Tollog\K` -> `4@7Tollog\L` rows at visible delta
+`47.156226753946804`.
+
+One-token full95 nester outcomes for that exact token/value cohort:
+
+| Part row | Geometry | Used-nest match vs raw | Difference |
+| --- | --- | --- | --- |
+| `B-185` row `11` | `180.0` -> `323.198444`, `delta_y=-15.6874999464` | no | nests `27`/`28` swap |
+| `B-185` row `13` | `216.801556` -> `0.0`, `delta_y=+15.6874999464` | yes | none |
+| `B-186` row `22` | `180.0` -> `323.198444`, `delta_y=-15.6874999464` | no | nests `27`/`28` swap |
+| `B-186` row `24` | `216.801556` -> `0.0`, `delta_y=+15.6874999464` | no | nests `27`/`28` swap |
+| `F54410-B-21` row `12` | `180.0` -> `323.198444`, `delta_y=-15.6874999464` | no | nests `27`/`28` swap |
+| `F54410-B-21` row `14` | `216.801556` -> `0.0`, `delta_y=+15.6874999464` | no | nests `27`/`28` swap |
+
+The B-185 row `13` neutral result is now the exception, not the rule. B-185
+row `13` and F54410-B-21 row `14` have matching visible arc geometry, but only
+F54410-B-21 row `14` perturbs the full95 nest. That rules out token text,
+visible delta, local LINE/ARC/LINE context, and visible arc geometry as complete
+explanations. The remaining signal is likely deeper row/corpus context, source
+float provenance, hidden per-symbol conversion state, or aggregate nester
+ordering sensitivity.

@@ -111,22 +111,76 @@ def slot_visible_value(dxf_row: dict[str, Any], slot: int) -> float | None:
     return None
 
 
-def _circle_context(dxf_row: dict[str, Any]) -> dict[str, Any]:
-    if str(dxf_row.get("type")) != "CIRCLE":
-        return {
-            "radius": None,
-            "normalized_center_x": None,
-            "normalized_center_y": None,
-            "circle_start_x": None,
-            "circle_start_y": None,
-        }
+def _geometry_context(dxf_row: dict[str, Any]) -> dict[str, Any]:
+    context = {
+        "radius": None,
+        "normalized_start_x": None,
+        "normalized_start_y": None,
+        "normalized_end_x": None,
+        "normalized_end_y": None,
+        "normalized_center_x": None,
+        "normalized_center_y": None,
+        "dxf_delta_x": None,
+        "dxf_delta_y": None,
+        "dxf_center_delta_x": None,
+        "dxf_center_delta_y": None,
+        "arc_start_angle": None,
+        "arc_end_angle": None,
+        "circle_start_x": None,
+        "circle_start_y": None,
+    }
+    entity_type = str(dxf_row.get("type"))
+    if entity_type == "LINE":
+        start_x, start_y = [float(value) for value in dxf_row["normalized_start"]]
+        end_x, end_y = [float(value) for value in dxf_row["normalized_end"]]
+        context.update(
+            {
+                "normalized_start_x": start_x,
+                "normalized_start_y": start_y,
+                "normalized_end_x": end_x,
+                "normalized_end_y": end_y,
+                "dxf_delta_x": end_x - start_x,
+                "dxf_delta_y": end_y - start_y,
+            }
+        )
+        return context
+    if entity_type == "ARC":
+        start_x, start_y = [float(value) for value in dxf_row["normalized_start_point"]]
+        end_x, end_y = [float(value) for value in dxf_row["normalized_end_point"]]
+        center_x, center_y = [float(value) for value in dxf_row["normalized_center"]]
+        context.update(
+            {
+                "radius": float(dxf_row["radius"]),
+                "normalized_start_x": start_x,
+                "normalized_start_y": start_y,
+                "normalized_end_x": end_x,
+                "normalized_end_y": end_y,
+                "normalized_center_x": center_x,
+                "normalized_center_y": center_y,
+                "dxf_delta_x": end_x - start_x,
+                "dxf_delta_y": end_y - start_y,
+                "dxf_center_delta_x": center_x - start_x,
+                "dxf_center_delta_y": center_y - start_y,
+                "arc_start_angle": float(dxf_row["start_angle"]),
+                "arc_end_angle": float(dxf_row["end_angle"]),
+            }
+        )
+        return context
+    if entity_type != "CIRCLE":
+        return context
     center_x, center_y = [float(value) for value in dxf_row["normalized_center"]]
     radius = float(dxf_row["radius"])
+    start_x = center_x + radius
     return {
+        **context,
         "radius": radius,
+        "normalized_start_x": start_x,
+        "normalized_start_y": center_y,
         "normalized_center_x": center_x,
         "normalized_center_y": center_y,
-        "circle_start_x": center_x + radius,
+        "dxf_center_delta_x": -radius,
+        "dxf_center_delta_y": 0.0,
+        "circle_start_x": start_x,
         "circle_start_y": center_y,
     }
 
@@ -183,7 +237,7 @@ def _context_row(
         "decoded_bucket": _decoded_bucket(decoded_abs_diff),
         "token_length_delta": len(oracle_token) - len(generated_token),
     }
-    row.update(_circle_context(dxf_row))
+    row.update(_geometry_context(dxf_row))
     return row
 
 
@@ -278,8 +332,18 @@ def _example(row: dict[str, Any]) -> dict[str, Any]:
         "next_dxf_type",
         "is_first_geometry",
         "radius",
+        "normalized_start_x",
+        "normalized_start_y",
+        "normalized_end_x",
+        "normalized_end_y",
         "normalized_center_x",
         "normalized_center_y",
+        "dxf_delta_x",
+        "dxf_delta_y",
+        "dxf_center_delta_x",
+        "dxf_center_delta_y",
+        "arc_start_angle",
+        "arc_end_angle",
     ]
     return {key: row.get(key) for key in keys}
 
@@ -417,8 +481,18 @@ CSV_FIELDNAMES = [
     "decoded_bucket",
     "token_length_delta",
     "radius",
+    "normalized_start_x",
+    "normalized_start_y",
+    "normalized_end_x",
+    "normalized_end_y",
     "normalized_center_x",
     "normalized_center_y",
+    "dxf_delta_x",
+    "dxf_delta_y",
+    "dxf_center_delta_x",
+    "dxf_center_delta_y",
+    "arc_start_angle",
+    "arc_end_angle",
     "circle_start_x",
     "circle_start_y",
 ]
