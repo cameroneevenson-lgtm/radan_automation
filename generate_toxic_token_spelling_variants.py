@@ -101,6 +101,9 @@ BUILTIN_VARIANTS: dict[str, list[TokenShiftPatch]] = {
     "b38_append_zero_deltas": B38_APPEND_ZERO_DELTAS_VARIANT,
     "b38_source_like_delta_residuals": B38_SOURCE_LIKE_DELTA_RESIDUAL_VARIANT,
     "b38_source_like_residual_digits": B38_SOURCE_LIKE_RESIDUAL_VARIANT,
+    "f54410_rowcount_toxic_append_zero_deltas": (
+        B37_VARIANTS["b37_append_zero_deltas"] + B38_APPEND_ZERO_DELTAS_VARIANT
+    ),
 }
 
 
