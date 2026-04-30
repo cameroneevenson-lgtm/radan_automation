@@ -437,6 +437,23 @@ class WriteNativeSymPrototypeTests(unittest.TestCase):
         self.assertAlmostEqual(float(decode_ddc_number_fraction(tokens[9])), 1.0, places=6)
         self.assertAlmostEqual(float(decode_ddc_number_fraction(tokens[10])), 1.0, places=6)
 
+    def test_symbol_view_record_field_uses_radan_float6_spelling(self) -> None:
+        field = _symbol_view_record_field(
+            Bounds(
+                min_x=0.0,
+                min_y=-16.42421867667253,
+                max_x=80.68749999999999,
+                max_y=32.72343735334496,
+            ),
+            part_name="B-37",
+        )
+        tokens = field.split("$", 1)[0].split(".")
+
+        self.assertEqual(tokens[1], "6@>@P")
+        self.assertEqual(tokens[3], "6@5ICo:QLZ`")
+        self.assertEqual(tokens[5], "6@>@P")
+        self.assertEqual(tokens[7], "6@5ICo:QLZ`")
+
     def test_refresh_symbol_metadata_attrs_updates_filename_and_bounding_box(self) -> None:
         text = """<RadanCompoundDocument>
 <Attr num="110" name="File name" type="s" value="donor">

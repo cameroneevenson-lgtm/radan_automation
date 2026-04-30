@@ -127,7 +127,7 @@ def _symbol_view_extents(bounds: Bounds) -> tuple[Fraction, Fraction]:
 def _encode_view_extent(value: Fraction, *, default_value: Fraction, default_token: str) -> str:
     if abs(float(value - default_value)) <= 1e-12:
         return default_token
-    return encode_ddc_number_fraction(value, continuation_digits=8)
+    return encode_ddc_number(round(float(value), 6))
 
 
 def _symbol_view_record_field(bounds: Bounds, *, part_name: str) -> str:

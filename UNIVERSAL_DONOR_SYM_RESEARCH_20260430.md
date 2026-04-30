@@ -1037,6 +1037,33 @@ but the broad 95-part generated path still needs compact-token/D-record/cache
 work on the remaining singleton classes. The old hard-three minimal-token
 patches remain diagnostic and use same-part oracle-derived token text.
 
+## Generated D-Record Float6 Repair 2026-04-30
+
+The seven `11036` blockers from the generated 95-part donor-only candidate were
+retested with lab-generated D-record spelling variants. The old writer encoded
+the calculated view/cache extents as exact fractions. RADAN's accepted D records
+instead use compact numbers from six-decimal float view extents.
+
+Variant folder:
+`C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\d_record_variants\float6`
+
+Singleton copied-project gates all passed with this generated D-record spelling,
+without copying same-part oracle D text:
+
+| Part | Previous code | Float6 D-record result |
+| --- | --- | --- |
+| `B-37` | `11036` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `B-38` | `11036` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `B-50` | `11036` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `F54410-B-01` | `11036` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `F54410-B-10` | `11036` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `F54410-B-29` | `11036` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `F54410-B-31` | `11036` | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+The native writer now emits non-default D view/cache tokens with
+`encode_ddc_number(round(view_extent, 6))`. Baseline after the change passed
+`222` tests.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
