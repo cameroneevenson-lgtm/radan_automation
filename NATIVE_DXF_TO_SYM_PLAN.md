@@ -2252,3 +2252,9 @@ optional rows: `73`, `77`, `126`, `129`, `131`, `133`, and `140`. Rows `43`,
 `59`, `76`, `79`, `83`, `109`, `110`, `122`, `123`, `124`, `130`, `132`, and
 `156` remain load-bearing in this context. This opens a new F12(19) reduction
 layer on top of the current F15+F12(20) candidate.
+
+Pairwise testing among those seven rows found four passing two-row omissions:
+`73+131`, `77+140`, `126+133`, and `129+133`. All preserve raw full95 used-nest
+semantics and `0` layout-token deltas. The best exact-token pair candidates are
+`77+140` and `129+133`, each with `65600/72553` exact tokens
+(`0.9041666092373851`, far `0`) and `19` total token patches.
