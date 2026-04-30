@@ -1549,6 +1549,44 @@ rounding for both `B-25 R2` and `B-30`, plus two narrow non-cardinal arc
 context rules. `B-25 R2` no longer needs whole-part target-rounded context, and
 `B-30` no longer needs whole-part raw context.
 
+## Broad Arc-Context 20-Blocker Promotion
+
+The two non-cardinal ARC context rules were then applied uniformly to all 20
+coordinate-model blocker parts, still using W-source DXFs with source-coordinate
+rounding and the local cleaned W-source B-49 geometry. This keeps the rule
+part-agnostic within the current blocker family instead of special-casing only
+`B-25 R2` and `B-30`.
+
+Writer manifest:
+
+- folder: `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\coord20_source_round_arc_context_writer`
+- generated parts: `20`
+- raw non-cardinal `ARC` `center_delta_y` slots preserved: `6`
+- target-rounded non-cardinal `ARC` `start_y` slots preserved: `6`
+- affected parts: `B-25 R2`, `B-28`, `B-30`
+
+95-part copied-project gate:
+
+| Field | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_arc_context_all20_b49clean\symbols` |
+| short-path RPD | `C:\Tools\radan_automation\_sym_lab\arcctx20_95\F54410 PAINT PACK.arcctx20.rpd` |
+| same-part oracle text used | `no` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.765s` |
+| part rows | `95` |
+| sheet rows | `8` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+| process preflight/final counts | `0 / 0` |
+
+Conclusion: the arc-context rules are not just isolated B-25/B-30 rescues. They
+remain compatible when applied across the current 20-part coordinate blocker
+set, with B-28 gaining harmless decoded-close token-spelling changes and the
+95-part nester result unchanged.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
