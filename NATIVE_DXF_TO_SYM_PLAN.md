@@ -2374,3 +2374,31 @@ tie state. The gate keeps the primary baseline mismatch visible in
 `result.json["gate_comparison"]` instead of hiding it. Focused nester-gate and
 nest-artifact tests passed, and the full baseline after this harness update was
 `198` tests, `OK`.
+
+Live validation of that integrated gate used the short-label output:
+
+`C:\Tools\radan_automation\_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_q6cmp_0808`
+
+Candidate symbols:
+
+`C:\Tools\radan_automation\_sym_lab\overnight_crack_and_nest_validate_20260429_174834\writer_q15_noR59_76_77_79_83_109_122_123_124`
+
+The gate rewrote the copied project only under `_sym_lab`, excluded the three
+oversized known-good blockers, ran `prj_add_part + UpdateSheetsList +
+lay_run_nest(0)`, and produced:
+
+- `lay_run_nest(0) = 0`
+- part rows: `95`
+- sheet rows: `8`
+- nest rows: `42`
+- made/nonzero count: `431`
+- `NextNestNum = 43`
+- `.drg` count: `28`
+- RADAN process preflight: empty
+- RADAN process final cleanup: empty
+- report attempt: blocked with `Wrong mode for DevExpress reports`
+- integrated tie-aware comparison: accepted, matched `raw_original`
+
+The inspection RPD from this run is:
+
+`C:\Tools\radan_automation\_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_q6cmp_0808\F54410 PAINT PACK.q6cmp.rpd`
