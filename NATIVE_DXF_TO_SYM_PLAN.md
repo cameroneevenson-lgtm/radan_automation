@@ -1929,3 +1929,26 @@ Interpretation:
 - some token effects are additive/interacting across independent parts
 - raw synthetic remains the simpler operational benchmark, while targeted
   exact-token variants need a semantic guard before they are considered better
+
+### 2026-04-29 B-185 Circle Center-Delta Context Mining
+
+`analyze_symbol_token_context.py` now records generated-vs-oracle token spelling
+with local DXF row context. The first use focused on the B-185 row `1`
+`CIRCLE:center_delta_x` cancellation token:
+
+- generated/raw token: `k?P`
+- known-good token: `k?P000000P0`
+- decoded absolute delta: about `2.842e-14`
+- role/value cohort: `138` `CIRCLE:center_delta_x` rows with visible value
+  `-0.062500000000000`
+- oracle spelling split in that cohort: `137` keep `k?P`; only B-185 row `1`
+  uses `k?P000000P0`
+- four other first-geometry circle rows in the same visible-value cohort keep
+  `k?P`
+
+This disproves a simple radius, dyadic value, or first-geometry-row rule for
+that long continuation spelling. The spelling choice may depend on more subtle
+source float provenance, local geometry ordering, original RADAN conversion
+state, or downstream nester/cache behavior. Do not teach the writer to emit
+`k?P000000P0` for all `-1/16` circle center-delta-X slots from this evidence
+alone.
