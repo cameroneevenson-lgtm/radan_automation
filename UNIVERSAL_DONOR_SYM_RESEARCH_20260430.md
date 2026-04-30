@@ -116,6 +116,67 @@ Combined proof metrics:
 
 Interpretation: these are still diagnostic token-patch variants, because the exact accepted token strings were copied from per-part RADAN oracle symbols during isolation. The crack has narrowed from whole-symbol uncertainty to a small set of compact-number spelling choices. The next real writer step is to derive those final-token/continuation choices from DXF-visible values and corpus rules without same-part oracle tokens.
 
+## Hard7 Follow-Up 2026-04-30
+
+Lab root:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128`
+
+A fresh 95-part universal-donor corpus was generated offline under:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\proven95_generate`
+
+Generation result:
+
+| Metric | Value |
+| --- | --- |
+| generated symbols | `95` |
+| excluded oversized known-good nester blockers | `F54410-B-09`, `F54410-B-11`, `F54410-B-17` |
+| template source | `universal_donor` |
+| RADAN conversion used | no |
+
+A simple leave-one-part-out before-token predictability check was run against the required hard-singleton token slots. Slot-aware before-token evidence predicted only `3/20` required repairs; most required repairs had no matching training token outside the target part. This argues for a numeric/token-continuation rule rather than a sparse lookup table.
+
+The 95-symbol folder with the three minimal hard-singleton fixes swapped in is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_hard3_min`
+
+Hard7 copied-project nester result with that folder:
+
+| Candidate | Result |
+| --- | --- |
+| B-14 minimal token fix | single-part pass |
+| B-17 minimal token fix | single-part pass |
+| F54410-B-49 cleaned minimal token fix | single-part pass |
+| F54410-B-27 raw donor | single-part pass |
+| B-27 raw donor | single-part fail, `11063` |
+| B-30 raw donor | single-part fail, `11063` |
+| F54410-B-12 raw donor | single-part fail, `11063` |
+| hard7 together with only hard3 fixed | fail, `11063`, 0 DRGs |
+
+For `B-27`, `B-30`, and `F54410-B-12`, donor and oracle row counts and type sequences match exactly:
+
+| Part | Rows | Finding |
+| --- | --- | --- |
+| B-27 | `181` | donor wrapper + all oracle geometry rows passes |
+| B-30 | `80` | donor wrapper + all oracle geometry rows passes |
+| F54410-B-12 | `194` | donor wrapper + all oracle geometry rows passes |
+
+Chunk-exclusion isolation with 16-row chunks still failed for every chunk on all three parts. Unlike B-14/B-17/B-49, these large canaries do not reduce to a tiny poison-row set; they appear to need broad exact compact-number spelling across many rows.
+
+The hard7 diagnostic folder with `B-27`, `B-30`, and `F54410-B-12` replaced by full oracle-row variants is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_hard7_oracle_rows`
+
+Its copied-project nester proof passed:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_hard7_oracle_rows\F54410 PAINT PACK.hard7_oracle_rows.rpd` |
+| part rows | `7` |
+| sheet rows after refresh | `5` |
+| `lay_run_nest(0)` | `0` |
+| DRG count | `2` |
+| nest rows | `16` |
+| made/nonzero count | `28` |
+| `NextNestNum` | `17` |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
