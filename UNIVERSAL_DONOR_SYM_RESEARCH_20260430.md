@@ -1089,6 +1089,37 @@ map confirmed the D repair eliminated the whole `11036` class:
 The remaining generated-symbol blocker is therefore the `11063` compact
 geometry-token/row-shape family, not D view/cache generation for these parts.
 
+## Donor Plus Coordinate-Model Generated Upper Bound 2026-04-30
+
+The prior raw coordinate-model synthetic corpus from 2026-04-29 was confirmed
+as a generated reference: it had already passed the 95-part copied-project
+nester gate before RADAN save, without the three known setup blockers. A hybrid
+candidate was built from the current donor D-float6 folder by replacing only the
+20 remaining `11063` blockers with those raw coordinate-model generated symbols.
+
+| Metric | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\hybrid_donor_drec_plus_coord20\symbols` |
+| coordinate-model source | `C:\Tools\radan_automation\_sym_lab\radan_save_validate_line_repair_zero_arc_start_full98_20260429_151926\before` |
+| manifest | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\hybrid_donor_drec_plus_coord20\hybrid_manifest.json` |
+| replaced parts | 20 current `11063` blockers |
+| same-part oracle text used | no |
+| RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_95_hybrid_donor_drec_coord20\F54410 PAINT PACK.hybrid_coord20.rpd` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `56.058s` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+| RADAN process cleanup | preflight empty, final empty |
+
+This is the best same-part-oracle-free generated upper bound from the run. It
+does not finish the donor-native crack, because 20 parts still need the
+coordinate-model hidden-coordinate/token rules rather than the simpler donor
+writer, but it gives a clean target for the next reduction.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
