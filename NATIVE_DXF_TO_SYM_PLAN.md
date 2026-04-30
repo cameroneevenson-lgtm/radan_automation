@@ -2266,3 +2266,11 @@ deltas, and `18` total token patches. Adding any of `73`, `126`, `131`, or
 `133` to that best triple fails with the standard `26/28` contained-symbol
 summary shape. The `18`-patch `77+129+140` candidate passed hard-canary
 thumbnail parity `7/7` at `900x700`.
+
+Additional fourth/fifth-row testing found a smaller passing branch:
+`73+126+131+133` and `73+126+129+133` both pass as `17`-patch candidates, and
+`73+126+131+133+140` passes as a `16`-patch candidate. That `16`-patch candidate
+preserves raw full95 used-nest semantics, has `0` layout-token deltas,
+`65596/72553` exact tokens (`0.9041114771270657`, far `0`), and passes
+hard-canary thumbnails `7/7`. Adding `77`, `129`, or both to the `16`-patch
+candidate hard-fails with `lay_run_nest(0)=11088` and `0` DRGs.
