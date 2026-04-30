@@ -70,6 +70,52 @@ The B-14 token fraction analysis showed that the oracle and donor-rotated symbol
 
 The oracle-fraction re-encoding diagnostic used the donor-generated wrapper and oracle decoded fractions, but did not copy oracle token text. Our encoder reproduced `244/272` slots exactly (`89.7%`) and stripped trailing zero continuation digits from 28 non-empty tokens, for example `n?=5R[T\1R0 -> n?=5R[T\1R`. RADAN still returned `11063`. The earlier donor-wrapper plus exact oracle DDC text passed. This is strong evidence that RADAN nesting is sensitive to exact compact-number token spelling, including otherwise decoded-equivalent trailing continuation zeroes.
 
+## Hard Singleton Isolation 2026-04-30
+
+Lab root:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_hard_singleton_row_isolation_20260430_1044`
+
+The copied-project nester gate now preserves pre-existing RADAN/RADRAFT PIDs during cleanup unless `--kill-existing-radan` is explicitly used. The hard-singleton run preserved visible preflight PID `17512` (`P3 F55985 SPEEDLAY ... Nest Editor`) and cleaned up only automation-owned hidden instances.
+
+The three donor-only hard singletons are now localized to small exact-token sets:
+
+| Part | Required setup | Required exact oracle-token slots | Minimal nester result |
+| --- | --- | --- | --- |
+| B-14 | universal donor, connected line order, lowest-Y/rightmost rotation | `B-14:3:2`, `B-14:7:2`, `B-14:11:2`, `B-14:12:2`, `B-14:14:2`, `B-14:15:2` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-17 | universal donor hard7 writer output | `B-17:1:2`, `B-17:1:3`, `B-17:1:4`, `B-17:2:2`, `B-17:3:2`, `B-17:4:2`, `B-17:6:3`, `B-17:6:5` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| F54410-B-49 | universal donor from cleaned DXF, tolerance `0.002`, 28 input line vertices simplified to 20 | `F54410-B-49:7:2`, `F54410-B-49:10:3`, `F54410-B-49:13:2`, `F54410-B-49:14:2`, `F54410-B-49:16:2`, `F54410-B-49:17:2` | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+The B-49 cleaned-DXF report is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_hard_singleton_row_isolation_20260430_1044\b49_cleaned_source\clean_report.json`
+
+Its simplification removed 8 micro-jog vertices with `max_removed_local_deviation=0.0017680232690313101`, producing 20 line entities. A cleaned donor-only B-49 with decoded geometry passing still failed nesting until the six exact token slots above were restored.
+
+Inspectable minimal singleton RPDs:
+
+| Candidate | RPD |
+| --- | --- |
+| B-14 minimal token patch | `C:\Tools\radan_automation\_sym_lab\universal_donor_hard_singleton_row_isolation_20260430_1044\nester_b14_min_required_tokens\F54410 PAINT PACK.b14_min_tok.rpd` |
+| B-17 minimal token patch | `C:\Tools\radan_automation\_sym_lab\universal_donor_hard_singleton_row_isolation_20260430_1044\nester_b17_min_required_tokens\F54410 PAINT PACK.b17_min_tok.rpd` |
+| F54410-B-49 cleaned minimal token patch | `C:\Tools\radan_automation\_sym_lab\universal_donor_hard_singleton_row_isolation_20260430_1044\nester_b49_cleaned_min_required_tokens\F54410 PAINT PACK.b49_min_tok.rpd` |
+| combined hard-three proof | `C:\Tools\radan_automation\_sym_lab\universal_donor_hard_singleton_row_isolation_20260430_1044\nester_hard3_min_required_tokens\F54410 PAINT PACK.hard3_min_tok.rpd` |
+
+The combined hard-three proof used:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_hard_singleton_row_isolation_20260430_1044\hard3_min_required_tokens_symbols`
+
+Combined proof metrics:
+
+| Metric | Value |
+| --- | --- |
+| part rows | `3` |
+| sheet rows after refresh | `5` |
+| `lay_run_nest(0)` | `0` |
+| DRG count | `2` |
+| nest rows | `16` |
+| made/nonzero count | `12` |
+| `NextNestNum` | `17` |
+
+Interpretation: these are still diagnostic token-patch variants, because the exact accepted token strings were copied from per-part RADAN oracle symbols during isolation. The crack has narrowed from whole-symbol uncertainty to a small set of compact-number spelling choices. The next real writer step is to derive those final-token/continuation choices from DXF-visible values and corpus rules without same-part oracle tokens.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
