@@ -2274,3 +2274,7 @@ preserves raw full95 used-nest semantics, has `0` layout-token deltas,
 `65596/72553` exact tokens (`0.9041114771270657`, far `0`), and passes
 hard-canary thumbnails `7/7`. Adding `77`, `129`, or both to the `16`-patch
 candidate hard-fails with `lay_run_nest(0)=11088` and `0` DRGs.
+
+The full Python baseline after documenting the reduced branch passed:
+`C:\Tools\.venv\Scripts\python.exe -m unittest discover -v` ran `196` tests in
+`2.733s` with `OK`.
