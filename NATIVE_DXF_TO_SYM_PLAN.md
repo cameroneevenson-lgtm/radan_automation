@@ -2082,3 +2082,23 @@ previous broader `B194_circle_pair_context_only` candidate, which includes the
 full context set, still matches raw used-nest semantics. Therefore cancellation
 requires cross-group token interactions; neither high-count nor low-count
 context groups are sufficient alone.
+
+Further split narrowed a smaller passing candidate. With the raw+B194/F21 base,
+`top9 + lowB` restores raw semantics, while `top9 + lowA` does not. Splitting
+`lowB` showed `top9 + lowB2` restores raw semantics and `top9 + lowB1` does
+not. Pair probes inside `lowB2` all failed, but leave-one-out showed:
+
+| Variant | Used-nest match vs raw |
+| --- | --- |
+| top9 + `F54410-B-32` + `F54410-B-19` + `F54410-B-18` (no `F54410-B-15`) | no |
+| top9 + `F54410-B-15` + `F54410-B-19` + `F54410-B-18` (no `F54410-B-32`) | no |
+| top9 + `F54410-B-15` + `F54410-B-32` + `F54410-B-18` (no `F54410-B-19`) | yes |
+| top9 + `F54410-B-15` + `F54410-B-32` + `F54410-B-19` (no `F54410-B-18`) | yes |
+
+The current smaller passing candidate is raw + `B-194` circle-pair +
+`F54410-B-21` pair + top9 + `F54410-B-15` + `F54410-B-32` +
+`F54410-B-18`. It passed full95 copied-project nesting with raw used-nest
+semantics, `28` DRGs, `431` made/nonzero, no final RADAN processes, and hard
+canary thumbnails `7/7` exact. Token exact rate versus known-good is
+`0.9099830468760768` (`66022/72553`, far mismatches `0`). The top9 side remains
+unminimized.
