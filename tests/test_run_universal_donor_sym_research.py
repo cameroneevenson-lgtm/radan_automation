@@ -35,6 +35,14 @@ def _write_blank_donor(path: Path) -> None:
   </Attr>
   <Attr num="166" name="Bounding box Y" type="r" value="0">
   </Attr>
+  <Attr num="119" name="Material" type="s" value="-">
+  </Attr>
+  <Attr num="120" name="Thickness" type="r" value="0.1">
+  </Attr>
+  <Attr num="121" name="Thickness units" type="s" value="mm">
+  </Attr>
+  <Attr num="146" name="Strategy" type="s" value="">
+  </Attr>
   <RadanFile extension="ddc">
     <![CDATA[A,2,
 B,D,>,,1,2,
@@ -125,12 +133,21 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
         self.assertEqual(payload["generated_count"], 1)
         self.assertEqual(payload["rows"][0]["template_source"], research.TEMPLATE_SOURCE)
         self.assertEqual(manifest["rows"][0]["template_source"], research.TEMPLATE_SOURCE)
+        self.assertTrue(payload["rows"][0]["bom_metadata"]["all_present"])
+        self.assertEqual(payload["rows"][0]["bom_metadata"]["requested"]["119"], "Aluminum 5052")
+        self.assertEqual(payload["rows"][0]["bom_metadata"]["requested"]["120"], "0.18")
+        self.assertEqual(payload["rows"][0]["bom_metadata"]["requested"]["121"], "in")
+        self.assertEqual(payload["rows"][0]["bom_metadata"]["requested"]["146"], "AIR")
         self.assertEqual(payload["rows"][0]["output_attr_110"], "Part A")
         self.assertFalse(payload["rows"][0]["retained_donor_attr_110"])
         self.assertEqual(payload["rows"][0]["entity_count"], 1)
         self.assertEqual(payload["rows"][0]["generated_geometry_records"], 1)
         self.assertIn("B,G,", generated_text)
         self.assertIn("G,,1,3,,1,,,1,,", generated_text)
+        self.assertIn('num="119" name="Material" type="s" value="Aluminum 5052"', generated_text)
+        self.assertIn('num="120" name="Thickness" type="r" value="0.18"', generated_text)
+        self.assertIn('num="121" name="Thickness units" type="s" value="in"', generated_text)
+        self.assertIn('num="146" name="Strategy" type="s" value="AIR"', generated_text)
         self.assertNotIn('value="donor"', generated_text)
 
     def test_ladder_rung_resolves_proven95_excludes(self) -> None:

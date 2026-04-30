@@ -110,6 +110,50 @@ def _attr_value(text: str, attr_num: str) -> str | None:
     return str(match.group(3))
 
 
+def _replace_attr_value(text: str, attr_num: str, value: str) -> tuple[str, bool]:
+    pattern = re.compile(ATTR_VALUE_RE_TEMPLATE.format(attr_num=re.escape(str(attr_num))), re.DOTALL)
+    changed = False
+
+    def replace(match: re.Match[str]) -> str:
+        nonlocal changed
+        changed = True
+        return f"{match.group(1)}{match.group(2)}{value}{match.group(4)}"
+
+    return pattern.sub(replace, text), changed
+
+
+def _format_thickness(value: float) -> str:
+    return f"{float(value):.9f}".rstrip("0").rstrip(".")
+
+
+def _write_symbol_text(path: Path, text: str) -> None:
+    _resolve_lab_path(path)
+    temp_path = path.with_name(f"{path.name}.tmp")
+    temp_path.write_text(text, encoding="utf-8")
+    temp_path.replace(path)
+
+
+def refresh_generated_symbol_bom_metadata(path: Path, part: Any) -> dict[str, Any]:
+    text = path.read_text(encoding="utf-8", errors="replace")
+    requested = {
+        "119": str(part.material),
+        "120": _format_thickness(float(part.thickness)),
+        "121": str(part.unit),
+        "146": str(part.strategy),
+    }
+    refreshed = text
+    updated: dict[str, bool] = {}
+    for attr_num, value in requested.items():
+        refreshed, updated[attr_num] = _replace_attr_value(refreshed, attr_num, value)
+    if refreshed != text:
+        _write_symbol_text(path, refreshed)
+    return {
+        "requested": requested,
+        "updated": updated,
+        "all_present": all(updated.values()),
+    }
+
+
 def _ddc_record_counts(text: str) -> dict[str, int]:
     match = DDC_RE.search(text)
     if match is None:
@@ -187,11 +231,13 @@ def generate_donor_symbol(*, part: Any, donor_sym: Path, symbol_dir: Path) -> di
             topology_snap_endpoints=True,
             canonicalize_endpoints=True,
         )
+        bom_metadata = refresh_generated_symbol_bom_metadata(out_path, part)
         validation = validate_native_sym(dxf_path=part.dxf_path, sym_path=out_path)
         facts = inspect_symbol(out_path)
         row.update(
             {
                 "write_ok": True,
+                "bom_metadata": bom_metadata,
                 "entity_count": payload["entity_count"],
                 "replaced_records": payload["replaced_records"],
                 "validation_passed": bool(validation["passed"]),
