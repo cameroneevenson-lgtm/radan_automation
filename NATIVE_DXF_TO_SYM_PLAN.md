@@ -2215,3 +2215,12 @@ tokens. Omitting all five optional middle rows (`118`, `127`, `130`, `138`,
 The `23`-patch F12 candidate also passed the hard-canary RADAN thumbnail gate:
 `7/7` candidate/known-good pairs were exact pixel matches at `900x700`,
 including `F54410-B-12`, and RADAN-family process cleanup was empty afterward.
+
+Rechecking the surrounding stabilizer after F12 reduction showed `F54410-B-16`
+is no longer required. Starting again from raw+B194/F21, `F54410-B-16` +
+F12(23) fails with the standard B-3/B-5 swap, F12(23) alone also fails, but
+`F54410-B-15` + F12(23) preserves raw full95 used-nest semantics. This reduces
+the current passing candidate to `24` total token patches: one `F54410-B-15`
+`delta_x` token plus the `23` F12 `delta_y` tokens. It has `0` crack-relevant
+layout-token deltas, `65602/72553` exact tokens (`0.9041941752925448`), far
+`0`, and `7/7` hard-canary thumbnail parity at `900x700`.
