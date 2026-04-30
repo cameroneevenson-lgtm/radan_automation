@@ -34,6 +34,9 @@ Copied-project nester results:
 | B-14 | donor-only with BOM attrs and connected line order | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | connected line order plus RADAN open/save | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | connected line order rotated to lowest-Y/rightmost start | fail, `lay_run_nest(0)=11063`, 0 DRGs |
+| B-14 | donor wrapper plus oracle DDC geometry lines | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-17 | donor wrapper plus oracle DDC geometry lines | pass, `lay_run_nest(0)=0`, 1 DRG |
+| F54410-B-49 | donor wrapper plus oracle full DDC block | pass, `lay_run_nest(0)=0`, 1 DRG |
 | B-10 | donor-only with BOM attrs and connected line order | pass, `lay_run_nest(0)=0`, 1 DRG |
 | B-14 | prior RADAN-saved synthetic baseline | pass, `lay_run_nest(0)=0`, 1 DRG |
 
@@ -61,6 +64,27 @@ Result: false. The line-ordering pass produced one connected B-14 chain and unor
 
 Result: false. A lab-only computed variant rotated the connected B-14 loop to the same lowest-Y/rightmost start point seen in the nesting-good saved synthetic B-14, updated row identifiers, and still returned `11063`.
 
+`Generic leave-one-out corpus token spelling is enough for B-14.`
+
+Result: false. A token-only variant preserved the donor geometry fractions and changed 8 token spellings using B-14-excluded corpus observations. Unordered geometry still matched the DXF, but the nester returned `11088`.
+
+`Donor wrapper/cache metadata is the hard blocker.`
+
+Result: false for the tested canaries. Donor-wrapper symbols nested successfully when their DDC geometry/block was replaced with oracle RADAN DDC:
+
+| Part | Diagnostic | Result |
+| --- | --- | --- |
+| B-14 | donor wrapper + oracle G lines, DDC raw equal to oracle | pass |
+| B-17 | donor wrapper + oracle G/H lines | pass |
+| F54410-B-49 | donor wrapper + oracle full DDC block, including RADAN row-count repair from 28 to 20 rows | pass |
+
+These are diagnostic upper bounds only, not candidate generated symbols, because they read per-part oracle DDC.
+
 ## Next Research Direction
 
-The remaining donor-only blocker appears to be in token spelling, row/cache semantics, wrapper metadata beyond the simple BOM attrs, or non-DDC sections. The strongest next comparison is failed donor-only B-14 versus the nesting-good RADAN-saved synthetic B-14, using the existing section/token analyzers and then targeted variants whose rules can be computed from donor + DXF/BOM rather than copied from per-part symbols.
+The remaining donor-only blocker is now localized to DDC geometry/block generation. The donor wrapper is acceptable. Next work should focus on deriving RADAN-exact DDC from DXF without per-part symbols:
+
+- exact token spelling/hidden-coordinate fractions for line and arc slots
+- RADAN row deletion/repair behavior for B-49 style micro-jog geometry
+- DDC row start/order/orientation rules only where they change the exact DDC block
+- corpus-learned rules that preserve DXF geometry and do not borrow same-part oracle rows
