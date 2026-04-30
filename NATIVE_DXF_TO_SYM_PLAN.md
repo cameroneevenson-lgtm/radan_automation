@@ -2278,3 +2278,14 @@ candidate hard-fails with `lay_run_nest(0)=11088` and `0` DRGs.
 The full Python baseline after documenting the reduced branch passed:
 `C:\Tools\.venv\Scripts\python.exe -m unittest discover -v` ran `196` tests in
 `2.733s` with `OK`.
+
+A follow-up boundary sweep showed the `16`-patch candidate was not minimal.
+Removing the single F15 token entirely still preserved raw full95 used-nest
+semantics, giving a pure F54410-B-12 `15`-token branch with `28/28`
+contained-symbol matches, `0` layout-token deltas, `65595/72553` exact tokens,
+and hard-canary thumbnail parity `7/7`. Removing one remaining F12 row while
+keeping F15 also produced five passing `15`-token branches: no-row `77`, `122`,
+`129`, `130`, and `132`; each preserved raw used-nest semantics with `28/28`
+contained-symbol matches, `0` layout-token deltas, `65596/72553` exact tokens,
+and no far decoded mismatches. The no-row `77` branch also passed hard-canary
+thumbnail parity `7/7`.
