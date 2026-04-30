@@ -2258,3 +2258,11 @@ Pairwise testing among those seven rows found four passing two-row omissions:
 semantics and `0` layout-token deltas. The best exact-token pair candidates are
 `77+140` and `129+133`, each with `65600/72553` exact tokens
 (`0.9041666092373851`, far `0`) and `19` total token patches.
+
+Third-row additions to those passing pairs found four passing triples:
+`73+77+131`, `73+131+133`, `77+129+140`, and `126+129+133`. The best exact-token
+triple is `77+129+140`, with `65600/72553` exact tokens, `0` layout-token
+deltas, and `18` total token patches. Adding any of `73`, `126`, `131`, or
+`133` to that best triple fails with the standard `26/28` contained-symbol
+summary shape. The `18`-patch `77+129+140` candidate passed hard-canary
+thumbnail parity `7/7` at `900x700`.
