@@ -1198,6 +1198,28 @@ question is why `B-17`, `B-27`, and `F54410-B-49` need exported/RADAN-cleaned
 DXF geometry context while the other 17 compact-token blockers can use the W:
 source DXFs.
 
+### Exported-DXF Exception Comparison
+
+Artifact:
+`C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\exported_exception_dxf_compare.json`
+
+The three exported-DXF exceptions split into two classes:
+
+| Part | W rows | Exported rows | Main finding |
+| --- | ---: | ---: | --- |
+| `B-17` | 8 | 8 | Same topology, but exported coordinates are origin-normalized and rounded to about 6 decimals. Six rows differ only by tiny coordinate deltas around `3.23e-7` plus angle wrap equivalence (`360` vs `0`). |
+| `B-27` | 181 | 181 | Same topology, but exported coordinates are origin-normalized and rounded to about 6 decimals. 146 rows differ with coordinate deltas generally in the `1e-7` to `6e-7` range plus angle wrap equivalence. |
+| `F54410-B-49` | 28 | 20 | True row-count/geometry cleanup difference. RADAN-exported DXF removes the W-source micro-jog chain down to 20 line rows, matching the known RADAN/oracle row-count family. |
+
+Conclusion:
+
+- `B-17` and `B-27` should be attacked by reproducing RADAN-exported
+  coordinate normalization before coordinate-model field-10 prediction, rather
+  than by requiring exported DXF files.
+- `F54410-B-49` remains a separate cleaned-geometry problem: W-source DXF has
+  28 line rows, RADAN-exported DXF has 20, and the passing singleton still
+  requires coordinate-model field 10 on the cleaned 20-row shape.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
