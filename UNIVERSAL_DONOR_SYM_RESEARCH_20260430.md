@@ -521,6 +521,29 @@ process cleanup was clean:
 | report result | blocked: `Wrong mode for DevExpress reports` |
 | RADAN process cleanup | preflight empty, final empty |
 
+A reduced DDC upper bound also passed. It kept the donor wrapper, copied exact
+G/H geometry rows for 21 post-49 failures, used D-record-only repair for
+`F54410-B-29` and `F54410-B-31`, and used full DDC only for the three parts
+where RADAN's source DDC has fewer geometry rows than the donor writer
+(`F54410-B-37`, `F54410-B-38`, `F54410-B-39`).
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_post49_geometry_exact_upper\F54410 PAINT PACK.q95_post49_geom_upper.rpd` |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_post49_geometry_exact_upper` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `56.626s` |
+| DRG count | `27` |
+| nest rows | `41` |
+| made/nonzero count | `428` |
+| `NextNestNum` | `42` |
+| RADAN process cleanup | preflight empty, final empty |
+
+This narrows the full-subset donor crack to exact G/H row generation, two
+known D-record-only cache repairs, and three row-count/repair cases.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
