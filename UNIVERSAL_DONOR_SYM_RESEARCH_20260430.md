@@ -33,6 +33,7 @@ Copied-project nester results:
 | B-14 | RADAN open/saved donor-only generated | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor-only with BOM attrs and connected line order | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | connected line order plus RADAN open/save | fail, `lay_run_nest(0)=11063`, 0 DRGs |
+| B-14 | connected line order rotated to lowest-Y/rightmost start | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-10 | donor-only with BOM attrs and connected line order | pass, `lay_run_nest(0)=0`, 1 DRG |
 | B-14 | prior RADAN-saved synthetic baseline | pass, `lay_run_nest(0)=0`, 1 DRG |
 
@@ -55,6 +56,10 @@ Result: false. Refreshing `Attr 119/120/121/146` from the CSV made the donor sym
 `Line-only DXF row order is the whole B-14 nester blocker.`
 
 Result: false. The line-ordering pass produced one connected B-14 chain and unordered line geometry matched the source DXF, but raw and RADAN-saved ordered B-14 still returned `11063`.
+
+`Loop start point is the whole B-14 nester blocker.`
+
+Result: false. A lab-only computed variant rotated the connected B-14 loop to the same lowest-Y/rightmost start point seen in the nesting-good saved synthetic B-14, updated row identifiers, and still returned `11063`.
 
 ## Next Research Direction
 
