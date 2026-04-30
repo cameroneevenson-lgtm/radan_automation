@@ -811,6 +811,68 @@ Artifacts:
 | row-count reduced symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_rowcount_source_order_generated_f10_except_toxic` |
 | row-count reduced 95-part gate | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_rowcount_source_order_generated_f10_except_toxic` |
 
+## Proposed Experiment: A Priori Collinear Chain Normalization
+
+Prompting question: could the row-count-resistant parts be made easier by
+concatenating their collinear DXF line fragments before SYM token generation?
+
+Hypothesis:
+
+RADAN is collapsing contiguous, same-pen, same-line DXF `LINE` fragments into
+longer `G` rows during import/save. If the donor-only DXF reader performs the
+same conservative normalization before DDC/token generation, then
+`F54410-B-37`, `F54410-B-38`, and `F54410-B-39` should no longer need
+source-derived row-count/order help. This should either solve `F54410-B-39`
+outright or narrow `F54410-B-37`/`F54410-B-38` to compact-token spelling only.
+
+Implementation shape:
+
+- add a lab-only collinear line normalization stage before native SYM writing;
+  it may use `ezdxf` entity geometry, but must not overwrite source DXFs
+- only merge contiguous `LINE` entities when all of these hold:
+  - same layer/pen mapping
+  - shared endpoint within a tight tolerance
+  - true collinearity within a tight tolerance
+  - no intervening arc/circle/entity-type boundary
+  - no cut/mark/interior pen boundary
+  - same connected-loop context
+- preserve deterministic loop/order behavior and record every merge in a
+  manifest with original entity ids/indexes, old endpoints, new endpoint,
+  total length, pen, layer, and maximum deviation
+- emit both pre-normalized and post-normalized geometry metrics so any geometry
+  change is quantified, not assumed safe
+
+Safety:
+
+- generated DXFs/SYMs/RPDs/DRGs stay under `_sym_lab`
+- production DXFs and known-good SYMs remain read-only oracle inputs only
+- this experiment must not become production import behavior
+- copied-project validation continues to use only
+  `prj_add_part + UpdateSheetsList + lay_run_nest(0)`
+
+Validation ladder:
+
+1. Generate donor-only normalized singletons for `F54410-B-39`,
+   `F54410-B-37`, and `F54410-B-38`.
+2. Compare row counts, row order, decoded geometry, and compact tokens against
+   the current known-good/oracle symbols.
+3. Run copied-project singleton nester checks for the three parts.
+4. If singletons pass, run the hard canary set and then the 95-part subset.
+5. If `F54410-B-37`/`F54410-B-38` still fail with `11063`, isolate whether
+   the failure rows are still the 11 toxic token rows listed above.
+
+Expected interpretation:
+
+- If the normalized donor-only `F54410-B-39` passes, the B-39 blocker was mostly
+  RADAN-style chain collapse/order, not hidden metadata.
+- If `F54410-B-37` and `F54410-B-38` still fail only on the known toxic rows,
+  the remaining crack target is compact number token canonicalization.
+- If all three pass without source row help, promote the normalized writer to
+  the 95-part copied-project nest gate as a donor-only candidate and continue
+  reducing RADAN/source-token dependency.
+- If new parts regress, keep the normalization lab-only and use the manifest to
+  tighten merge eligibility rather than broadening it.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
