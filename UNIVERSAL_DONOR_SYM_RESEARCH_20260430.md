@@ -1392,6 +1392,46 @@ coordinate-model preprocessing rule for this blocker family except `B-25 R2`
 and `B-30`. Those two need raw/source-fraction coordinate context and remain
 the next compact-token/hidden-coordinate exceptions to crack.
 
+## Refined Coordinate Rounding Pass
+
+Follow-up singleton probes split the two uniform-rounding exceptions:
+
+| Part | Target-normalized 6-decimal singleton result |
+| --- | ---: |
+| `B-25 R2` | `0` |
+| `B-30` | `11063` |
+
+Artifact:
+`C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\target_round6_b25_b30_singleton_summary.json`
+
+The refined 95-part candidate uses:
+
+- source-coordinate rounding for the changed-safe compact-token blockers
+- target/normalized-coordinate rounding for `B-25 R2`
+- raw target coordinate context for `B-30`
+- local W-source cleaned `F54410-B-49`
+
+This passed the copied-project 95-part nester gate on a short lab path:
+
+| Field | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_rule_refined_b25_targetround_b30_raw_b49clean\symbols` |
+| short-path RPD | `C:\Tools\radan_automation\_sym_lab\rref95\F54410 PAINT PACK.rref95.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `56.138s` |
+| part rows | `95` |
+| sheet rows | `8` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+
+No same-part oracle text was used. The remaining coordinate-context exception
+is `B-30`: raw W-source context and exported-target context both pass, while
+source-rounded and target-rounded context both fail. That points to a per-row
+or per-slot compact-token/hidden-coordinate rule rather than a broad
+6-decimal-normalization rule.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
