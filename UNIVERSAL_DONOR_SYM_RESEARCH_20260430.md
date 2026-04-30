@@ -731,6 +731,10 @@ Keeping only those two rows at source token spelling while generating the other
 7 changed rows passed: `lay_run_nest(0)=0`, 1 DRG. The source/generated values
 for the toxic rows decode to the same geometry within about `7e-15`, so the
 failure is compact token spelling/rounding, not visible geometric deviation.
+Neighbor-cluster checks did not rescue the two toxic rows: generating
+`r03+r04`, `r05+r06`, the right cluster, the left cluster, or both local
+clusters all still returned `11063`. That makes the issue narrower than a
+single adjacent shared-vertex spelling mismatch.
 Artifacts:
 
 | Artifact | Path |
@@ -738,6 +742,7 @@ Artifacts:
 | B-37 single-row field-10 variants | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_single_row_variants` |
 | B-37 single-row nester checks | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_single_row_checks` |
 | B-37 generated-except-r04/r05 pass | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_except_r04_r05_check` |
+| B-37 neighbor-cluster checks | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_vertex_cluster_checks` |
 
 `F54410-B-38` was reduced with iterative delta debugging. Starting from 91
 generated field-10 substitutions in source G/H order, the nester found multiple
@@ -802,6 +807,7 @@ Artifacts:
 | Artifact | Path |
 | --- | --- |
 | B-38 iterative ddmin | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b38_field10_iterative_ddmin_summary.json` |
+| toxic token delta analysis | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\rowcount_toxic_token_delta_analysis.json` |
 | row-count reduced symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_rowcount_source_order_generated_f10_except_toxic` |
 | row-count reduced 95-part gate | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_rowcount_source_order_generated_f10_except_toxic` |
 
