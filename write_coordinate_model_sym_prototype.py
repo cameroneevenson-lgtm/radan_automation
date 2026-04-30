@@ -20,7 +20,13 @@ from evaluate_exported_coordinate_token_model import (
 )
 from path_safety import assert_w_drive_write_allowed
 from radan_save_token_model import build_radan_save_token_model, choose_radan_save_canonical_token
-from write_native_sym_prototype import DDC_BLOCK_RE, DEFAULT_LAB_ROOT, _ensure_lab_output
+from write_native_sym_prototype import (
+    DDC_BLOCK_RE,
+    DEFAULT_LAB_ROOT,
+    _ensure_lab_output,
+    _rows_with_rounded_source_coordinates,
+    _rows_with_topology_snapped_endpoints,
+)
 
 
 @dataclass(frozen=True)
@@ -138,6 +144,32 @@ def _load_training_pairs(dxf_folder: Path, sym_folder: Path) -> tuple[list[PartP
             )
         )
     return pairs, skipped
+
+
+def _preprocess_coordinate_model_dxf_rows(
+    dxf_rows: list[dict[str, Any]],
+    bounds: Any,
+    *,
+    source_coordinate_digits: int | None = None,
+    source_coordinate_entity_types: set[str] | None = None,
+    topology_snap_endpoints: bool = False,
+) -> list[dict[str, Any]]:
+    if topology_snap_endpoints:
+        if source_coordinate_digits is None:
+            raise RuntimeError("--topology-snap-endpoints requires --source-coordinate-digits.")
+        return _rows_with_topology_snapped_endpoints(
+            dxf_rows,
+            bounds,
+            digits=int(source_coordinate_digits),
+        )
+    if source_coordinate_digits is not None:
+        return _rows_with_rounded_source_coordinates(
+            dxf_rows,
+            bounds,
+            digits=int(source_coordinate_digits),
+            entity_types=source_coordinate_entity_types,
+        )
+    return dxf_rows
 
 
 def _token_observations(pairs: list[PartPair]) -> list[dict[str, Any]]:
@@ -1200,10 +1232,20 @@ def write_coordinate_model_prototype(
     use_slot_value_fractions: bool = False,
     radan_save_token_model: dict[str, Any] | None = None,
     radan_save_token_model_mode: str = "off",
+    source_coordinate_digits: int | None = None,
+    source_coordinate_entity_types: set[str] | None = None,
+    topology_snap_endpoints: bool = False,
     allow_outside_lab: bool = False,
 ) -> dict[str, Any]:
     _ensure_lab_output(out_path, allow_outside_lab=allow_outside_lab)
-    dxf_rows, _bounds = read_dxf_entities(dxf_path)
+    dxf_rows, bounds = read_dxf_entities(dxf_path)
+    dxf_rows = _preprocess_coordinate_model_dxf_rows(
+        dxf_rows,
+        bounds,
+        source_coordinate_digits=source_coordinate_digits,
+        source_coordinate_entity_types=source_coordinate_entity_types,
+        topology_snap_endpoints=topology_snap_endpoints,
+    )
     ddc_rows = read_ddc_records(template_sym)
     if len(dxf_rows) != len(ddc_rows):
         raise RuntimeError(f"{part}: DXF/DDC count mismatch: {len(dxf_rows)} != {len(ddc_rows)}")
@@ -1279,6 +1321,11 @@ def write_coordinate_model_prototype(
         "allow_same_part_token_spelling": allow_same_part_token_spelling,
         "prefer_literal_geometry": prefer_literal_geometry,
         "use_slot_value_fractions": use_slot_value_fractions,
+        "source_coordinate_digits": source_coordinate_digits,
+        "source_coordinate_entity_types": (
+            None if source_coordinate_entity_types is None else sorted(source_coordinate_entity_types)
+        ),
+        "topology_snap_endpoints": topology_snap_endpoints,
         "radan_save_token_model_mode": radan_save_token_model_mode,
         "radan_save_token_canonicalized_slots": sum(
             1
@@ -1349,6 +1396,25 @@ def main() -> int:
         "--use-slot-value-fractions",
         action="store_true",
         help="Lab mode: use leave-one-part-out hidden fractions learned for direct slot value/type/role keys.",
+    )
+    parser.add_argument(
+        "--source-coordinate-digits",
+        type=int,
+        help=(
+            "Lab option: round source DXF coordinates and source min bounds before coordinate-model prediction. "
+            "This mirrors RADAN-exported coordinate normalization without requiring exported target DXFs."
+        ),
+    )
+    parser.add_argument(
+        "--source-coordinate-entity-type",
+        action="append",
+        choices=("LINE", "ARC", "CIRCLE"),
+        help="Limit --source-coordinate-digits to one or more DXF entity types. Defaults to all geometry types.",
+    )
+    parser.add_argument(
+        "--topology-snap-endpoints",
+        action="store_true",
+        help="Lab option: cluster shared line/arc endpoints before coordinate-model prediction. Requires --source-coordinate-digits.",
     )
     parser.add_argument(
         "--radan-save-token-model-mode",
@@ -1426,6 +1492,11 @@ def main() -> int:
                 use_slot_value_fractions=bool(args.use_slot_value_fractions),
                 radan_save_token_model=radan_save_model,
                 radan_save_token_model_mode=str(args.radan_save_token_model_mode),
+                source_coordinate_digits=args.source_coordinate_digits,
+                source_coordinate_entity_types=(
+                    None if args.source_coordinate_entity_type is None else set(args.source_coordinate_entity_type)
+                ),
+                topology_snap_endpoints=bool(args.topology_snap_endpoints),
                 allow_outside_lab=bool(args.allow_outside_lab),
             )
         except Exception as exc:
@@ -1449,6 +1520,9 @@ def main() -> int:
         "allow_same_part_token_spelling": bool(args.allow_same_part_token_spelling),
         "prefer_literal_geometry": bool(args.prefer_literal_geometry),
         "use_slot_value_fractions": bool(args.use_slot_value_fractions),
+        "source_coordinate_digits": args.source_coordinate_digits,
+        "source_coordinate_entity_types": args.source_coordinate_entity_type,
+        "topology_snap_endpoints": bool(args.topology_snap_endpoints),
         "radan_save_token_model_mode": str(args.radan_save_token_model_mode),
         "radan_save_token_model_summary": None
         if radan_save_model is None

@@ -3,9 +3,11 @@ from __future__ import annotations
 import unittest
 from fractions import Fraction
 
+from ddc_corpus import Bounds
 from ddc_number_codec import decode_ddc_number_fraction, encode_ddc_number_fraction
 from write_coordinate_model_sym_prototype import (
     PartPair,
+    _preprocess_coordinate_model_dxf_rows,
     _compare_tokens,
     _coordinate_point_observations_for_pair,
     _build_context_coordinate_lookup,
@@ -17,6 +19,36 @@ from write_coordinate_model_sym_prototype import (
 
 
 class WriteCoordinateModelSymPrototypeTests(unittest.TestCase):
+    def test_preprocess_rounds_source_coordinates_before_coordinate_model_prediction(self) -> None:
+        rows = [
+            {
+                "type": "LINE",
+                "start": [0.0000004, -1.135832849900836],
+                "end": [10.0625, 0.913385826771655],
+                "normalized_start": [0.0, 0.0],
+                "normalized_end": [10.0624996, 2.049218676672491],
+            }
+        ]
+        bounds = Bounds(
+            min_x=0.0000004,
+            min_y=-1.135832849900836,
+            max_x=10.0625,
+            max_y=0.913385826771655,
+        )
+
+        processed = _preprocess_coordinate_model_dxf_rows(rows, bounds, source_coordinate_digits=6)
+
+        self.assertEqual(processed[0]["normalized_start"], [0.0, 0.0])
+        self.assertEqual(processed[0]["normalized_end"], [10.0625, 2.049219])
+
+    def test_preprocess_requires_source_digits_for_topology_snap(self) -> None:
+        with self.assertRaises(RuntimeError):
+            _preprocess_coordinate_model_dxf_rows(
+                [],
+                Bounds(0.0, 0.0, 0.0, 0.0),
+                topology_snap_endpoints=True,
+            )
+
     def test_choose_token_excludes_same_part_by_default(self) -> None:
         token_a = encode_ddc_number_fraction(Fraction(1, 4), min_continuation_digits=2)
         token_b = encode_ddc_number_fraction(Fraction(1, 4), min_continuation_digits=4)
