@@ -182,6 +182,22 @@ class RadanMac:
     def model_thumbnail(self, path: str, width: int) -> bool | None:
         return _coerce_bool(self._call_method("mfl_thumbnail", path, int(width)))
 
+    def finish_nesting(
+        self,
+        *,
+        update_annotation: bool = True,
+        update_schedule: bool = True,
+        reserved: float = 0.0,
+    ) -> bool | None:
+        return _coerce_bool(
+            self._call_method(
+                "pfl_finish_nesting",
+                bool(update_annotation),
+                bool(update_schedule),
+                float(reserved),
+            )
+        )
+
     def output_project_report(self, report_name: str, file_path: str, file_type: int) -> RadanReportResult:
         return _parse_report_result(self._call_method("prj_output_report", report_name, file_path, int(file_type), ""))
 

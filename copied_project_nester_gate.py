@@ -326,6 +326,25 @@ def _attempt_reports(app: Any, report_dir: Path, logger: _Logger) -> list[dict[s
     return results
 
 
+def _finish_nesting_for_reports(mac: Any, logger: _Logger) -> dict[str, Any]:
+    payload: dict[str, Any] = {
+        "attempted": True,
+        "update_annotation": True,
+        "update_schedule": False,
+        "reserved": 0.0,
+    }
+    try:
+        result = mac.pfl_finish_nesting(True, False, 0.0)
+        payload["result"] = result
+        payload["ok"] = bool(result)
+        logger.write(f"pfl_finish_nesting(True, False, 0.0) returned {result}.")
+    except Exception as exc:
+        payload["ok"] = False
+        payload["error"] = f"{type(exc).__name__}: {exc}"
+        logger.write(f"pfl_finish_nesting before reports failed: {payload['error']}")
+    return payload
+
+
 def _comparison_summary(comparison: dict[str, Any], *, out_json: Path, out_md: Path) -> dict[str, Any]:
     return {
         "out_json": str(out_json),
@@ -388,6 +407,7 @@ def run_gate(
     backend: str = "win32com",
     kill_existing_radan: bool = False,
     attempt_reports: bool = False,
+    finish_nesting_before_reports: bool = False,
 ) -> dict[str, Any]:
     safe_label = sanitize_label(label)
     assert_lab_output_path(out_dir, operation="write copied-project nester gate")
@@ -493,6 +513,10 @@ def run_gate(
         payload["path_lengths"]["max_drg_path_length"] = max((len(path) for path in payload["drg_files"]), default=0)
 
         if attempt_reports:
+            if finish_nesting_before_reports:
+                payload["finish_nesting_before_reports"] = _finish_nesting_for_reports(mac, logger)
+                payload["save_after_finish_nesting"] = bool(mac.prj_save())
+                payload["after_finish_nesting_save"] = project_snapshot(project_path)
             payload["reports"] = _attempt_reports(app, out_dir / "reports", logger)
         else:
             payload["reports"] = []
@@ -541,6 +565,7 @@ def main() -> int:
     parser.add_argument("--backend", default="win32com")
     parser.add_argument("--kill-existing-radan", action="store_true")
     parser.add_argument("--attempt-reports", action="store_true")
+    parser.add_argument("--finish-nesting-before-reports", action="store_true")
     parser.add_argument("--compare-right-dir", type=Path)
     parser.add_argument("--compare-right-name", default="primary_baseline")
     parser.add_argument("--alternate-right-dir", type=Path, action="append", default=[])
@@ -564,6 +589,7 @@ def main() -> int:
         backend=str(args.backend),
         kill_existing_radan=bool(args.kill_existing_radan),
         attempt_reports=bool(args.attempt_reports),
+        finish_nesting_before_reports=bool(args.finish_nesting_before_reports),
     )
     if args.compare_right_dir and payload.get("ok"):
         payload["gate_comparison"] = write_gate_comparison(

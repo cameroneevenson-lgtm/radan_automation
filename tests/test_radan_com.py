@@ -220,6 +220,10 @@ class _FakeBackend:
             self._calls.append(("mfl_thumbnail", (path, width)))
             return "false"
 
+        def pfl_finish_nesting(self, update_annotation: bool, update_schedule: bool, reserved: float) -> bool:
+            self._calls.append(("pfl_finish_nesting", (update_annotation, update_schedule, reserved)))
+            return True
+
         def prj_output_report(self, report_name: str, file_path: str, file_type: int, options: str):
             self._calls.append(("prj_output_report", (report_name, file_path, file_type, options)))
             return (False, "Wrong mode for DevExpress reports")
@@ -420,6 +424,7 @@ class RadanComTests(unittest.TestCase):
         )
         flat_thumbnail = app.mac.flat_thumbnail(r"C:\Jobs\thumb.png", 400, 300)
         model_thumbnail = app.mac.model_thumbnail(r"C:\Jobs\model.png", 512)
+        finish_nesting = app.mac.finish_nesting(update_annotation=True, update_schedule=False)
         project_report = app.mac.output_project_report("Project Report", r"C:\Jobs\project.pdf", 4)
         setup_report = app.mac.output_setup_report("Setup Sheet", r"C:\Jobs\setup.pdf", 4)
 
@@ -452,6 +457,7 @@ class RadanComTests(unittest.TestCase):
         self.assertTrue(extraction_result)
         self.assertTrue(flat_thumbnail)
         self.assertFalse(model_thumbnail)
+        self.assertTrue(finish_nesting)
         self.assertIsInstance(project_report, RadanReportResult)
         self.assertFalse(project_report.ok)
         self.assertEqual(project_report.error_message, "Wrong mode for DevExpress reports")
@@ -486,6 +492,7 @@ class RadanComTests(unittest.TestCase):
                 ),
                 ("fla_thumbnail", (r"C:\Jobs\thumb.png", 400, 300)),
                 ("mfl_thumbnail", (r"C:\Jobs\model.png", 512)),
+                ("pfl_finish_nesting", (True, False, 0.0)),
                 ("prj_output_report", ("Project Report", r"C:\Jobs\project.pdf", 4, "")),
                 ("stp_output_report", ("Setup Sheet", r"C:\Jobs\setup.pdf", 4, "")),
             ],

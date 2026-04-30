@@ -168,6 +168,31 @@ class CopiedProjectNesterGateTests(unittest.TestCase):
                         include_parts=["Nope"],
                     )
 
+    def test_finish_nesting_for_reports_calls_headless_refresh_api(self) -> None:
+        class FakeMac:
+            def __init__(self) -> None:
+                self.calls: list[tuple[bool, bool, float]] = []
+
+            def pfl_finish_nesting(self, update_annotation: bool, update_schedule: bool, reserved: float) -> bool:
+                self.calls.append((update_annotation, update_schedule, reserved))
+                return True
+
+        class FakeLogger:
+            def __init__(self) -> None:
+                self.messages: list[str] = []
+
+            def write(self, message: str) -> None:
+                self.messages.append(message)
+
+        mac = FakeMac()
+        logger = FakeLogger()
+
+        result = gate._finish_nesting_for_reports(mac, logger)
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(mac.calls, [(True, False, 0.0)])
+        self.assertIn("pfl_finish_nesting", logger.messages[0])
+
     def test_write_gate_comparison_accepts_tie_aware_alternate_baseline(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
