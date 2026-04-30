@@ -52,6 +52,27 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
     temp_path.replace(path)
 
 
+def write_filtered_radan_csv(*, source_csv: Path, out_csv: Path, include_parts: tuple[str, ...]) -> None:
+    assert_lab_output_path(out_csv, operation="write filtered overnight CSV")
+    include_keys = {part.casefold() for part in include_parts}
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    selected: list[list[str]] = []
+    with source_csv.open(newline="", encoding="utf-8-sig") as handle:
+        for row in csv.reader(handle):
+            if not row or not row[0].strip():
+                continue
+            if Path(row[0].strip()).stem.casefold() in include_keys:
+                selected.append(row)
+    missing = sorted(include_keys - {Path(row[0].strip()).stem.casefold() for row in selected})
+    if missing:
+        raise RuntimeError(f"Filtered CSV missed requested part(s): {', '.join(missing)}")
+    temp_path = out_csv.with_name(f"{out_csv.name}.tmp")
+    with temp_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerows(selected)
+    temp_path.replace(out_csv)
+
+
 def append_log(out_dir: Path, *, track: str, hypothesis: str, command: str = "", conclusion: str = "") -> None:
     assert_lab_output_path(out_dir / "OVERNIGHT_LOG.md", operation="write overnight log")
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -241,6 +262,14 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     candidate_matrix: list[dict[str, Any]] = []
     append_log(out_dir, track="setup", hypothesis="Create fresh overnight run folder", conclusion=str(out_dir))
+    trio_csv = out_dir / "rowcount_trio_Radan.csv"
+    write_filtered_radan_csv(source_csv=args.csv, out_csv=trio_csv, include_parts=ROWCOUNT_TRIO)
+    append_log(
+        out_dir,
+        track="setup",
+        hypothesis="Create a lab-local CSV for row-count trio comparisons",
+        conclusion=str(trio_csv),
+    )
 
     if not args.skip_baseline:
         run_command(
@@ -256,7 +285,7 @@ def main() -> int:
         args.python,
         REPO_ROOT / "run_universal_donor_sym_research.py",
         "--csv",
-        args.csv,
+        trio_csv,
         "--source-rpd",
         args.source_rpd,
         "--out-dir",
@@ -284,7 +313,7 @@ def main() -> int:
             args.python,
             REPO_ROOT / "compare_ddc_geometry.py",
             "--csv",
-            args.csv,
+            trio_csv,
             "--oracle-sym-folder",
             args.oracle_sym_folder,
             "--compare-sym-folder",
@@ -344,7 +373,7 @@ def main() -> int:
                     "--source-rpd",
                     args.source_rpd,
                     "--csv",
-                    args.csv,
+                    trio_csv,
                     "--symbol-folder",
                     symbol_folder,
                     "--out-dir",
