@@ -2174,3 +2174,12 @@ that rows `73` and `84` are individually optional, while rows `43`, `58`, `59`,
 `84` are not jointly optional: omitting both brings back the standard nests
 `27`/`28` B-3/B-5 swap. The current early requirement is therefore eight
 required rows plus either row `73` or row `84`.
+
+Middle leave-one-row-out in the row-`73`-omitted context found only middle row
+`127` is individually optional. Omitting any of rows `109`, `110`, `118`,
+`119`, `122`, `123`, `124`, `126`, `129`, `130`, `131`, `132`, `133`, `138`,
+`139`, or `140` brings back the B-3/B-5 swap. The current smallest passing F12
+subset is early except `73`, middle except `127`, plus row `156`: `26`
+F54410-B-12 `delta_y` patches. It preserves raw full95 used-nest semantics,
+has `0` crack-relevant DRG layout-token deltas, and has token exact rate
+`0.9047317133681585` (`65641/72553`, far `0`).
