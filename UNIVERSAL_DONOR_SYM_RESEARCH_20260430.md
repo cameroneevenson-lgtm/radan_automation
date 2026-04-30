@@ -544,6 +544,38 @@ where RADAN's source DDC has fewer geometry rows than the donor writer
 This narrows the full-subset donor crack to exact G/H row generation, two
 known D-record-only cache repairs, and three row-count/repair cases.
 
+A stricter field-10-only reduction was tested next. It preserved the donor
+G/H row prefixes and non-field-10 fields, copied only the source field-10
+geometry-token payload for row-count-matching post-49 failures, kept D-only
+repair for `F54410-B-29` and `F54410-B-31`, and kept full DDC for the same
+three row-count/repair cases. The full 95-part copied-project nester run failed
+fast with `11063` and 0 DRGs:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_post49_field10_exact_upper\F54410 PAINT PACK.q95_post49_f10_upper.rpd` |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_post49_field10_exact_upper` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `11063` |
+| DRG count | `0` |
+| RADAN process cleanup | preflight empty, final empty |
+
+Singleton isolation showed the field-10-only reduction was sufficient for 16 of
+the 21 row-count-matching post-49 failures, but these five still require more
+than exact field-10 payload:
+
+| Part | Field-10-only singleton result |
+| --- | --- |
+| F54410-B-01 | fail, `11063` |
+| F54410-B-05 | fail, `11063` |
+| F54410-B-10 | fail, `11063` |
+| F54410-B-14 | fail, `11063` |
+| F54410-B-40 | fail, `11063` |
+
+That separates most post-49 failures into token-payload exactness and leaves a
+smaller set where record type or other G/H fields are also nester-visible.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
