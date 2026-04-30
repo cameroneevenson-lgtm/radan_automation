@@ -2224,3 +2224,11 @@ the current passing candidate to `24` total token patches: one `F54410-B-15`
 `delta_x` token plus the `23` F12 `delta_y` tokens. It has `0` crack-relevant
 layout-token deltas, `65602/72553` exact tokens (`0.9041941752925448`), far
 `0`, and `7/7` hard-canary thumbnail parity at `900x700`.
+
+Leave-one reduction of the F12(23) subset in the F15-only context found five
+individually optional F12 rows: `58`, `59`, `80`, `119`, and `129`. Omitting any
+of rows `43`, `73`, `76`, `77`, `79`, `83`, `109`, `110`, `122`, `123`, `124`,
+`126`, `130`, `131`, `132`, `133`, `140`, or `156` brings back the standard
+B-3/B-5 swap while still producing the broad 28-DRG count envelope. This makes
+the F15-only F12 stabilizer smaller and differently shaped than the prior
+F15+F16 context.
