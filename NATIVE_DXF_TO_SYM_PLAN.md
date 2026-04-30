@@ -2402,3 +2402,18 @@ lay_run_nest(0)`, and produced:
 The inspection RPD from this run is:
 
 `C:\Tools\radan_automation\_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_q6cmp_0808\F54410 PAINT PACK.q6cmp.rpd`
+
+Report unblock probe:
+
+`C:\Tools\radan_automation\_sym_lab\overnight_crack_and_nest_validate_20260429_174834\nester_q6fin_0814`
+
+This reran the same full95 candidate with
+`--finish-nesting-before-reports`, which calls
+`pfl_finish_nesting(True, False, 0.0)` before `prj_output_report` /
+`stp_output_report`. The gate still nested successfully (`lay_run_nest(0) = 0`,
+`95` part rows, `8` sheet rows, `42` nest rows, `431` made/nonzero, `28` DRGs)
+and the integrated comparison matched `raw_original`, but
+`pfl_finish_nesting(...)` returned `False` and both report calls remained
+blocked with `Wrong mode for DevExpress reports`. This disproves the hypothesis
+that a simple post-nest finish/annotation refresh is sufficient to enter the
+DevExpress report mode for this copied-project headless workflow.
