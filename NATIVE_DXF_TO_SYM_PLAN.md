@@ -2027,3 +2027,23 @@ field-3/record mismatches versus known-good. The normal identifier sequence is
 the geometry row index plus `2` (`row13` -> `?`, `row14` -> `@`). Therefore the
 field-3 nester failures above are deliberate perturbation evidence, not an
 accidental field-3 drift in the current writer candidates.
+
+### 2026-04-29 DXF Source Text Does Not Explain ARC Delta-X Split
+
+`analyze_dxf_entity_provenance.py` compares raw DXF group-code rows alongside
+the normalized geometry view. For the most informative neutral/trigger split,
+`B-185` row `13` and `F54410-B-21` row `14`, the raw ARC entity group sequence
+is byte-identical:
+
+- layer `0`
+- center `10=84.500000`, `20=31.688690`
+- radius `40=26.187500`
+- angles `50=216.801556`, `51=0.000000`
+
+The matching trigger pair `B-185` row `11` and `F54410-B-21` row `12` is also
+byte-identical at the raw ARC entity level. Therefore the `B-185` row `13`
+neutral exception is not explained by source DXF decimal spelling, source DXF
+numeric values, local ARC group-code text, visible geometry, token text, or
+local LINE/ARC/LINE shape. The remaining likely causes are global row/topology
+context, row identity/cache participation, interaction with other token
+spellings, or downstream nester ordering sensitivity.
