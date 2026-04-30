@@ -1166,6 +1166,38 @@ Artifacts:
 - field-10 replacement pass:
   `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\f49_exported_dxf_native_coord_f10`
 
+The coordinate-model field-10 path was then regenerated live rather than copied
+from an existing generated folder. Using the W: source DXFs for all 19
+row-count-matching compact-token blockers plus the exported 20-row DXF for
+`F54410-B-49` failed the 95 gate at `11063`. Singleton isolation showed only
+`B-17` and `B-27` failed singly; the other 18 replacements passed.
+
+Regenerating `B-17`, `B-27`, and `F54410-B-49` from the RADAN-exported DXF
+corpus while using W: source DXFs for the other 17 compact-token blockers
+passed the 95-part copied-project nester gate:
+
+| Metric | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_exported_b17_b27_b49\symbols` |
+| manifest | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_exported_b17_b27_b49\manifest.json` |
+| generated from W: DXF | 17 compact-token blockers |
+| generated from exported DXF | `B-17`, `B-27`, `F54410-B-49` |
+| same-part oracle text used | no |
+| RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_95_live_coord_exported_b17_b27_b49\F54410 PAINT PACK.livecf10_exp3.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.670s` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+
+This is sharper than copying field 10 from the prior generated folder: field 10
+is regenerated during the run from the coordinate model, with same-part
+coordinate fallback and same-part token spelling disabled. The remaining
+question is why `B-17`, `B-27`, and `F54410-B-49` need exported/RADAN-cleaned
+DXF geometry context while the other 17 compact-token blockers can use the W:
+source DXFs.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
