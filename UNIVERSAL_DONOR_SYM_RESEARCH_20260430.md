@@ -221,6 +221,65 @@ Its copied-project nester proof passed:
 
 Interpretation: the universal donor wrapper and generated row structure are still acceptable, but larger canaries need broad exact compact-number spelling by slot family. These variants are diagnostic because the accepted token text is still copied from same-part RADAN oracle rows. The next crack target is a numeric continuation/spelling rule for these families, not a per-part token lookup.
 
+## Arc/Circle Stress Slot-Family Isolation 2026-04-30
+
+Lab root:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\arc_stress_slot_family_isolation`
+
+The arc/circle stress rung was run with:
+`B-27`, `B-28`, `B-30`, `F54410-B-41`, `F54410-B-02`, `F54410-B-35`.
+
+The first attempt using only the hard7 required-family folder failed with `11063`. Single-part isolation showed four new donor-family blockers:
+
+| Part | Raw/hard7-family donor result |
+| --- | --- |
+| B-28 | fail, `11063` |
+| F54410-B-41 | fail, `11063` |
+| F54410-B-02 | fail, `11063` |
+| F54410-B-35 | fail, `11063` |
+
+Donor wrapper plus full oracle rows for those four parts passed the six-part arc/circle stress rung:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_arc_stress_oracle_rows\F54410 PAINT PACK.arc_stress_oracle_rows.rpd` |
+| part rows | `6` |
+| sheet rows after refresh | `6` |
+| `lay_run_nest(0)` | `0` |
+| DRG count | `3` |
+| nest rows | `17` |
+| made/nonzero count | `24` |
+| `NextNestNum` | `18` |
+
+Required or sufficient donor-side token-family candidates:
+
+| Part | Sufficient oracle-token families | Notes |
+| --- | --- | --- |
+| B-28 | `G0/H0` | smallest family candidate tested passed |
+| F54410-B-41 | `G2/H2/H3/H4/H5` | smallest family candidate tested passed |
+| F54410-B-35 | `G2/G3` | no single family was individually required; this two-family combo passed |
+| F54410-B-02 | `G0/G1/G2/G3/H2/H3` | individually necessary `G2/H2/H3` was not sufficient; all G families plus `H2/H3` passed |
+
+Patching field 8 pen values back to oracle spelling was not required for `F54410-B-02` or `F54410-B-35`; in both broad all-token-plus-field8 diagnostics it made RADAN return `11088`. This is another sign that field-level changes can become inconsistent unless the whole row spelling is copied.
+
+The combined arc/circle required-family folder is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_arc_stress_required_families`
+
+Its copied-project nester proof passed:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_arc_stress_required_families_v2\F54410 PAINT PACK.arc_stress_reqfam_v2.rpd` |
+| part rows | `6` |
+| sheet rows after refresh | `6` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `1.983s` |
+| DRG count | `3` |
+| nest rows | `17` |
+| made/nonzero count | `24` |
+| `NextNestNum` | `18` |
+| RADAN process cleanup | preflight empty, final empty |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
