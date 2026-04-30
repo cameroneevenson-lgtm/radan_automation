@@ -2335,3 +2335,14 @@ token `g?WE\TjLD00`, matches the raw-repeat tie state. Removing row `129`
 entirely still hard-fails with `lay_run_nest(0)=11088`, so row `129` is
 required, but its source-vs-known-good spelling appears to select between valid
 raw nester tie states rather than an accept/reject boundary.
+
+The tie-state reclassification also changes the interpretation of the
+raw+B-194/F54410-B-21 base branch. `writer_raw_B194_circle_F21_arc_pairs`
+previously looked like a nester-semantics failure because it differed from the
+original raw run by the same B-3/B-5 swap. Compared against a fresh raw repeat,
+however, it matches `28/28` contained-symbol summaries and used-nest semantics.
+The six F12 rows by themselves on top of raw synthetic also match that raw-repeat
+tie state. Therefore the B-194/F21 pair is RADAN-acceptable under a tie-aware
+copied-project nester oracle, while the F12 six-row set is best understood as a
+token-exactness/spelling improvement and tie-state selector, not as a strict
+acceptance stabilizer.
