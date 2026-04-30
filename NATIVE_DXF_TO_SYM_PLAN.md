@@ -2242,3 +2242,7 @@ and `119`: `22` total token patches. It preserves raw full95 used-nest
 semantics, has `0` crack-relevant DRG layout-token deltas, has `65601/72553`
 exact tokens (`0.9041803922649649`, far `0`), and passes hard-canary thumbnails
 `7/7` at `900x700`.
+
+The current boundary check confirms both sides are still needed: the F12(20)
+subset without F15 and the F15-only variant each nest with `28` DRGs but fail
+raw used-nest semantics with the same `26/28` contained-symbol match pattern.
