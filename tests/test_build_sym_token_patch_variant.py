@@ -34,6 +34,21 @@ class BuildSymTokenPatchVariantTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             patcher.parse_patch_spec("B-185:0:2")
 
+    def test_parse_field_patch_spec_uses_one_based_rows_and_zero_based_fields(self) -> None:
+        self.assertEqual(
+            patcher.parse_field_patch_spec("B-185:13:3:@"),
+            {
+                "part": "B-185",
+                "row_index": 13,
+                "field_index": 3,
+                "field_value": "@",
+                "source": "field-spec",
+            },
+        )
+
+        with self.assertRaises(ValueError):
+            patcher.parse_field_patch_spec("B-185:13:-1:@")
+
     def test_load_patch_csv_filters_matches_roles_and_parts(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "patches.csv"
@@ -83,6 +98,39 @@ class BuildSymTokenPatchVariantTests(unittest.TestCase):
         self.assertEqual(rows[0]["tokens"], ["a", "b", "c"])
         self.assertEqual(rows[1]["tokens"], ["d", "v", "f"])
         self.assertIn("d.v.f\n]]>", patched_text)
+
+    def test_build_token_patch_variant_can_patch_ddc_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            base = root / "base"
+            source = root / "source"
+            out = root / "_sym_lab" / "field_variant"
+            base.mkdir()
+            source.mkdir()
+            (base / "P1.sym").write_text(
+                _sym(["G,,1,A,,,,,,,a.b.c", "H,,1,B,,,,,,,d.e.f"]),
+                encoding="utf-8",
+            )
+            (source / "P1.sym").write_text(_sym(["G,,1,A,,,,,,,x.y.z"]), encoding="utf-8")
+
+            manifest = patcher.build_token_patch_variant(
+                base_folder=base,
+                source_folder=source,
+                out_dir=out,
+                patches=[],
+                field_patches=[
+                    {"part": "P1", "row_index": 2, "field_index": 3, "field_value": "Z", "source": "test"}
+                ],
+                lab_root=root / "_sym_lab",
+            )
+
+            rows = read_ddc_records(out / "P1.sym")
+            patched_text = (out / "P1.sym").read_text(encoding="utf-8")
+
+        self.assertEqual(manifest["field_patch_count"], 1)
+        self.assertEqual(manifest["changed_field_patch_count"], 1)
+        self.assertEqual(rows[1]["identifier"], "Z")
+        self.assertIn("H,,1,Z,,,,,,,d.e.f\n]]>", patched_text)
 
     def test_default_lab_guard_rejects_non_lab_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

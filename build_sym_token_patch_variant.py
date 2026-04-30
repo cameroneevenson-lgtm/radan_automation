@@ -41,6 +41,28 @@ def parse_patch_spec(value: str) -> dict[str, Any]:
     return {"part": part.strip(), "row_index": row_index, "slot": slot, "source": "spec"}
 
 
+def parse_field_patch_spec(value: str) -> dict[str, Any]:
+    fields = str(value).split(":", 3)
+    if len(fields) != 4:
+        raise ValueError(f"Field patch specs must be PART:ROW:FIELD:VALUE, got: {value!r}")
+    part, row_text, field_text, field_value = fields
+    if not part.strip():
+        raise ValueError(f"Field patch spec has an empty part name: {value!r}")
+    row_index = int(row_text)
+    field_index = int(field_text)
+    if row_index <= 0:
+        raise ValueError(f"Field patch row index must be 1-based and positive: {value!r}")
+    if field_index < 0:
+        raise ValueError(f"Field patch index must be zero-based and non-negative: {value!r}")
+    return {
+        "part": part.strip(),
+        "row_index": row_index,
+        "field_index": field_index,
+        "field_value": field_value,
+        "source": "field-spec",
+    }
+
+
 def _truthy(value: str) -> bool:
     return str(value).strip().casefold() in {"1", "true", "yes", "y"}
 
@@ -157,12 +179,74 @@ def _replace_geometry_token(text: str, patch: dict[str, Any], token: str) -> tup
     }
 
 
+def _replace_ddc_field(text: str, patch: dict[str, Any]) -> tuple[str, dict[str, Any]]:
+    match = DDC_BLOCK_RE.search(text)
+    if match is None:
+        raise RuntimeError(f"No DDC block found while patching {patch['part']}.")
+
+    ddc_body = match.group(2)
+    lines = ddc_body.splitlines()
+    trailing_newline = ""
+    if ddc_body.endswith("\r\n"):
+        trailing_newline = "\r\n"
+    elif ddc_body.endswith("\n"):
+        trailing_newline = "\n"
+    geometry_index = 0
+    row_index = int(patch["row_index"])
+    field_index = int(patch["field_index"])
+    field_value = str(patch["field_value"])
+    previous_value = ""
+    target_record = ""
+    replaced = False
+
+    for line_index, line in enumerate(lines):
+        if not line.strip():
+            continue
+        fields = line.split(",")
+        record_type = fields[0] if fields else ""
+        if record_type not in {"G", "H"}:
+            continue
+        geometry_index += 1
+        if geometry_index != row_index:
+            continue
+        target_record = record_type
+        while len(fields) <= field_index:
+            fields.append("")
+        previous_value = fields[field_index]
+        fields[field_index] = field_value
+        lines[line_index] = ",".join(fields)
+        replaced = True
+        break
+
+    if not replaced:
+        raise RuntimeError(f"Target {patch['part']} has no geometry row {row_index}.")
+
+    newline = "\r\n" if "\r\n" in ddc_body else "\n"
+    patched_body = newline.join(lines) + trailing_newline
+    patched_text = DDC_BLOCK_RE.sub(
+        lambda current: f"{current.group(1)}{patched_body}{current.group(3)}",
+        text,
+        count=1,
+    )
+    return patched_text, {
+        "part": patch["part"],
+        "row_index": row_index,
+        "field_index": field_index,
+        "target_record": target_record,
+        "previous_value": previous_value,
+        "field_value": field_value,
+        "changed": previous_value != field_value,
+        "patch_source": patch.get("source", ""),
+    }
+
+
 def build_token_patch_variant(
     *,
     base_folder: Path,
     source_folder: Path,
     out_dir: Path,
     patches: list[dict[str, Any]],
+    field_patches: list[dict[str, Any]] | None = None,
     lab_root: Path | None = None,
 ) -> dict[str, Any]:
     assert_lab_output_path(out_dir, lab_root=lab_root)
@@ -178,9 +262,16 @@ def build_token_patch_variant(
     grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for patch in patches:
         grouped[str(patch["part"])].append(patch)
+    grouped_field_patches: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for patch in field_patches or []:
+        grouped_field_patches[str(patch["part"])].append(patch)
 
     patch_results: list[dict[str, Any]] = []
-    for part, part_patches in sorted(grouped.items(), key=lambda item: item[0].casefold()):
+    field_patch_results: list[dict[str, Any]] = []
+    patched_parts = set(grouped) | set(grouped_field_patches)
+    for part in sorted(patched_parts, key=str.casefold):
+        part_patches = grouped.get(part, [])
+        part_field_patches = grouped_field_patches.get(part, [])
         target_path = out_dir / f"{part}.sym"
         if not target_path.exists():
             raise RuntimeError(f"Target symbol not found in base copy: {target_path}")
@@ -191,6 +282,9 @@ def build_token_patch_variant(
             result["source_record"] = source_record
             result["patch_source"] = patch.get("source", "")
             patch_results.append(result)
+        for patch in sorted(part_field_patches, key=lambda row: (int(row["row_index"]), int(row["field_index"]))):
+            text, result = _replace_ddc_field(text, patch)
+            field_patch_results.append(result)
         target_path.write_text(text, encoding="utf-8")
 
     manifest = {
@@ -201,8 +295,11 @@ def build_token_patch_variant(
         "copied_symbol_count": copied,
         "patch_count": len(patch_results),
         "changed_patch_count": sum(1 for row in patch_results if row["changed"]),
-        "patched_parts": sorted(grouped, key=str.casefold),
+        "field_patch_count": len(field_patch_results),
+        "changed_field_patch_count": sum(1 for row in field_patch_results if row["changed"]),
+        "patched_parts": sorted(patched_parts, key=str.casefold),
         "patches": patch_results,
+        "field_patches": field_patch_results,
     }
     manifest_path = out_dir / "token_patch_manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=True, sort_keys=True), encoding="utf-8")
@@ -215,6 +312,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--source-folder", type=Path, required=True)
     parser.add_argument("--out-dir", type=Path, required=True)
     parser.add_argument("--patch", action="append", default=[], help="Patch spec PART:ROW:SLOT.")
+    parser.add_argument("--field-patch", action="append", default=[], help="Field patch spec PART:ROW:FIELD:VALUE.")
     parser.add_argument("--patch-csv", action="append", type=Path, default=[])
     parser.add_argument("--role", action="append", default=[], help="When reading CSVs, include only this role.")
     parser.add_argument("--part", action="append", default=[], help="When reading CSVs, include only this part.")
@@ -222,6 +320,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     patches = [parse_patch_spec(value) for value in args.patch]
+    field_patches = [parse_field_patch_spec(value) for value in args.field_patch]
     for csv_path in args.patch_csv:
         patches.extend(
             load_patch_csv(
@@ -231,14 +330,15 @@ def main(argv: list[str] | None = None) -> int:
                 only_mismatches=not args.include_matches,
             )
         )
-    if not patches:
-        raise RuntimeError("No token patches requested.")
+    if not patches and not field_patches:
+        raise RuntimeError("No token or field patches requested.")
 
     manifest = build_token_patch_variant(
         base_folder=args.base_folder,
         source_folder=args.source_folder,
         out_dir=args.out_dir,
         patches=patches,
+        field_patches=field_patches,
     )
     print(json.dumps(manifest, indent=2, ensure_ascii=True, sort_keys=True))
     return 0

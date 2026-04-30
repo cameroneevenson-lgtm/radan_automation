@@ -1992,3 +1992,30 @@ visible delta, local LINE/ARC/LINE context, and visible arc geometry as complete
 explanations. The remaining signal is likely deeper row/corpus context, source
 float provenance, hidden per-symbol conversion state, or aggregate nester
 ordering sensitivity.
+
+### 2026-04-29 DDC Field-3 Identifier Is Nester-Visible
+
+`build_sym_token_patch_variant.py` now also supports lab-only DDC field patches
+via `--field-patch PART:ROW:FIELD:VALUE`, preserving DDC CDATA framing. This
+was added to test whether the geometry-row identifier field participates in the
+same nester sensitivity.
+
+Identifier-control experiments:
+
+| Variant | DDC field change | Geometry-token change | Used-nest match vs raw | Difference |
+| --- | --- | --- | --- | --- |
+| `B-185` row13 slot2 + row13/14 ID swap | row13 `?` -> `@`, row14 `@` -> `?` | row13 `4@7Tollog\K` -> `4@7Tollog\L` | no | nests `27`/`28` swap |
+| `F54410-B-21` row14 slot2 + row13/14 ID swap | row13 `?` -> `@`, row14 `@` -> `?` | row14 `4@7Tollog\K` -> `4@7Tollog\L` | no | nests `27`/`28` swap |
+| `B-185` row13/14 ID swap only | row13 `?` -> `@`, row14 `@` -> `?` | none | no | nests `27`/`28` swap |
+| `F54410-B-21` row13/14 ID swap only | row13 `?` -> `@`, row14 `@` -> `?` | none | no | nests `27`/`28` swap |
+
+All four passed the full95 count envelope (`lay_run_nest(0)=0`, `28` DRGs,
+`95` parts, `8` sheets, `42` nest rows, `431` made/nonzero) and cleaned up
+RADAN processes. The identifier-only controls are the important result: DDC
+field index `3` is nester-visible even when decoded geometry and geometry
+tokens are unchanged.
+
+Treat field `3` as part of the native crack target. It may be a feature/row ID,
+topology ordering key, cache correlation key, or tie-break input. It is not safe
+to regenerate or reorder it casually, and future hybrid/token experiments must
+preserve it unless the hypothesis explicitly targets field `3`.
