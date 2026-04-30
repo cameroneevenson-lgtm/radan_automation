@@ -2357,3 +2357,10 @@ reclassifies the six-token F12 candidate, raw+B-194/F54410-B-21 pair candidate,
 and raw-plus-six-F12 candidate as tie-aware accepted, all matching
 `raw_repeat`. The comparator update added focused unit coverage and the full
 baseline passed afterward: `197` tests, `OK`.
+
+Current tie-aware accepted token benchmarks against the L-side known-good corpus
+are: raw+B-194/F54410-B-21 pair at `65585/72553` exact tokens
+(`0.903959863824`, far `0`), raw plus the six F12 row-3 tokens at
+`65586/72553` (`0.903973646851`, far `0`), and the combined B-194/F21 pair plus
+six F12 tokens at `65590/72553` (`0.904028778962`, far `0`). All remain
+decoded-close for `72553/72553` token slots.
