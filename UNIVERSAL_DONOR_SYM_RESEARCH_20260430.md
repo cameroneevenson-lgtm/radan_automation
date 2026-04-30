@@ -324,6 +324,71 @@ Its copied-project nester proof passed:
 | `NextNestNum` | `19` |
 | RADAN process cleanup | preflight empty, final empty |
 
+## First-25 Slot-Family Isolation 2026-04-30
+
+The first-25 rung initially failed with the first-10 required-family folder:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_first25_first10_reqfam\F54410 PAINT PACK.first25_first10_reqfam.rpd` |
+| part rows | `25` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `11063` |
+| DRG count | `0` |
+
+Single-part isolation over rows 11-25 found these additional blockers:
+
+| Part | Single-part donor-family result |
+| --- | --- |
+| B-18 | fail, `11063` |
+| B-184 | fail, `11063` |
+| B-193 | fail, `11063` |
+| B-194 | fail, `11063` |
+| B-195 | fail, `11063` |
+| B-25 R2 | fail, `11063` |
+
+Full oracle-row replacement for those six parts made the first-25 rung pass:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_first25_oracle_rows\F54410 PAINT PACK.first25_oracle_rows.rpd` |
+| part rows | `25` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| DRG count | `9` |
+| made/nonzero count | `115` |
+
+Slot-family isolation produced these donor-side sufficient candidates:
+
+| Part | Sufficient oracle-token families | Single-part result |
+| --- | --- | --- |
+| B-18 | `G3/H2/H3/H4/H5` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-184 | `G0/G1/G2/G3` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-193 | `G2/G3/H2/H3/H4/H5` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-194 | `G2/G3/H2/H3/H4/H5` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-195 | `G2/G3/H2/H3/H4/H5` | pass, `lay_run_nest(0)=0`, 1 DRG |
+| B-25 R2 | `G0/G1/G2/G3/H2/H4/H5` | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+For `B-25 R2`, `H2/H4/H5` were individually necessary but not sufficient; adding all G families made the candidate pass. As with earlier field-8 diagnostics, adding field-8 pen patches to the broad all-token candidate returned `11088`, so field-8 exactness is not being treated as a safe standalone repair.
+
+The combined first-25 required-family folder is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_first25_required_families`
+
+Its copied-project nester proof passed:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_first25_required_families\F54410 PAINT PACK.first25_reqfam.rpd` |
+| part rows | `25` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `12.881s` |
+| DRG count | `9` |
+| nest rows | `23` |
+| made/nonzero count | `115` |
+| `NextNestNum` | `24` |
+| RADAN process cleanup | preflight empty, final empty |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
