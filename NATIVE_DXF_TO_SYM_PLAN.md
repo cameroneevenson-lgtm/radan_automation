@@ -2138,3 +2138,21 @@ the `F54410-B-18` addback both reproduce the nests `27`/`28` `B-3 R1` /
 This is not yet a writer rule. It is strong lab evidence that small, nonlocal
 token-spelling sets can cancel nester-visible ordering perturbations without
 changing decoded geometry or final DRG layout payloads.
+
+F12 role splitting narrowed the current reduced branch further. Relative to
+the raw+B194/F21 base, the three-part stabilizer has `137` decoded-close token
+differences: one `F54410-B-15` `delta_x`, `70` `F54410-B-16` `delta_x/delta_y`
+tokens, and `66` `F54410-B-12` `delta_x/delta_y` tokens. On top of the failing
+`F54410-B-15`+`F54410-B-16` base, F12 `delta_x`-only still swaps B-3/B-5, but
+F12 `delta_y`-only restores raw full95 used-nest semantics with `28` DRGs,
+`431` made/nonzero, `0` crack-relevant layout-token deltas, token exact rate
+`0.9047592794233181` (`65643/72553`, far `0`).
+
+The `29` F12 `delta_y` rows were split into early (`43`, `58`, `59`, `73`,
+`76`, `77`, `79`, `80`, `83`, `84`), middle (`109`, `110`, `118`, `119`,
+`122`, `123`, `124`, `126`, `127`, `129`, `130`, `131`, `132`, `133`, `138`,
+`139`, `140`), and late (`156`, `165`) row clusters. Each cluster alone failed,
+and each leave-one-cluster-out variant failed. Removing the middle cluster was
+most severe (`27` DRGs versus raw `28`, contained-symbol summaries `11/28`),
+so the F12 `delta_y` stabilizer appears distributed across all three coarse
+clusters, with the middle rows especially load-bearing.
