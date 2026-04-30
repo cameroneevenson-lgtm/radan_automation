@@ -49,6 +49,15 @@ class BuildSymTokenPatchVariantTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             patcher.parse_field_patch_spec("B-185:13:-1:@")
 
+    def test_parse_row_patch_spec_uses_one_based_rows(self) -> None:
+        self.assertEqual(
+            patcher.parse_row_patch_spec("B-185:13"),
+            {"part": "B-185", "row_index": 13, "source": "row-spec"},
+        )
+
+        with self.assertRaises(ValueError):
+            patcher.parse_row_patch_spec("B-185:0")
+
     def test_load_patch_csv_filters_matches_roles_and_parts(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "patches.csv"
@@ -131,6 +140,41 @@ class BuildSymTokenPatchVariantTests(unittest.TestCase):
         self.assertEqual(manifest["changed_field_patch_count"], 1)
         self.assertEqual(rows[1]["identifier"], "Z")
         self.assertIn("H,,1,Z,,,,,,,d.e.f\n]]>", patched_text)
+
+    def test_build_token_patch_variant_can_patch_whole_geometry_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            base = root / "base"
+            source = root / "source"
+            out = root / "_sym_lab" / "row_variant"
+            base.mkdir()
+            source.mkdir()
+            (base / "P1.sym").write_text(
+                _sym(["D,base", "G,,1,A,,,,,,,a.b.c", "H,,1,B,,,,,,,d.e.f", "E,base"]),
+                encoding="utf-8",
+            )
+            (source / "P1.sym").write_text(
+                _sym(["G,,1,X,,,,,,,x.y.z", "H,,1,Y,,,,,,,u.v.w"]),
+                encoding="utf-8",
+            )
+
+            manifest = patcher.build_token_patch_variant(
+                base_folder=base,
+                source_folder=source,
+                out_dir=out,
+                patches=[],
+                row_patches=[{"part": "P1", "row_index": 2, "source": "test"}],
+                lab_root=root / "_sym_lab",
+            )
+
+            rows = read_ddc_records(out / "P1.sym")
+            patched_text = (out / "P1.sym").read_text(encoding="utf-8")
+
+        self.assertEqual(manifest["row_patch_count"], 1)
+        self.assertEqual(manifest["changed_row_patch_count"], 1)
+        self.assertEqual(rows[0]["identifier"], "A")
+        self.assertEqual(rows[1]["identifier"], "Y")
+        self.assertIn("D,base\nG,,1,A,,,,,,,a.b.c\nH,,1,Y,,,,,,,u.v.w\nE,base\n]]>", patched_text)
 
     def test_default_lab_guard_rejects_non_lab_output(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
