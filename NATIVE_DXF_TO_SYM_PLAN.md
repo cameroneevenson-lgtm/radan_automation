@@ -2167,3 +2167,10 @@ and middle into halves still failed: earlyA+middle+156, earlyB+middle+156,
 early+midA+156, and early+midB+156 all failed, with earlyB+middle+156 producing
 the severe `27`-DRG / `11/28` contained-symbol match shape. Early and middle
 remain distributed across the tested halves.
+
+Early leave-one-row-out against the current early+middle+156 candidate found
+that rows `73` and `84` are individually optional, while rows `43`, `58`, `59`,
+`76`, `77`, `79`, `80`, and `83` are load-bearing one at a time. Rows `73` and
+`84` are not jointly optional: omitting both brings back the standard nests
+`27`/`28` B-3/B-5 swap. The current early requirement is therefore eight
+required rows plus either row `73` or row `84`.
