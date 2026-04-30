@@ -2190,3 +2190,12 @@ exact-token count (`65641/72553`) and `0` crack-relevant layout-token deltas.
 Rows `73` and `84` remain a coupled either/or pair, not jointly optional:
 omitting `73`, `84`, and `127` still nests with the broad count envelope but
 reproduces the standard nests `27`/`28` B-3/B-5 swap.
+
+A full middle leave-one sweep in the early-except-`84` context found a broader
+optional-middle set than the row-`73` branch. Rows `118`, `127`, `130`, `138`,
+and `139` can each be omitted one at a time while preserving raw full95
+used-nest semantics and `0` crack-relevant DRG layout-token deltas. Rows `109`,
+`110`, `119`, `122`, `123`, `124`, `126`, `129`, `131`, `132`, `133`, and
+`140` still fail with the standard B-3/B-5 swap. Among the passing no-`84`
+variants, rows `118`, `127`, and `138` tie at `65641/72553` exact tokens; rows
+`130` and `139` pass with `65640/72553`.
