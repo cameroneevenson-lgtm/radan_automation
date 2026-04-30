@@ -40,6 +40,10 @@ Copied-project nester results:
 | B-14 | donor-only raw-float connected line order rotated to lowest-Y/rightmost start | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor-only visible fractions with existing continuation tokens padded to length 11 | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor wrapper plus oracle decoded fractions re-encoded by our encoder, with trailing zero continuation trimmed | fail, `lay_run_nest(0)=11063`, 0 DRGs |
+| B-14 | oracle decoded fractions, exact trailing-zero spelling restored only for start slots | fail, `lay_run_nest(0)=11063`, 0 DRGs |
+| B-14 | oracle decoded fractions, exact trailing-zero spelling restored only for delta slots | fail, `lay_run_nest(0)=11063`, 0 DRGs |
+| B-14 | oracle decoded fractions, exact trailing-zero spelling restored only for x slots | fail, `lay_run_nest(0)=11063`, 0 DRGs |
+| B-14 | oracle decoded fractions, exact trailing-zero spelling restored only for y slots | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor wrapper plus oracle DDC geometry lines | pass, `lay_run_nest(0)=0`, 1 DRG |
 | B-17 | donor wrapper plus oracle DDC geometry lines | pass, `lay_run_nest(0)=0`, 1 DRG |
 | F54410-B-49 | donor wrapper plus oracle full DDC block | pass, `lay_run_nest(0)=0`, 1 DRG |
@@ -60,6 +64,7 @@ Additional B-14 diagnostic artifacts:
 | raw-float no-order donor nester RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_sym_research_20260430_084148\b14_variant_float_no_order\nester_b14_float_no_order\F54410 PAINT PACK.b14_float_no_order.rpd` |
 | raw-float rotated short-path donor nester RPD | `C:\Tools\radan_automation\_sym_lab\b14fr\nester_b14fr\F54410 PAINT PACK.b14fr.rpd` |
 | oracle-fraction re-encoded diagnostic RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_sym_research_20260430_084148\b14_oracle_fraction_reencoded_diagnostic\nester\F54410 PAINT PACK.b14_oracle_fraction_reencoded.rpd` |
+| partial restore start/delta/x/y RPDs | `C:\Tools\radan_automation\_sym_lab\nst_rs`, `C:\Tools\radan_automation\_sym_lab\nst_rd`, `C:\Tools\radan_automation\_sym_lab\nst_rx`, `C:\Tools\radan_automation\_sym_lab\nst_ry` |
 
 The B-14 token fraction analysis showed that the oracle and donor-rotated symbols both match transformed DXF geometry to floating tolerance (`~1e-14` / `~1e-15`), but `0/16` rows had identical first-four `G` tokens. This keeps the blocker in DDC token spelling / hidden fraction representation rather than visible geometry, row connectivity, or donor wrapper structure.
 
@@ -98,6 +103,10 @@ Result: false. Padding existing generated visible-fraction tokens with continuat
 `Decoded oracle fractions are enough even if token text is not exact.`
 
 Result: false. Re-encoding oracle decoded fractions from the donor wrapper stripped only trailing zero continuation digits from 28 non-empty tokens and still returned `11063`.
+
+`Only one broad B-14 slot family needs exact trailing-zero spelling.`
+
+Result: false. Restoring exact oracle token text only for start slots, delta slots, x slots, or y slots all still returned `11063`. Each run used a short copied-project path, produced 0 DRGs, and ended with no RADAN processes. Exact token spelling appears to be a broader all-slot/block property for this canary.
 
 `Generic leave-one-out corpus token spelling is enough for B-14.`
 
