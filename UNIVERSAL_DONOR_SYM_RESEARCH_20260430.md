@@ -1264,6 +1264,71 @@ Their previous failure was a target coordinate normalization/token context
 problem. `F54410-B-49` remains the only current 95-part candidate member still
 requiring RADAN-exported/cleaned 20-row geometry context.
 
+### Local B-49 Cleaner Removes Final Exported Target Dependency
+
+The existing lab-only outside-profile cleaner was rerun on the W-source
+`F54410-B-49.dxf` with tolerance `0.002`, then coordinate-model field 10 was
+regenerated from that cleaned DXF.
+
+Cleaner artifacts:
+
+- cleaned DXF:
+  `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\b49_w_cleaned_tol002_coord_model\F54410-B-49_outer_cleaned_tol002.dxf`
+- cleaning report:
+  `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\b49_w_cleaned_tol002_coord_model\F54410-B-49_outer_cleaned_tol002.report.json`
+- cleaned-vs-exported comparison:
+  `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\b49_cleaned_vs_exported_compare.json`
+
+Cleaner metrics:
+
+| Metric | Value |
+| --- | ---: |
+| input vertices | 28 |
+| output vertices | 20 |
+| removed vertices | 8 |
+| max removed local deviation | `0.0017680232690313101` |
+| max final vertex deviation | `0.0017680232690313101` |
+| area delta abs | `0.0018063177606109093` |
+
+The local cleaned DXF and the RADAN-exported DXF both have 20 rows. Ordered
+normalized line endpoints match with maximum distance
+`7.499509024881185e-7`; no ordered row endpoints differ by more than `1e-6`.
+
+Singleton copied-project gate for the cleaned-W-source B-49 coordinate-model
+symbol:
+
+| Field | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_wround6_b17_b27_cleaned_b49\symbols` |
+| `lay_run_nest(0)` | `0` |
+| DRGs | `1` |
+| nest rows | `15` |
+| made/nonzero count | `4` |
+| `NextNestNum` | `16` |
+
+The 95-part copied-project gate also passed with no exported target DXFs:
+
+| Field | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_live_coord_model_field10_wround6_b17_b27_cleaned_b49\symbols` |
+| generated from W-source rounded DXF | `B-17`, `B-27` |
+| generated from W-source cleaned DXF | `F54410-B-49` |
+| same-part oracle text used | no |
+| RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_95_live_coord_wround6_b17_b27_cleaned_b49\F54410 PAINT PACK.livecf10_wround6_b17_b27_b49clean.rpd` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.754s` |
+| part rows | `95` |
+| sheet rows | `8` |
+| DRGs | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+
+Conclusion: the current best 95-part candidate no longer needs exported target
+DXF files. It is still lab-only because `F54410-B-49` uses an intentional
+0.002-tolerance geometry cleanup, and the coordinate-model writer still uses a
+training corpus derived from RADAN-exported DXFs plus known-good SYMs.
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
