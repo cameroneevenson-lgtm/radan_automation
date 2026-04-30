@@ -453,6 +453,74 @@ Its copied-project nester proof passed:
 | `NextNestNum` | `28` |
 | RADAN process cleanup | preflight empty, final empty |
 
+## 95-Part Donor Wrapper DDC Upper Bound 2026-04-30
+
+Promoting the first-49 required-family folder directly to the 95-part proven
+subset, excluding only oversized `F54410-B-09`, `F54410-B-11`, and
+`F54410-B-17`, loaded 95 part rows and 8 sheet rows but failed during nesting
+with a COM exception from RADAN:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_first49_required_families\F54410 PAINT PACK.q95_first49_reqfam.rpd` |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_first49_required_families` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| excluded parts | `F54410-B-09`, `F54410-B-11`, `F54410-B-17` |
+| result | COM exception during nest, 0 DRGs |
+| RADAN process cleanup | preflight empty, automation PID killed, final empty |
+
+Singleton isolation over the post-49 rows found 20 parts that already nested
+with the first-49 folder and 26 additional donor blockers:
+
+| Code | Parts |
+| --- | --- |
+| `11036` | `F54410-B-01`, `F54410-B-10`, `F54410-B-29`, `F54410-B-31` |
+| `11063` | `F54410-B-03`, `F54410-B-04`, `F54410-B-05`, `F54410-B-06`, `F54410-B-07`, `F54410-B-08`, `F54410-B-13`, `F54410-B-14`, `F54410-B-15`, `F54410-B-16`, `F54410-B-18`, `F54410-B-19`, `F54410-B-25`, `F54410-B-26`, `F54410-B-32`, `F54410-B-33`, `F54410-B-37`, `F54410-B-38`, `F54410-B-39`, `F54410-B-40`, `F54410-B-46`, `F54410-B-47` |
+
+D-record-only repair was sufficient for two of the four `11036` parts:
+
+| Part | D-record-only result |
+| --- | --- |
+| F54410-B-01 | changed failure from `11036` to `11063`; D record alone not enough |
+| F54410-B-10 | changed failure from `11036` to `11063`; D record alone not enough |
+| F54410-B-29 | pass, `lay_run_nest(0)=0`, 1 DRG |
+| F54410-B-31 | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+Replacing the full DDC block, but keeping the universal donor wrapper, for the
+26 post-49 failing parts produced a 95-part copied-project nester pass. This is
+a diagnostic upper bound, not a generated-symbol solution, because it borrows
+same-part RADAN DDC text. It proves the universal donor wrapper remains
+acceptable at the full proven-subset scale and localizes the remaining failures
+to DDC block generation.
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_post49_full_ddc_failures\F54410 PAINT PACK.q95_post49_full_ddc.rpd` |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_post49_full_ddc_failures` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `59.750s` |
+| DRG count | `26` |
+| nest rows | `40` |
+| made/nonzero count | `428` |
+| `NextNestNum` | `41` |
+| RADAN process cleanup | preflight empty, final empty |
+
+The report follow-up reran the same 95-part upper-bound candidate successfully
+and then attempted `Project Report` and `Setup Sheet`. Both report calls failed
+with `Wrong mode for DevExpress reports`, no PDFs were created, and the RADAN
+process cleanup was clean:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_post49_full_ddc_reports\F54410 PAINT PACK.q95_full_ddc_report.rpd` |
+| `lay_run_nest(0)` | `0` |
+| DRG count | `26` |
+| report result | blocked: `Wrong mode for DevExpress reports` |
+| RADAN process cleanup | preflight empty, final empty |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
