@@ -576,6 +576,48 @@ than exact field-10 payload:
 That separates most post-49 failures into token-payload exactness and leaves a
 smaller set where record type or other G/H fields are also nester-visible.
 
+The five field-10-only singleton failures were reduced further:
+
+| Part | Additional requirement over exact field 10 | Singleton result |
+| --- | --- | --- |
+| F54410-B-05 | field 8 exactness | pass, `lay_run_nest(0)=0`, 1 DRG |
+| F54410-B-10 | field 8 exactness | pass, `lay_run_nest(0)=0`, 1 DRG |
+| F54410-B-14 | field 8 exactness | pass, `lay_run_nest(0)=0`, 1 DRG |
+| F54410-B-01 | record type, fields 8/9/11, and terminal empty-field count | pass, `lay_run_nest(0)=0`, 1 DRG |
+| F54410-B-40 | record type, fields 9/11, and terminal empty-field count | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+For `F54410-B-01` and `F54410-B-40`, matching the visible fields but leaving
+the donor-style terminal comma count still failed with `11063`. Adjusting only
+the trailing empty-field shape to match RADAN's exact row text made both parts
+nest. This proves the raw DDC row arity/trailing-delimiter spelling is
+nester-visible.
+
+The current sharpest 95-part reduced upper bound is:
+`C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_post49_required_fields_trailing_upper`
+
+It uses:
+
+- exact field 10 only for the 16 post-49 parts where that was sufficient
+- field 8 plus exact field 10 for `F54410-B-05`, `F54410-B-10`, `F54410-B-14`
+- record type / field 9 / field 11 / trailing-empty-field-count repairs for `F54410-B-01` and `F54410-B-40`
+- D-record-only repair for `F54410-B-29` and `F54410-B-31`
+- full DDC only for row-count/repair cases `F54410-B-37`, `F54410-B-38`, `F54410-B-39`
+
+Its copied-project nester proof passed:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_post49_required_fields_trailing\F54410 PAINT PACK.q95_post49_reqfields.rpd` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `54.020s` |
+| DRG count | `27` |
+| nest rows | `41` |
+| made/nonzero count | `428` |
+| `NextNestNum` | `42` |
+| RADAN process cleanup | preflight empty, final empty |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
