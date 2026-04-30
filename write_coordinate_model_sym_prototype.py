@@ -150,6 +150,7 @@ def _preprocess_coordinate_model_dxf_rows(
     dxf_rows: list[dict[str, Any]],
     bounds: Any,
     *,
+    target_coordinate_digits: int | None = None,
     source_coordinate_digits: int | None = None,
     source_coordinate_entity_types: set[str] | None = None,
     topology_snap_endpoints: bool = False,
@@ -169,7 +170,48 @@ def _preprocess_coordinate_model_dxf_rows(
             digits=int(source_coordinate_digits),
             entity_types=source_coordinate_entity_types,
         )
+    if target_coordinate_digits is not None:
+        return _rows_with_rounded_normalized_coordinates(
+            dxf_rows,
+            digits=int(target_coordinate_digits),
+            entity_types=source_coordinate_entity_types,
+        )
     return dxf_rows
+
+
+def _round_coordinate(value: float, digits: int) -> float:
+    rounded = round(float(value), int(digits))
+    return 0.0 if rounded == 0 else rounded
+
+
+def _round_point(point: Any, *, digits: int) -> list[float]:
+    return [_round_coordinate(float(point[0]), digits), _round_coordinate(float(point[1]), digits)]
+
+
+def _rows_with_rounded_normalized_coordinates(
+    dxf_rows: list[dict[str, Any]],
+    *,
+    digits: int,
+    entity_types: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    rounded_rows: list[dict[str, Any]] = []
+    for row in dxf_rows:
+        copied = dict(row)
+        entity_type = str(copied["type"])
+        if entity_types is not None and entity_type not in entity_types:
+            rounded_rows.append(copied)
+            continue
+        if entity_type == "LINE":
+            copied["normalized_start"] = _round_point(copied["normalized_start"], digits=digits)
+            copied["normalized_end"] = _round_point(copied["normalized_end"], digits=digits)
+        elif entity_type == "ARC":
+            copied["normalized_start_point"] = _round_point(copied["normalized_start_point"], digits=digits)
+            copied["normalized_end_point"] = _round_point(copied["normalized_end_point"], digits=digits)
+            copied["normalized_center"] = _round_point(copied["normalized_center"], digits=digits)
+        elif entity_type == "CIRCLE":
+            copied["normalized_center"] = _round_point(copied["normalized_center"], digits=digits)
+        rounded_rows.append(copied)
+    return rounded_rows
 
 
 def _token_observations(pairs: list[PartPair]) -> list[dict[str, Any]]:
@@ -1232,6 +1274,7 @@ def write_coordinate_model_prototype(
     use_slot_value_fractions: bool = False,
     radan_save_token_model: dict[str, Any] | None = None,
     radan_save_token_model_mode: str = "off",
+    target_coordinate_digits: int | None = None,
     source_coordinate_digits: int | None = None,
     source_coordinate_entity_types: set[str] | None = None,
     topology_snap_endpoints: bool = False,
@@ -1242,6 +1285,7 @@ def write_coordinate_model_prototype(
     dxf_rows = _preprocess_coordinate_model_dxf_rows(
         dxf_rows,
         bounds,
+        target_coordinate_digits=target_coordinate_digits,
         source_coordinate_digits=source_coordinate_digits,
         source_coordinate_entity_types=source_coordinate_entity_types,
         topology_snap_endpoints=topology_snap_endpoints,
@@ -1321,6 +1365,7 @@ def write_coordinate_model_prototype(
         "allow_same_part_token_spelling": allow_same_part_token_spelling,
         "prefer_literal_geometry": prefer_literal_geometry,
         "use_slot_value_fractions": use_slot_value_fractions,
+        "target_coordinate_digits": target_coordinate_digits,
         "source_coordinate_digits": source_coordinate_digits,
         "source_coordinate_entity_types": (
             None if source_coordinate_entity_types is None else sorted(source_coordinate_entity_types)
@@ -1396,6 +1441,14 @@ def main() -> int:
         "--use-slot-value-fractions",
         action="store_true",
         help="Lab mode: use leave-one-part-out hidden fractions learned for direct slot value/type/role keys.",
+    )
+    parser.add_argument(
+        "--target-coordinate-digits",
+        type=int,
+        help=(
+            "Lab option: round already-normalized DXF coordinates before coordinate-model prediction. "
+            "This tests RADAN-export style normalized-coordinate spelling."
+        ),
     )
     parser.add_argument(
         "--source-coordinate-digits",
@@ -1492,6 +1545,7 @@ def main() -> int:
                 use_slot_value_fractions=bool(args.use_slot_value_fractions),
                 radan_save_token_model=radan_save_model,
                 radan_save_token_model_mode=str(args.radan_save_token_model_mode),
+                target_coordinate_digits=args.target_coordinate_digits,
                 source_coordinate_digits=args.source_coordinate_digits,
                 source_coordinate_entity_types=(
                     None if args.source_coordinate_entity_type is None else set(args.source_coordinate_entity_type)
@@ -1520,6 +1574,7 @@ def main() -> int:
         "allow_same_part_token_spelling": bool(args.allow_same_part_token_spelling),
         "prefer_literal_geometry": bool(args.prefer_literal_geometry),
         "use_slot_value_fractions": bool(args.use_slot_value_fractions),
+        "target_coordinate_digits": args.target_coordinate_digits,
         "source_coordinate_digits": args.source_coordinate_digits,
         "source_coordinate_entity_types": args.source_coordinate_entity_type,
         "topology_snap_endpoints": bool(args.topology_snap_endpoints),

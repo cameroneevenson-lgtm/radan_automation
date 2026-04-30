@@ -41,6 +41,26 @@ class WriteCoordinateModelSymPrototypeTests(unittest.TestCase):
         self.assertEqual(processed[0]["normalized_start"], [0.0, 0.0])
         self.assertEqual(processed[0]["normalized_end"], [10.0625, 2.049219])
 
+    def test_preprocess_rounds_normalized_coordinates_before_coordinate_model_prediction(self) -> None:
+        rows = [
+            {
+                "type": "LINE",
+                "start": [0.0000004, -1.135832849900836],
+                "end": [10.0625, 0.913385826771655],
+                "normalized_start": [0.0000004, 0.0],
+                "normalized_end": [10.0624996, 2.049218676672491],
+            }
+        ]
+
+        processed = _preprocess_coordinate_model_dxf_rows(
+            rows,
+            Bounds(0.0000004, -1.135832849900836, 10.0625, 0.913385826771655),
+            target_coordinate_digits=6,
+        )
+
+        self.assertEqual(processed[0]["normalized_start"], [0.0, 0.0])
+        self.assertEqual(processed[0]["normalized_end"], [10.0625, 2.049219])
+
     def test_preprocess_requires_source_digits_for_topology_snap(self) -> None:
         with self.assertRaises(RuntimeError):
             _preprocess_coordinate_model_dxf_rows(
