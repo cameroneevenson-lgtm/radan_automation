@@ -2183,3 +2183,10 @@ subset is early except `73`, middle except `127`, plus row `156`: `26`
 F54410-B-12 `delta_y` patches. It preserves raw full95 used-nest semantics,
 has `0` crack-relevant DRG layout-token deltas, and has token exact rate
 `0.9047317133681585` (`65641/72553`, far `0`).
+
+The alternate early choice also works: early except `84`, middle except `127`,
+plus row `156` passes full95 and matches raw used-nest semantics with the same
+exact-token count (`65641/72553`) and `0` crack-relevant layout-token deltas.
+Rows `73` and `84` remain a coupled either/or pair, not jointly optional:
+omitting `73`, `84`, and `127` still nests with the broad count envelope but
+reproduces the standard nests `27`/`28` B-3/B-5 swap.
