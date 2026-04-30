@@ -2289,3 +2289,12 @@ keeping F15 also produced five passing `15`-token branches: no-row `77`, `122`,
 contained-symbol matches, `0` layout-token deltas, `65596/72553` exact tokens,
 and no far decoded mismatches. The no-row `77` branch also passed hard-canary
 thumbnail parity `7/7`.
+
+Reducing the pure F12-only `15`-token branch found three individually removable
+rows: `76`, `109`, and `132`. Dropping row `109` is the best current pure-F12
+`14`-token branch: it preserves raw full95 used-nest semantics, has `28/28`
+contained-symbol matches, `0` layout-token deltas, `65595/72553` exact tokens,
+`0` far mismatches, and hard-canary thumbnail parity `7/7`. Dropping row `76`
+or `132` also preserves the nester oracle but lands one exact token lower at
+`65594/72553`. Pair drops among `76`, `109`, and `132` all fail with the
+standard `26/28` contained-symbol swap shape.
