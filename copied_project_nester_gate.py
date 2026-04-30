@@ -223,10 +223,22 @@ Get-Process | Where-Object {{ $_.ProcessName -match '{RADAN_PROCESS_PATTERN}' }}
     return []
 
 
-def terminate_processes(processes: list[dict[str, Any]], *, timeout_sec: float = 10.0) -> dict[str, Any]:
-    ids = [int(row["id"]) for row in processes if str(row.get("id", "")).strip().isdigit()]
+def terminate_processes(
+    processes: list[dict[str, Any]],
+    *,
+    timeout_sec: float = 10.0,
+    exclude_ids: Iterable[int] = (),
+) -> dict[str, Any]:
+    excluded = {int(value) for value in exclude_ids}
+    candidate_ids = [int(row["id"]) for row in processes if str(row.get("id", "")).strip().isdigit()]
+    ids = [value for value in candidate_ids if value not in excluded]
     if not ids or os.name != "nt":
-        return {"requested_ids": ids, "stopped": [], "after": list_radan_processes()}
+        return {
+            "requested_ids": ids,
+            "preserved_ids": sorted(value for value in candidate_ids if value in excluded),
+            "stopped": [],
+            "after": list_radan_processes(),
+        }
     id_list = ",".join(str(value) for value in ids)
     script = f"Stop-Process -Id {id_list} -Force -ErrorAction SilentlyContinue"
     subprocess.run(["powershell", "-NoProfile", "-Command", script], capture_output=True, text=True, timeout=30, check=False)
@@ -235,7 +247,12 @@ def terminate_processes(processes: list[dict[str, Any]], *, timeout_sec: float =
     while after and time.time() < deadline:
         time.sleep(0.25)
         after = list_radan_processes()
-    return {"requested_ids": ids, "stopped": ids, "after": after}
+    return {
+        "requested_ids": ids,
+        "preserved_ids": sorted(value for value in candidate_ids if value in excluded),
+        "stopped": ids,
+        "after": after,
+    }
 
 
 def _set_mac_property(mac: Any, name: str, value: Any) -> bool:
@@ -447,7 +464,13 @@ def run_gate(
         raise RuntimeError(f"Missing {len(missing_symbols)} symbol(s) for gate; first: {missing_symbols[0]}")
 
     preflight_processes = list_radan_processes()
+    preflight_ids = {
+        int(row["id"])
+        for row in preflight_processes
+        if str(row.get("id", "")).strip().isdigit()
+    }
     cleanup_before = terminate_processes(preflight_processes) if kill_existing_radan else None
+    cleanup_exclude_ids = set() if kill_existing_radan else preflight_ids
     preexisting_visible_pids = _visible_radan_process_ids()
     before_snapshot = prepare_copied_project(source_rpd, project_path, label=safe_label)
     payload: dict[str, Any] = {
@@ -544,7 +567,10 @@ def run_gate(
                 app.close()
             except Exception:
                 pass
-        payload["process_cleanup_after_quit"] = terminate_processes(list_radan_processes())
+        payload["process_cleanup_after_quit"] = terminate_processes(
+            list_radan_processes(),
+            exclude_ids=cleanup_exclude_ids,
+        )
         payload["process_final"] = list_radan_processes()
         (out_dir / "result.json").write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
         logger.write("Finished copied-project nester gate.")

@@ -142,6 +142,22 @@ class CopiedProjectNesterGateTests(unittest.TestCase):
         self.assertEqual(snapshot["made_nonzero_count"], 1)
         self.assertEqual(snapshot["next_nest_num"], ["15"])
 
+    def test_terminate_processes_preserves_excluded_ids(self) -> None:
+        processes = [
+            {"id": "101", "process_name": "RADRAFT"},
+            {"id": "202", "process_name": "RADRAFT"},
+        ]
+        with mock.patch.object(gate.os, "name", "nt"):
+            with mock.patch.object(gate, "list_radan_processes", return_value=[]):
+                with mock.patch.object(gate.subprocess, "run") as run_mock:
+                    result = gate.terminate_processes(processes, exclude_ids=[202])
+
+        self.assertEqual(result["requested_ids"], [101])
+        self.assertEqual(result["preserved_ids"], [202])
+        self.assertEqual(result["stopped"], [101])
+        self.assertIn("-Id 101", run_mock.call_args.args[0][-1])
+        self.assertNotIn("202", run_mock.call_args.args[0][-1])
+
     def test_run_gate_writes_error_result_when_requested_part_missing(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
