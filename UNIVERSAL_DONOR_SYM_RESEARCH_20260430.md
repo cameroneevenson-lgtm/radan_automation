@@ -1147,6 +1147,25 @@ coordinate-model rules. The remaining donor-native gap is now specifically:
 - generate the `F54410-B-49` 20-row collapse/cleanup shape without same-part
   oracle row text
 
+`F54410-B-49` was split further. The W: source DXF has 28 LINE entities, while
+the RADAN-exported DXF corpus used by the coordinate-model writer has 20 LINE
+entities and matches the source symbol row count. Generating a donor-native
+symbol from that exported 20-row DXF still failed with `11063`, so row-count
+cleanup alone is not sufficient. Replacing only field 10 in that 20-row donor
+symbol with coordinate-model generated field 10 passed singly:
+
+| Candidate | Result |
+| --- | --- |
+| exported 20-row DXF + native donor field 10 | fail, `lay_run_nest(0)=11063`, 0 DRGs |
+| exported 20-row DXF + donor wrapper/rows + coordinate-model generated field 10 | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+Artifacts:
+
+- native exported-DXF candidate:
+  `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\f49_exported_dxf_native`
+- field-10 replacement pass:
+  `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\f49_exported_dxf_native_coord_f10`
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
