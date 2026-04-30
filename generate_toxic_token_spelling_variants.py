@@ -72,8 +72,34 @@ B38_SOURCE_LIKE_RESIDUAL_VARIANT = [
     TokenShiftPatch("F54410-B-38", 200, 3, 0, 1, "vertical delta spelling with one zero"),
 ]
 
+B38_APPEND_ZERO_DELTAS_VARIANT = [
+    TokenShiftPatch("F54410-B-38", 20, 3, 0, 1, "append one zero to vertical delta"),
+    TokenShiftPatch("F54410-B-38", 23, 2, 0, 1, "append one zero to horizontal delta"),
+    TokenShiftPatch("F54410-B-38", 25, 2, 0, 1, "append one zero to horizontal delta"),
+    TokenShiftPatch("F54410-B-38", 30, 2, 0, 1, "append one zero to horizontal delta"),
+    TokenShiftPatch("F54410-B-38", 33, 2, 0, 1, "append one zero to horizontal delta"),
+    TokenShiftPatch("F54410-B-38", 35, 3, 0, 1, "append one zero to vertical delta"),
+    TokenShiftPatch("F54410-B-38", 37, 2, 0, 1, "append one zero to horizontal delta"),
+    TokenShiftPatch("F54410-B-38", 199, 2, 0, 1, "append one zero to horizontal delta"),
+    TokenShiftPatch("F54410-B-38", 200, 3, 0, 1, "append one zero to vertical delta"),
+]
+
+B38_SOURCE_LIKE_DELTA_RESIDUAL_VARIANT = [
+    TokenShiftPatch("F54410-B-38", 20, 3, 0, 1, "vertical delta spelling with one zero"),
+    TokenShiftPatch("F54410-B-38", 23, 2, 1, 2, "horizontal delta plus one unit and two zeros"),
+    TokenShiftPatch("F54410-B-38", 25, 2, 4, 1, "horizontal delta plus four units and one zero"),
+    TokenShiftPatch("F54410-B-38", 30, 2, -12, 1, "horizontal delta minus twelve units and one zero"),
+    TokenShiftPatch("F54410-B-38", 33, 2, 1, 2, "horizontal delta plus one unit and two zeros"),
+    TokenShiftPatch("F54410-B-38", 35, 3, 0, 1, "vertical delta spelling with one zero"),
+    TokenShiftPatch("F54410-B-38", 37, 2, 4, 1, "horizontal delta plus four units and one zero"),
+    TokenShiftPatch("F54410-B-38", 199, 2, -12, 1, "horizontal delta minus twelve units and one zero"),
+    TokenShiftPatch("F54410-B-38", 200, 3, 0, 1, "vertical delta spelling with one zero"),
+]
+
 BUILTIN_VARIANTS: dict[str, list[TokenShiftPatch]] = {
     **B37_VARIANTS,
+    "b38_append_zero_deltas": B38_APPEND_ZERO_DELTAS_VARIANT,
+    "b38_source_like_delta_residuals": B38_SOURCE_LIKE_DELTA_RESIDUAL_VARIANT,
     "b38_source_like_residual_digits": B38_SOURCE_LIKE_RESIDUAL_VARIANT,
 }
 
