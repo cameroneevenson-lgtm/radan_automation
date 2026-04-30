@@ -692,6 +692,31 @@ the practical nester blocker in this test. This remains an oracle-reduced upper
 bound, because the merged G/H row text was copied from same-part RADAN source
 symbols instead of generated directly from DXF.
 
+Follow-up generated-row diagnostics narrowed the row-count crack further:
+
+| Candidate | F54410-B-37 | F54410-B-38 | F54410-B-39 | Conclusion |
+| --- | --- | --- | --- | --- |
+| generated collinear-chain merge from raw donor rows, generated field 10, generated row count | fail `11063` | fail `11063` | fail `11063` | the merge topology and row count are not sufficient by themselves |
+| source G/H rows, but generated field 10 only on the two merged-chain rows | pass | pass | pass | generated compact tokens for the merged rows are acceptable |
+| source G/H order/row fields, generated field 10 for every matching generated `G` segment | fail `11063` | fail `11063` | pass | `F54410-B-39` is mostly row order/row-shape sensitive; `F54410-B-37` and `F54410-B-38` still need exact token spelling on additional rows |
+
+The generated collinear-chain rule found exactly the RADAN row-count reduction
+for all three parts: two five-fragment straight same-pen chains per part,
+removing eight geometry rows. Artifacts:
+
+| Artifact | Path |
+| --- | --- |
+| generated merge symbols | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_rowcount_generated_collinear_merge_v2` |
+| generated merge singleton checks | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\rowcount_generated_collinear_merge_v2_single_checks` |
+| generated merged-row field-10 diagnostic | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_rowcount_source_rows_generated_merged_only_field10` |
+| source-order generated field-10 diagnostic | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_rowcount_source_order_generated_field10_all` |
+
+This turns the row-count branch into two smaller problems:
+
+- generate RADAN-like row order/row fields for the merged source-order shape
+- improve compact token spelling for the remaining non-merged generated rows,
+  especially `F54410-B-37` and `F54410-B-38`
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
