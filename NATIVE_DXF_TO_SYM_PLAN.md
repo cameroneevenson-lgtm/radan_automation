@@ -2156,3 +2156,14 @@ and each leave-one-cluster-out variant failed. Removing the middle cluster was
 most severe (`27` DRGs versus raw `28`, contained-symbol summaries `11/28`),
 so the F12 `delta_y` stabilizer appears distributed across all three coarse
 clusters, with the middle rows especially load-bearing.
+
+Finer F12 row-cluster splitting found that late row `156` is sufficient with
+early+middle present, while late row `165` is not. The current smallest passing
+role/row subset is therefore F12 early all + middle all + row `156`, for `28`
+F12 `delta_y` patches instead of `29`. It preserves raw full95 used-nest
+semantics, has `0` crack-relevant DRG layout-token deltas versus raw, and has
+token exact rate `0.9047454963957383` (`65642/72553`, far `0`). Splitting early
+and middle into halves still failed: earlyA+middle+156, earlyB+middle+156,
+early+midA+156, and early+midB+156 all failed, with earlyB+middle+156 producing
+the severe `27`-DRG / `11/28` contained-symbol match shape. Early and middle
+remain distributed across the tested halves.
