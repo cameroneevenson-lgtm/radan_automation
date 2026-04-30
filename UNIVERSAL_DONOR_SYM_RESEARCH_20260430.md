@@ -717,6 +717,28 @@ This turns the row-count branch into two smaller problems:
 - improve compact token spelling for the remaining non-merged generated rows,
   especially `F54410-B-37` and `F54410-B-38`
 
+`F54410-B-37` was isolated further. There are 9 generated field-10
+substitutions when using source G/H order/row fields. Single-row nester checks
+showed 7/9 substitutions are accepted individually. Two short vertical rows are
+individually toxic:
+
+| Variant | source row index | segment | singleton result |
+| --- | ---: | --- | --- |
+| `r04` | 12 | `(35.0625,35.81521)` to `(35.0625,36.25)` | fail `11063` |
+| `r05` | 18 | `(6.9375,35.81521)` to `(6.9375,36.25)` | fail `11063` |
+
+Keeping only those two rows at source token spelling while generating the other
+7 changed rows passed: `lay_run_nest(0)=0`, 1 DRG. The source/generated values
+for the toxic rows decode to the same geometry within about `7e-15`, so the
+failure is compact token spelling/rounding, not visible geometric deviation.
+Artifacts:
+
+| Artifact | Path |
+| --- | --- |
+| B-37 single-row field-10 variants | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_single_row_variants` |
+| B-37 single-row nester checks | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_single_row_checks` |
+| B-37 generated-except-r04/r05 pass | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_except_r04_r05_check` |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
