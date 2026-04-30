@@ -739,6 +739,57 @@ Artifacts:
 | B-37 single-row nester checks | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_single_row_checks` |
 | B-37 generated-except-r04/r05 pass | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b37_generated_field10_except_r04_r05_check` |
 
+`F54410-B-38` was reduced with iterative delta debugging. Starting from 91
+generated field-10 substitutions in source G/H order, the nester found multiple
+independently toxic compact-token spellings. Keeping these 9 source rows exact
+and generating the other 82 changed rows passed:
+
+| Source row index | Segment |
+| ---: | --- |
+| 19 | `(33.50325,53.38045)` to `(33.50325,53.4512)` |
+| 22 | `(33.02175,53.4762)` to `(33.47825,53.4762)` |
+| 24 | `(32.78405,53.35545)` to `(32.97175,53.35545)` |
+| 29 | `(33.52825,51.89455)` to `(33.71595,51.89455)` |
+| 32 | `(33.02175,51.7738)` to `(33.47825,51.7738)` |
+| 34 | `(32.99675,51.7988)` to `(32.99675,51.86955)` |
+| 36 | `(32.78405,51.89455)` to `(32.97175,51.89455)` |
+| 198 | `(33.52825,53.35545)` to `(33.71595,53.35545)` |
+| 199 | `(33.50325,51.7988)` to `(33.50325,51.86955)` |
+
+The current sharpest row-count upper bound uses:
+
+| Part | generated field-10 rows | exact source field-10 rows still required |
+| --- | ---: | ---: |
+| F54410-B-37 | 7 | 2 |
+| F54410-B-38 | 82 | 9 |
+| F54410-B-39 | 1 | 0 |
+
+It keeps source G/H row order and row fields for these three row-count parts,
+but no longer needs full source field-10 text. The 95-part copied-project
+nester gate passed:
+
+| Metric | Value |
+| --- | --- |
+| RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_rowcount_source_order_generated_f10_except_toxic\F54410 PAINT PACK.q95_rowcount_genf10_except_toxic.rpd` |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_rowcount_source_order_generated_f10_except_toxic` |
+| part rows | `95` |
+| sheet rows after refresh | `8` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `55.295s` |
+| DRG count | `28` |
+| nest rows | `42` |
+| made/nonzero count | `431` |
+| `NextNestNum` | `43` |
+| RADAN process cleanup | preflight empty, final empty |
+
+Artifacts:
+
+| Artifact | Path |
+| --- | --- |
+| B-38 iterative ddmin | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\b38_field10_iterative_ddmin_summary.json` |
+| row-count reduced symbol folder | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\symbols_95_plus_rowcount_source_order_generated_f10_except_toxic` |
+| row-count reduced 95-part gate | `C:\Tools\radan_automation\_sym_lab\universal_donor_predictability_20260430_1128\nester_95_rowcount_source_order_generated_f10_except_toxic` |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
