@@ -37,6 +37,7 @@ Copied-project nester results:
 | B-14 | donor-only source-6 line order, no topology snap, no endpoint canonicalization | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor-only raw-float line order, no topology snap, no endpoint canonicalization | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor-only raw-float original DXF order, no topology snap, no endpoint canonicalization | fail, `lay_run_nest(0)=11063`, 0 DRGs |
+| B-14 | donor-only raw-float connected line order rotated to lowest-Y/rightmost start | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor-only visible fractions with existing continuation tokens padded to length 11 | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor wrapper plus oracle decoded fractions re-encoded by our encoder, with trailing zero continuation trimmed | fail, `lay_run_nest(0)=11063`, 0 DRGs |
 | B-14 | donor wrapper plus oracle DDC geometry lines | pass, `lay_run_nest(0)=0`, 1 DRG |
@@ -57,6 +58,7 @@ Additional B-14 diagnostic artifacts:
 | --- | --- |
 | token fraction analysis | `C:\Tools\radan_automation\_sym_lab\universal_donor_sym_research_20260430_084148\b14_token_fraction_analysis.json` |
 | raw-float no-order donor nester RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_sym_research_20260430_084148\b14_variant_float_no_order\nester_b14_float_no_order\F54410 PAINT PACK.b14_float_no_order.rpd` |
+| raw-float rotated short-path donor nester RPD | `C:\Tools\radan_automation\_sym_lab\b14fr\nester_b14fr\F54410 PAINT PACK.b14fr.rpd` |
 | oracle-fraction re-encoded diagnostic RPD | `C:\Tools\radan_automation\_sym_lab\universal_donor_sym_research_20260430_084148\b14_oracle_fraction_reencoded_diagnostic\nester\F54410 PAINT PACK.b14_oracle_fraction_reencoded.rpd` |
 
 The B-14 token fraction analysis showed that the oracle and donor-rotated symbols both match transformed DXF geometry to floating tolerance (`~1e-14` / `~1e-15`), but `0/16` rows had identical first-four `G` tokens. This keeps the blocker in DDC token spelling / hidden fraction representation rather than visible geometry, row connectivity, or donor wrapper structure.
@@ -84,6 +86,10 @@ Result: false. A lab-only computed variant rotated the connected B-14 loop to th
 `Current snapping/canonicalization settings are the whole B-14 nester blocker.`
 
 Result: false. Source-rounded/no-snap/no-canonical, raw-float/no-snap/no-canonical, and raw-float/original-order variants all still returned `11063`.
+
+`Raw float coordinates plus the saved-symbol loop start is enough for B-14.`
+
+Result: false. A repeatable writer option now rotates a closed connected line profile to the lowest-Y/rightmost start point. The B-14 raw-float/no-snap/no-canonical rotated variant started at `[21.5, 0.0]`, had unordered line geometry parity, and still returned `11063` in a short copied-project path with no path-length warning.
 
 `Continuation length alone can fix visible-fraction donor B-14.`
 
