@@ -142,6 +142,8 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
         self.assertFalse(payload["rows"][0]["retained_donor_attr_110"])
         self.assertEqual(payload["rows"][0]["entity_count"], 1)
         self.assertEqual(payload["rows"][0]["generated_geometry_records"], 1)
+        self.assertTrue(payload["rows"][0]["line_profile_ordering"]["eligible"])
+        self.assertTrue(payload["rows"][0]["unordered_line_geometry"]["passed"])
         self.assertIn("B,G,", generated_text)
         self.assertIn("G,,1,3,,1,,,1,,", generated_text)
         self.assertIn('num="119" name="Material" type="s" value="Aluminum 5052"', generated_text)

@@ -470,6 +470,73 @@ def _rows_with_topology_snapped_endpoints(
     return snapped_rows
 
 
+def _line_point_key(point: list[float] | tuple[float, ...], *, digits: int = 6) -> tuple[float, float]:
+    return (round(float(point[0]), digits), round(float(point[1]), digits))
+
+
+def _line_row_start(row: dict[str, Any]) -> tuple[float, float]:
+    return _line_point_key(row["normalized_start"])
+
+
+def _line_row_end(row: dict[str, Any]) -> tuple[float, float]:
+    return _line_point_key(row["normalized_end"])
+
+
+def _reverse_line_row(row: dict[str, Any]) -> dict[str, Any]:
+    copied = dict(row)
+    copied["normalized_start"], copied["normalized_end"] = list(row["normalized_end"]), list(row["normalized_start"])
+    if "start" in copied and "end" in copied:
+        copied["start"], copied["end"] = list(row["end"]), list(row["start"])
+    return copied
+
+
+def _line_profile_signature(rows: list[dict[str, Any]]) -> list[tuple[tuple[float, float], tuple[float, float]]]:
+    return [(_line_row_start(row), _line_row_end(row)) for row in rows]
+
+
+def _rows_with_connected_line_profiles(dxf_rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    if any(str(row.get("type")) != "LINE" for row in dxf_rows):
+        return list(dxf_rows), {"eligible": False, "changed": False, "chain_count": 0}
+
+    original_signature = _line_profile_signature(dxf_rows)
+    unused = [dict(row) for row in dxf_rows]
+    ordered: list[dict[str, Any]] = []
+    chain_count = 0
+    while unused:
+        chain_count += 1
+        chain = [unused.pop(0)]
+        chain_start = _line_row_start(chain[0])
+        current_end = _line_row_end(chain[-1])
+        while unused:
+            match_index = None
+            reverse_match = False
+            for index, candidate in enumerate(unused):
+                if _line_row_start(candidate) == current_end:
+                    match_index = index
+                    reverse_match = False
+                    break
+                if _line_row_end(candidate) == current_end:
+                    match_index = index
+                    reverse_match = True
+                    break
+            if match_index is None:
+                break
+            next_row = unused.pop(match_index)
+            if reverse_match:
+                next_row = _reverse_line_row(next_row)
+            chain.append(next_row)
+            current_end = _line_row_end(next_row)
+            if current_end == chain_start:
+                break
+        ordered.extend(chain)
+
+    return ordered, {
+        "eligible": True,
+        "changed": _line_profile_signature(ordered) != original_signature,
+        "chain_count": chain_count,
+    }
+
+
 def _replace_ddc_geometry_block(
     template_text: str,
     dxf_rows: list[dict[str, Any]],
@@ -631,6 +698,7 @@ def write_native_prototype(
     source_coordinate_entity_types: set[str] | None = None,
     canonicalize_endpoints: bool = False,
     topology_snap_endpoints: bool = False,
+    order_connected_line_profiles: bool = False,
 ) -> dict[str, Any]:
     _ensure_lab_output(out_path, allow_outside_lab=allow_outside_lab)
     dxf_rows, bounds = read_dxf_entities(dxf_path)
@@ -649,6 +717,9 @@ def write_native_prototype(
             digits=int(source_coordinate_digits),
             entity_types=source_coordinate_entity_types,
         )
+    line_profile_ordering = {"eligible": False, "changed": False, "chain_count": 0}
+    if order_connected_line_profiles:
+        dxf_rows, line_profile_ordering = _rows_with_connected_line_profiles(dxf_rows)
     template_text = template_sym.read_text(encoding="utf-8", errors="replace")
     if DDC_RE.search(template_text) is None:
         raise RuntimeError(f"No DDC block found in template symbol: {template_sym}")
@@ -680,6 +751,8 @@ def write_native_prototype(
         ),
         "canonicalize_endpoints": canonicalize_endpoints,
         "topology_snap_endpoints": topology_snap_endpoints,
+        "order_connected_line_profiles": order_connected_line_profiles,
+        "line_profile_ordering": line_profile_ordering,
         "validation": {
             "dxf_count": validation["dxf_count"],
             "ddc_count": validation["ddc_count"],
@@ -738,6 +811,11 @@ def main() -> int:
             "Lab option: cluster shared line/arc endpoints before encoding. Requires --source-coordinate-digits."
         ),
     )
+    parser.add_argument(
+        "--order-connected-line-profiles",
+        action="store_true",
+        help="Lab option: order line-only DXF entities into connected profile chains before encoding.",
+    )
     args = parser.parse_args()
 
     payload = write_native_prototype(
@@ -752,6 +830,7 @@ def main() -> int:
         ),
         canonicalize_endpoints=args.canonicalize_endpoints,
         topology_snap_endpoints=args.topology_snap_endpoints,
+        order_connected_line_profiles=args.order_connected_line_profiles,
     )
     if args.report:
         write_json(args.report, payload)

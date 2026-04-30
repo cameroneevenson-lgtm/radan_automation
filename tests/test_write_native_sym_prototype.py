@@ -9,6 +9,7 @@ from ddc_corpus import Bounds
 from ddc_number_codec import decode_ddc_number_fraction
 from write_native_sym_prototype import (
     _refresh_symbol_metadata_attrs,
+    _rows_with_connected_line_profiles,
     _rows_with_rounded_source_coordinates,
     _rows_with_topology_snapped_endpoints,
     _symbol_view_extents,
@@ -106,6 +107,53 @@ class WriteNativeSymPrototypeTests(unittest.TestCase):
 
         self.assertEqual(snapped[0]["normalized_end"], [1.0, 0.0])
         self.assertEqual(snapped[1]["normalized_start_point"], [1.0, 0.0])
+
+    def test_connected_line_profile_order_reverses_and_chains_segments(self) -> None:
+        rows = [
+            {
+                "type": "LINE",
+                "start": [0.0, 1.0],
+                "end": [1.0, 1.0],
+                "normalized_start": [0.0, 1.0],
+                "normalized_end": [1.0, 1.0],
+            },
+            {
+                "type": "LINE",
+                "start": [0.0, 0.0],
+                "end": [1.0, 0.0],
+                "normalized_start": [0.0, 0.0],
+                "normalized_end": [1.0, 0.0],
+            },
+            {
+                "type": "LINE",
+                "start": [1.0, 0.0],
+                "end": [1.0, 1.0],
+                "normalized_start": [1.0, 0.0],
+                "normalized_end": [1.0, 1.0],
+            },
+            {
+                "type": "LINE",
+                "start": [0.0, 0.0],
+                "end": [0.0, 1.0],
+                "normalized_start": [0.0, 0.0],
+                "normalized_end": [0.0, 1.0],
+            },
+        ]
+
+        ordered, stats = _rows_with_connected_line_profiles(rows)
+
+        self.assertTrue(stats["eligible"])
+        self.assertTrue(stats["changed"])
+        self.assertEqual(stats["chain_count"], 1)
+        self.assertEqual(
+            [(row["normalized_start"], row["normalized_end"]) for row in ordered],
+            [
+                ([0.0, 1.0], [1.0, 1.0]),
+                ([1.0, 1.0], [1.0, 0.0]),
+                ([1.0, 0.0], [0.0, 0.0]),
+                ([0.0, 0.0], [0.0, 1.0]),
+            ],
+        )
 
     def test_canonicalized_line_delta_closes_on_encoded_endpoint_fraction(self) -> None:
         row = {

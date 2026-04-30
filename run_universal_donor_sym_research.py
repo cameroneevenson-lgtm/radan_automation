@@ -17,10 +17,11 @@ from copied_project_nester_gate import (
     sanitize_label,
     select_parts,
 )
-from ddc_corpus import DDC_RE
+from ddc_corpus import DDC_RE, read_ddc_records, read_dxf_entities
+from ddc_number_codec import decode_ddc_number
 from import_parts_csv_headless import read_import_csv
 from validate_native_sym import validate_native_sym
-from write_native_sym_prototype import write_native_prototype
+from write_native_sym_prototype import _rows_with_topology_snapped_endpoints, write_native_prototype
 
 
 DEFAULT_DONOR_SYM = Path(__file__).resolve().parent / "donor.sym"
@@ -154,6 +155,48 @@ def refresh_generated_symbol_bom_metadata(path: Path, part: Any) -> dict[str, An
     }
 
 
+def _decode_token(token: str) -> float:
+    return 0.0 if not token else float(decode_ddc_number(token))
+
+
+def _segment_key(start: tuple[float, float], end: tuple[float, float], *, digits: int = 5) -> tuple[tuple[float, float], ...]:
+    a = (round(float(start[0]), digits), round(float(start[1]), digits))
+    b = (round(float(end[0]), digits), round(float(end[1]), digits))
+    return tuple(sorted((a, b)))
+
+
+def unordered_line_geometry_check(*, dxf_path: Path, sym_path: Path) -> dict[str, Any]:
+    dxf_rows, bounds = read_dxf_entities(dxf_path)
+    if any(str(row.get("type")) != "LINE" for row in dxf_rows):
+        return {"eligible": False, "passed": False, "reason": "non_line_dxf_rows"}
+    dxf_rows = _rows_with_topology_snapped_endpoints(dxf_rows, bounds, digits=6)
+    ddc_rows = read_ddc_records(sym_path)
+    if any(str(row.get("record")) != "G" for row in ddc_rows):
+        return {"eligible": False, "passed": False, "reason": "non_line_ddc_rows"}
+    dxf_segments = Counter(
+        _segment_key(tuple(row["normalized_start"]), tuple(row["normalized_end"])) for row in dxf_rows
+    )
+    ddc_segments = Counter()
+    for row in ddc_rows:
+        tokens = list(row.get("tokens") or [])
+        start = (_decode_token(tokens[0] if len(tokens) > 0 else ""), _decode_token(tokens[1] if len(tokens) > 1 else ""))
+        end = (
+            start[0] + _decode_token(tokens[2] if len(tokens) > 2 else ""),
+            start[1] + _decode_token(tokens[3] if len(tokens) > 3 else ""),
+        )
+        ddc_segments[_segment_key(start, end)] += 1
+    missing = dxf_segments - ddc_segments
+    extra = ddc_segments - dxf_segments
+    return {
+        "eligible": True,
+        "passed": not missing and not extra,
+        "dxf_segment_count": sum(dxf_segments.values()),
+        "ddc_segment_count": sum(ddc_segments.values()),
+        "missing_count": sum(missing.values()),
+        "extra_count": sum(extra.values()),
+    }
+
+
 def _ddc_record_counts(text: str) -> dict[str, int]:
     match = DDC_RE.search(text)
     if match is None:
@@ -202,9 +245,12 @@ def ensure_blank_universal_donor(donor_sym: Path) -> dict[str, Any]:
 
 
 def _generation_row_ok(row: dict[str, Any]) -> bool:
+    geometry_passed = bool(row.get("validation_passed")) or bool(
+        (row.get("unordered_line_geometry") or {}).get("passed")
+    )
     return (
         bool(row.get("write_ok"))
-        and bool(row.get("validation_passed"))
+        and geometry_passed
         and not bool(row.get("retained_donor_attr_110"))
         and int(row.get("generated_geometry_records", 0)) > 0
     )
@@ -230,17 +276,21 @@ def generate_donor_symbol(*, part: Any, donor_sym: Path, symbol_dir: Path) -> di
             source_coordinate_digits=6,
             topology_snap_endpoints=True,
             canonicalize_endpoints=True,
+            order_connected_line_profiles=True,
         )
         bom_metadata = refresh_generated_symbol_bom_metadata(out_path, part)
         validation = validate_native_sym(dxf_path=part.dxf_path, sym_path=out_path)
+        unordered_geometry = unordered_line_geometry_check(dxf_path=part.dxf_path, sym_path=out_path)
         facts = inspect_symbol(out_path)
         row.update(
             {
                 "write_ok": True,
                 "bom_metadata": bom_metadata,
+                "line_profile_ordering": payload["line_profile_ordering"],
                 "entity_count": payload["entity_count"],
                 "replaced_records": payload["replaced_records"],
                 "validation_passed": bool(validation["passed"]),
+                "unordered_line_geometry": unordered_geometry,
                 "validation_tiers": validation["tiers"],
                 "output_attr_110": facts["attr_110"],
                 "output_attr_165": facts["attr_165"],
