@@ -36,6 +36,7 @@ DEFAULT_WRITER_OPTIONS: dict[str, Any] = {
     "source_coordinate_entity_types": None,
     "canonicalize_endpoints": True,
     "line_delta_repair_zero": False,
+    "h_delta_repair_zero": False,
     "topology_snap_endpoints": True,
     "order_connected_line_profiles": True,
     "rotate_connected_line_profile_start": False,
@@ -321,6 +322,7 @@ def generate_donor_symbol(
             topology_snap_endpoints=bool(options["topology_snap_endpoints"]),
             canonicalize_endpoints=bool(options["canonicalize_endpoints"]),
             line_delta_repair_zero=bool(options["line_delta_repair_zero"]),
+            h_delta_repair_zero=bool(options["h_delta_repair_zero"]),
             order_connected_line_profiles=bool(options["order_connected_line_profiles"]),
             rotate_connected_line_profile_start=bool(options["rotate_connected_line_profile_start"]),
             normalize_collinear_line_chains_enabled=bool(options["normalize_collinear_line_chains"]),
@@ -664,6 +666,11 @@ def main() -> int:
         help="Lab-only: append a decoded-close trailing zero to length-10 LINE delta tokens.",
     )
     parser.add_argument(
+        "--h-delta-repair-zero",
+        action="store_true",
+        help="Lab-only: pad decoded-close H delta/center-offset tokens with trailing zeros.",
+    )
+    parser.add_argument(
         "--no-order-connected-line-profiles",
         action="store_true",
         help="Disable connected line-profile ordering in the donor writer.",
@@ -717,6 +724,7 @@ def main() -> int:
         "topology_snap_endpoints": not bool(args.no_topology_snap_endpoints),
         "canonicalize_endpoints": not bool(args.no_canonicalize_endpoints),
         "line_delta_repair_zero": bool(args.line_delta_repair_zero),
+        "h_delta_repair_zero": bool(args.h_delta_repair_zero),
         "order_connected_line_profiles": not bool(args.no_order_connected_line_profiles),
         "rotate_connected_line_profile_start": bool(args.rotate_connected_line_profile_start),
         "normalize_collinear_line_chains": bool(args.normalize_collinear_line_chains),

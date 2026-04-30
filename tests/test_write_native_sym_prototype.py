@@ -47,6 +47,26 @@ class WriteNativeSymPrototypeTests(unittest.TestCase):
         self.assertEqual(repaired[3], "m?;djH4hNN0")
         self.assertEqual(float(decode_ddc_number_fraction(original[3])), float(decode_ddc_number_fraction(repaired[3])))
 
+    def test_h_delta_repair_zero_pads_arc_delta_slots(self) -> None:
+        row = {
+            "type": "ARC",
+            "normalized_start_point": [33.5, 53.38],
+            "normalized_end_point": [33.5, 53.451],
+            "normalized_center": [33.475, 53.38],
+        }
+
+        original = encode_geometry_data(row, token_count=21, canonicalize_endpoints=True).split(".")
+        repaired = encode_geometry_data(
+            row,
+            token_count=21,
+            canonicalize_endpoints=True,
+            h_delta_repair_zero=True,
+        ).split(".")
+
+        self.assertEqual(original[4], "i?YVIVIVJ")
+        self.assertEqual(repaired[4], "i?YVIVIVJ00")
+        self.assertEqual(float(decode_ddc_number_fraction(original[4])), float(decode_ddc_number_fraction(repaired[4])))
+
     def test_encodes_circle_as_arc_style_start_and_center_delta(self) -> None:
         row = {
             "type": "CIRCLE",

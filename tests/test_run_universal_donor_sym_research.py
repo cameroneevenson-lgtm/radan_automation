@@ -144,6 +144,7 @@ class UniversalDonorSymResearchTests(unittest.TestCase):
         self.assertEqual(payload["writer_options"]["source_coordinate_digits"], 6)
         self.assertTrue(payload["writer_options"]["topology_snap_endpoints"])
         self.assertTrue(payload["writer_options"]["canonicalize_endpoints"])
+        self.assertFalse(payload["writer_options"]["h_delta_repair_zero"])
         self.assertTrue(payload["writer_options"]["order_connected_line_profiles"])
         self.assertFalse(payload["writer_options"]["rotate_connected_line_profile_start"])
         self.assertTrue(payload["rows"][0]["bom_metadata"]["all_present"])

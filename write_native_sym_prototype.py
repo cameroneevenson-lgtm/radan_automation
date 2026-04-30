@@ -69,11 +69,32 @@ def _append_decoded_close_zero(token: str, *, tolerance: float = 1e-12) -> str:
     return token
 
 
+def _pad_decoded_close_zeros(token: str, *, min_length: int, tolerance: float = 1e-12) -> str:
+    if not token or len(token) >= int(min_length):
+        return token
+    candidate = token + ("0" * (int(min_length) - len(token)))
+    try:
+        diff = abs(float(decode_ddc_number_fraction(candidate) - decode_ddc_number_fraction(token)))
+    except Exception:
+        return token
+    if diff <= tolerance:
+        return candidate
+    return token
+
+
 def _repair_line_delta_zero_tokens(tokens: list[str]) -> list[str]:
     repaired = list(tokens)
     for index in (2, 3):
         if index < len(repaired):
             repaired[index] = _append_decoded_close_zero(repaired[index])
+    return repaired
+
+
+def _repair_h_delta_zero_tokens(tokens: list[str]) -> list[str]:
+    repaired = list(tokens)
+    for index in (2, 3, 4, 5):
+        if index < len(repaired):
+            repaired[index] = _pad_decoded_close_zeros(repaired[index], min_length=11)
     return repaired
 
 
@@ -187,6 +208,7 @@ def encode_geometry_data(
     canonicalize_endpoints: bool = False,
     continuation_digits: int = CANONICAL_DELTA_CONTINUATION_DIGITS,
     line_delta_repair_zero: bool = False,
+    h_delta_repair_zero: bool = False,
 ) -> str:
     entity_type = str(dxf_row["type"])
     if entity_type == "LINE":
@@ -266,7 +288,10 @@ def encode_geometry_data(
                 6: Fraction(1, 1),
                 9: Fraction(1, 1),
             }
-            return ".".join(_pad_fraction_tokens(tokens, token_count, continuation_digits=continuation_digits))
+            padded = _pad_fraction_tokens(tokens, token_count, continuation_digits=continuation_digits)
+            if h_delta_repair_zero:
+                padded = _repair_h_delta_zero_tokens(padded)
+            return ".".join(padded)
         tokens = {
             0: float(center[0]) + radius,
             1: float(center[1]),
@@ -274,7 +299,10 @@ def encode_geometry_data(
             6: 1.0,
             9: 1.0,
         }
-        return ".".join(_pad_tokens(tokens, token_count))
+        padded = _pad_tokens(tokens, token_count)
+        if h_delta_repair_zero:
+            padded = _repair_h_delta_zero_tokens(padded)
+        return ".".join(padded)
 
     if entity_type == "ARC":
         start = [_round_optional(value, coordinate_digits) for value in dxf_row["normalized_start_point"]]
@@ -321,7 +349,10 @@ def encode_geometry_data(
                 6: Fraction(1, 1),
                 9: Fraction(1, 1),
             }
-            return ".".join(_pad_fraction_tokens(tokens, token_count, continuation_digits=continuation_digits))
+            padded = _pad_fraction_tokens(tokens, token_count, continuation_digits=continuation_digits)
+            if h_delta_repair_zero:
+                padded = _repair_h_delta_zero_tokens(padded)
+            return ".".join(padded)
         tokens = {
             0: float(start[0]),
             1: float(start[1]),
@@ -332,7 +363,10 @@ def encode_geometry_data(
             6: 1.0,
             9: 1.0,
         }
-        return ".".join(_pad_tokens(tokens, token_count))
+        padded = _pad_tokens(tokens, token_count)
+        if h_delta_repair_zero:
+            padded = _repair_h_delta_zero_tokens(padded)
+        return ".".join(padded)
 
     raise ValueError(f"Unsupported DXF entity type: {entity_type}")
 
@@ -1031,6 +1065,7 @@ def _replace_ddc_geometry_block(
     coordinate_digits: int | None = None,
     canonicalize_endpoints: bool = False,
     line_delta_repair_zero: bool = False,
+    h_delta_repair_zero: bool = False,
     part_name: str | None = None,
 ) -> tuple[str, dict[str, Any]]:
     match = DDC_BLOCK_RE.search(template_text)
@@ -1070,6 +1105,7 @@ def _replace_ddc_geometry_block(
                 coordinate_digits=coordinate_digits,
                 canonicalize_endpoints=canonicalize_endpoints,
                 line_delta_repair_zero=line_delta_repair_zero,
+                h_delta_repair_zero=h_delta_repair_zero,
             )
             identifier = _encode_ddc_small_int(index)
             if record == "G":
@@ -1096,6 +1132,7 @@ def _replace_ddc_geometry_block(
                     coordinate_digits=coordinate_digits,
                     canonicalize_endpoints=canonicalize_endpoints,
                     line_delta_repair_zero=line_delta_repair_zero,
+                    h_delta_repair_zero=h_delta_repair_zero,
                 )
                 body_lines.append(",".join(fields))
                 geometry_index += 1
@@ -1187,6 +1224,7 @@ def write_native_prototype(
     source_coordinate_entity_types: set[str] | None = None,
     canonicalize_endpoints: bool = False,
     line_delta_repair_zero: bool = False,
+    h_delta_repair_zero: bool = False,
     topology_snap_endpoints: bool = False,
     order_connected_line_profiles: bool = False,
     rotate_connected_line_profile_start: bool = False,
@@ -1263,6 +1301,7 @@ def write_native_prototype(
         coordinate_digits=coordinate_digits,
         canonicalize_endpoints=canonicalize_endpoints,
         line_delta_repair_zero=line_delta_repair_zero,
+        h_delta_repair_zero=h_delta_repair_zero,
         part_name=out_path.stem,
     )
     output_text = _refresh_symbol_metadata_attrs(output_text, bounds=bounds, part_name=out_path.stem)
@@ -1286,6 +1325,7 @@ def write_native_prototype(
         ),
         "canonicalize_endpoints": canonicalize_endpoints,
         "line_delta_repair_zero": line_delta_repair_zero,
+        "h_delta_repair_zero": h_delta_repair_zero,
         "topology_snap_endpoints": topology_snap_endpoints,
         "order_connected_line_profiles": order_connected_line_profiles,
         "rotate_connected_line_profile_start": rotate_connected_line_profile_start,
@@ -1354,6 +1394,13 @@ def main() -> int:
         ),
     )
     parser.add_argument(
+        "--h-delta-repair-zero",
+        action="store_true",
+        help=(
+            "Lab option: pad decoded-close H delta/center-offset tokens with trailing zeros."
+        ),
+    )
+    parser.add_argument(
         "--topology-snap-endpoints",
         action="store_true",
         help=(
@@ -1406,6 +1453,7 @@ def main() -> int:
         ),
         canonicalize_endpoints=args.canonicalize_endpoints,
         line_delta_repair_zero=bool(args.line_delta_repair_zero),
+        h_delta_repair_zero=bool(args.h_delta_repair_zero),
         topology_snap_endpoints=args.topology_snap_endpoints,
         order_connected_line_profiles=args.order_connected_line_profiles,
         rotate_connected_line_profile_start=args.rotate_connected_line_profile_start,

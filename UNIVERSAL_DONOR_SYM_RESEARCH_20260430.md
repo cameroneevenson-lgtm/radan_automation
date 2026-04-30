@@ -948,6 +948,62 @@ Follow-up donor-only validation kept the row-order problem separate:
 | --- | --- | --- |
 | donor-only `F54410-B-37/B-38/B-39` with boundary-chain normalization and `--line-delta-repair-zero` | fail `11063`, 0 DRGs | toxic continuation spelling is cracked, but donor-only row order/row-shape is still not RADAN-acceptable |
 
+## 2026-04-30 B38 H-Row Continuation Repair
+
+After the line-delta breakthrough, the remaining donor-only
+`F54410-B-38` blocker was isolated to H records. A B38 singleton with source
+visible row order, source G rows, and donor-generated H rows failed `11063`.
+Delta debugging over the 122 H rows reduced the passing repair set to exactly
+12 H rows:
+
+`17, 19, 21, 22, 24, 26, 27, 29, 31, 32, 34, 36`
+
+Every one of those 12 rows was individually necessary in that diagnostic. Slot
+variants then separated coordinate spelling from delta/offset continuation
+spelling:
+
+| Variant | Mutation | Result |
+| --- | --- | --- |
+| `h12_delta_append2` | pad non-empty H slots `2..5` on the 12 rows to 11-character tokens with trailing zeroes | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `h12_delta_pass` | copy only H slots `2..5` from the passing generated candidate | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `h12_start_pass` | copy only H start coordinate slots `0..1` from the passing generated candidate | fail `11063`, 0 DRGs |
+| `h12_slots0_5_pass` | copy H slots `0..5` from the passing generated candidate | pass, `lay_run_nest(0)=0`, 1 DRG |
+| `hall_delta_append2` | pad non-empty H slots `2..5` on every B38 H row to 11-character tokens | pass, `lay_run_nest(0)=0`, 1 DRG |
+
+Conclusion: B38's donor-only H-row blocker is decoded-neutral
+continuation-length spelling on H delta/center-offset slots, not start
+coordinate token choice. Native writer support was added as another lab-only
+flag:
+
+```powershell
+--h-delta-repair-zero
+```
+
+The flag pads non-empty H slots `2`, `3`, `4`, and `5` with decoded-close
+trailing zero continuation digits up to the observed 11-character shape. It is
+not production behavior.
+
+Using boundary-chain normalization, `--line-delta-repair-zero`,
+`--h-delta-repair-zero`, and the same lab feature-pen remap used by RADAN-created
+symbols, the fully regenerated donor-only row-count trio now passes:
+
+| Metric | Value |
+| --- | --- |
+| symbol folder | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\donor_boundary_line_h_delta_zero_trio\symbols` |
+| RPD | `C:\Tools\radan_automation\_sym_lab\overnight_f54410_collinear_token_crack_20260430_164850\n_donor_trio_lhzero_pen\F54410 PAINT PACK.donor_trio_lhzero_pen.rpd` |
+| parts | `F54410-B-37`, `F54410-B-38`, `F54410-B-39` |
+| same-part oracle text used | no |
+| generated/diagnostic status | generated donor-only DDC geometry plus lab post-write pen remap |
+| part rows | `3` |
+| sheet rows after refresh | `3` |
+| `lay_run_nest(0)` | `0` |
+| elapsed | `0.504s` |
+| DRG count | `2` |
+| nest rows | `16` |
+| made/nonzero count | `12` |
+| `NextNestNum` | `17` |
+| RADAN process cleanup | preflight empty, final empty |
+
 ## Disproven Hypotheses
 
 `RADAN open/save will canonicalize the donor-only B-14 enough to nest.`
