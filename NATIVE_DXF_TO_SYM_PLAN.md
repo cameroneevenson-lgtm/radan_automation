@@ -2113,3 +2113,28 @@ failed, so the current smallest passing candidate is raw + `B-194` circle-pair
 `F54410-B-16` + `F54410-B-02` + `F54410-B-12`. It preserves raw full95
 used-nest semantics, passes hard-canary thumbnails `7/7`, and has known-good
 token exact rate `0.9055173459402093` (`65698/72553`, far mismatches `0`).
+
+Reduced-set minimization pushed that smaller again. Direct leave-one-out showed
+`F54410-B-02` is optional in the six-part reduced candidate; the no-`F54410-B-02`
+variant preserved raw used-nest semantics, had token exact rate
+`0.9049798078645955` (`65659/72553`, far `0`), had `0` crack-relevant DRG
+layout-token deltas versus raw, and passed hard-canary thumbnails `7/7`.
+
+Leave-one-out on the five-part state showed `F54410-B-15` and `F54410-B-16`
+are required, while `F54410-B-32`, `F54410-B-18`, and `F54410-B-12` are each
+optional one-at-a-time. Three-part addback probes found two passing stabilizers:
+raw + `B-194` circle-pair + `F54410-B-21` pair + `F54410-B-15` +
+`F54410-B-16` + `F54410-B-32`, and the same base plus `F54410-B-12` instead of
+`F54410-B-32`. The `F54410-B-12` version is the current smallest passing
+reduced candidate: full95 copied-project nesting matches raw used-nest
+semantics, `28` DRGs, `431` made/nonzero, `0` crack-relevant layout-token deltas
+versus raw, token exact rate `0.9049660248370157` (`65658/72553`, far `0`), and
+hard-canary thumbnail parity `7/7`. The `F54410-B-32` sibling also matches raw
+semantics but has a slightly lower exact rate (`65624/72553`,
+`0.9044974018993012`). The two-part `F54410-B-15`+`F54410-B-16` variant and
+the `F54410-B-18` addback both reproduce the nests `27`/`28` `B-3 R1` /
+`B-5 R1` swap.
+
+This is not yet a writer rule. It is strong lab evidence that small, nonlocal
+token-spelling sets can cancel nester-visible ordering perturbations without
+changing decoded geometry or final DRG layout payloads.
